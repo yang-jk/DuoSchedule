@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.DuoSchedule" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">@color/primary</item>
+        <item name="android:colorPrimaryDark">@color/primary_variant</item>
+        <item name="android:colorAccent">@color/primary</item>
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">@color/background</item>
+        
+        <item name="android:datePickerStyle">@style/DatePickerStyle</item>
+        <item name="android:timePickerStyle">@style/TimePickerStyle</item>
+    </style>
+
+    <style name="DatePickerStyle" parent="android:Widget.Material.Light.DatePicker">
+        <item name="android:headerBackground">@color/primary</item>
+        <item name="android:calendarViewStyle">@style/CalendarViewStyle</item>
+    </style>
+
+    <style name="CalendarViewStyle" parent="android:Widget.Material.Light.CalendarView">
+        <item name="android:selectedWeekBackgroundColor">@color/primary</item>
+        <item name="android:focusedMonthDateColor">@color/on_surface</item>
+        <item name="android:unfocusedMonthDateColor">@color/on_surface</item>
+    </style>
+
+    <style name="TimePickerStyle" parent="android:Widget.Material.Light.TimePicker">
+        <item name="android:headerBackground">@color/primary</item>
+    </style>
+
+    <style name="Theme.DuoSchedule.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimationDuration">200</item>
+        <item name="postSplashScreenTheme">@style/Theme.DuoSchedule</item>
+    </style>
+</resources>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background">#000000</color>
+    <color name="course_ended">#9E9E9E</color>
+    <color name="free_time_color">#A5D6A7</color>
+    <color name="glance_colorBackground">#ff1c1b1f</color>
+    <color name="glance_colorError">#fff2b8b5</color>
+    <color name="glance_colorErrorContainer">#ff8c1d18</color>
+    <color name="glance_colorOnBackground">#ffe6e1e5</color>
+    <color name="glance_colorOnError">#ff601410</color>
+    <color name="glance_colorOnErrorContainer">#fff2b8b5</color>
+    <color name="glance_colorOnPrimary">#ff381e72</color>
+    <color name="glance_colorOnPrimaryContainer">#ffeaddff</color>
+    <color name="glance_colorOnSecondary">#ff332d41</color>
+    <color name="glance_colorOnSecondaryContainer">#ffe8def8</color>
+    <color name="glance_colorOnSurface">#ffe6e1e5</color>
+    <color name="glance_colorOnSurfaceInverse">#ff313033</color>
+    <color name="glance_colorOnSurfaceVariant">#ffcac4d0</color>
+    <color name="glance_colorOnTertiary">#ff492532</color>
+    <color name="glance_colorOnTertiaryContainer">#ffffd8e4</color>
+    <color name="glance_colorOutline">#ff938f99</color>
+    <color name="glance_colorPrimary">#ffd0bcff</color>
+    <color name="glance_colorPrimaryContainer">#ff4f378b</color>
+    <color name="glance_colorPrimaryInverse">#ff6750a4</color>
+    <color name="glance_colorSecondary">#ffccc2dc</color>
+    <color name="glance_colorSecondaryContainer">#ff4a4458</color>
+    <color name="glance_colorSurface">#ff1c1b1f</color>
+    <color name="glance_colorSurfaceInverse">#ffe6e1e5</color>
+    <color name="glance_colorSurfaceVariant">#ff49454f</color>
+    <color name="glance_colorTertiary">#ffefb8c8</color>
+    <color name="glance_colorTertiaryContainer">#ff633b48</color>
+    <color name="glance_colorWidgetBackground">#ff20333d</color>
+    <color name="on_surface">#FFFFFF</color>
+    <color name="person_a_color">#7AB8FF</color>
+    <color name="person_b_color">#FFAB91</color>
+    <color name="primary">#5B9DF5</color>
+    <color name="primary_variant">#1A5CB0</color>
+    <color name="secondary">#B0B0B0</color>
+    <color name="surface">#242424</color>
+    <style name="Base.Theme.SplashScreen.DayNight" parent="Base.Theme.SplashScreen"/>
+    <style name="CalendarViewStyle" parent="android:Widget.Material.CalendarView">
+        <item name="android:selectedWeekBackgroundColor">@color/primary</item>
+        <item name="android:focusedMonthDateColor">@color/on_surface</item>
+        <item name="android:unfocusedMonthDateColor">@color/on_surface</item>
+    </style>
+    <style name="DatePickerStyle" parent="android:Widget.Material.DatePicker">
+        <item name="android:headerBackground">@color/primary</item>
+        <item name="android:calendarViewStyle">@style/CalendarViewStyle</item>
+    </style>
+    <style name="Theme.DuoSchedule" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/primary</item>
+        <item name="android:colorPrimaryDark">@color/primary_variant</item>
+        <item name="android:colorAccent">@color/primary</item>
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowBackground">@color/background</item>
+        
+        <item name="android:datePickerStyle">@style/DatePickerStyle</item>
+        <item name="android:timePickerStyle">@style/TimePickerStyle</item>
+    </style>
+    <style name="Theme.DuoSchedule.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimationDuration">200</item>
+        <item name="postSplashScreenTheme">@style/Theme.DuoSchedule</item>
+    </style>
+    <style name="TimePickerStyle" parent="android:Widget.Material.TimePicker">
+        <item name="android:headerBackground">@color/primary</item>
+    </style>
+</resources>
