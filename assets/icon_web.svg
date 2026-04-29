@@ -1,0 +1,55 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#007AFF"/>
+      <stop offset="50%" style="stop-color:#5856D6"/>
+      <stop offset="100%" style="stop-color:#00C7BE"/>
+    </linearGradient>
+    
+    <linearGradient id="highlightGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.35"/>
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 主背景 -->
+  <rect x="40" y="40" width="432" height="432" rx="120" fill="url(#mainGradient)"/>
+  
+  <!-- 高光 -->
+  <path d="M40,40
+           C40,40 40,256 40,256
+           C40,216 168,184 256,184
+           C344,184 472,216 472,256
+           L472,40
+           C472,40 256,40 40,40 Z"
+        fill="url(#highlightGradient)"/>
+  
+  <!-- 左侧日历 - 白色 -->
+  <rect x="96" y="144" width="152" height="224" rx="24" fill="#FFFFFF"/>
+  
+  <!-- 右侧日历 - 黄色 -->
+  <rect x="264" y="144" width="152" height="224" rx="24" fill="#FFB74D"/>
+  
+  <!-- 数字 1 -->
+  <rect x="152" y="200" width="16" height="80" rx="4" fill="#007AFF"/>
+  <rect x="132" y="280" width="56" height="16" rx="4" fill="#007AFF"/>
+  
+  <!-- 数字 2 -->
+  <path d="M312,200
+           H352
+           V216
+           H328
+           V232
+           H352
+           V256
+           H312
+           V240
+           H336
+           V232
+           H312
+           V200 Z"
+        fill="#FFFFFF"/>
+  <rect x="312" y="264" width="40" height="16" rx="4" fill="#FFFFFF"/>
+  
+</svg>
+

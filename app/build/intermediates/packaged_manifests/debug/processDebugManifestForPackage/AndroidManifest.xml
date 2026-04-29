@@ -33,6 +33,7 @@
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:debuggable="true"
+        android:enableOnBackInvokedCallback="false"
         android:extractNativeLibs="false"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -226,6 +227,15 @@
         <receiver
             android:name="com.duoschedule.notification.SilentModeReceiver"
             android:enabled="true"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="com.duoschedule.action.SILENT_START" />
+                <action android:name="com.duoschedule.action.SILENT_END" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name="com.duoschedule.notification.PreStartServiceReceiver"
+            android:enabled="true"
             android:exported="false" />
 
         <provider
@@ -246,7 +256,8 @@
         <service
             android:name="com.duoschedule.notification.LiveUpdateService"
             android:exported="false"
-            android:foregroundServiceType="specialUse" />
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false" />
 
         <provider
             android:name="androidx.startup.InitializationProvider"

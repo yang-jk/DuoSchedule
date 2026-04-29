@@ -11,6 +11,7 @@ color primary_variant
 color secondary
 color surface
 drawable ic_launcher_foreground
+drawable ic_notification
 drawable widget_background
 drawable widget_preview_background
 drawable widget_system_background

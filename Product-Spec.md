@@ -3443,6 +3443,89 @@ appWidgetManager.updateAppWidget(appWidgetId, views)
 
 ---
 
+### 功能 83：首页今日课程跨天更新修复
+
+**功能描述**：修复首页今日课程区域在跨天后仍显示昨天课程的问题，确保日期变化时课程列表能正确更新。
+
+**问题描述**：
+- 用户反馈"上课前看还是昨天的课"
+- `currentDayOfWeek`（当前星期几）在 ViewModel 初始化时设置，但跨天后不会自动更新
+- `MainScreen` 中的定时任务只更新小时和分钟，没有检查日期变化
+
+**解决方案**：
+
+**1. 添加日期变化检测**
+- 在 `MainViewModel` 中添加 `lastDate` 变量记录上次日期
+- 在 `updateTime()` 方法中检测日期变化
+
+**2. 自动刷新星期数据**
+- 当检测到日期变化时，调用 `refreshCurrentDay()` 更新 `currentDayOfWeek`
+- 触发 `todayCourses` Flow 重新查询当天课程
+
+**技术实现**：
+```kotlin
+// MainViewModel.kt
+private var lastDate: LocalDate = LocalDate.now()
+
+fun updateTime() {
+    val now = LocalTime.now()
+    _currentHour.value = now.hour
+    _currentMinute.value = now.minute
+    
+    val today = LocalDate.now()
+    if (today != lastDate) {
+        lastDate = today
+        refreshCurrentDay()
+    }
+}
+```
+
+**影响文件**：
+- MainViewModel.kt - 添加日期变化检测和自动刷新逻辑
+
+**优先级**：高
+
+**状态**：已实现
+
+---
+
+### 功能 84：底部导航栏指示器样式和动画优化
+
+**功能描述**：参考 Pronto 应用的底部导航栏指示器设计，重构双人课程表底栏，实现与 Pronto 一致的样式和动画效果。
+
+**输入**：
+- 当前选中页面索引
+- 用户点击导航项
+
+**输出**：
+- 与 Pronto 一致的底栏指示器样式和动画
+
+**业务规则**：
+
+**1. 样式重构（与 Pronto 一致）**
+- 移除独立的指示器滑块
+- 选中项自身显示 Capsule（胶囊）背景
+- 背景使用主题色（iOS 蓝色）
+- 毛玻璃效果（blur + lens）
+
+**2. 动画效果（与 Pronto 一致）**
+- 动画时长：400ms
+- 缓动曲线：CubicBezierEasing(0.25f, 0.1f, 0.25f, 1.0f)
+- 选中项 scale 动画（按压时缩小到 0.85）
+
+**技术实现**：
+- 重构 `GlassBottomBar.kt`
+- 移除独立的指示器滑块逻辑
+- 在 `GlassBottomBarItem` 中添加选中状态背景
+- 使用 Capsule 形状作为选中背景
+- 修改 MainActivity.kt 中的调用方式
+
+**优先级**：中
+
+**状态**：已实现
+
+---
+
 ## 功能优先级
 
 ### 高优先级（必须有）
@@ -3509,6 +3592,8 @@ appWidgetManager.updateAppWidget(appWidgetId, views)
 | 功能 78：上课中通知倒计时修复 | 修复倒计时显示不准确问题 | 已实现 |
 | 功能 79：空闲时段显示优化 | 显示离现在最近的空闲时段 | 已实现 |
 | 功能 80：小米负一屏小组件适配优化 | 解决负一屏小组件不显示问题 | 已实现 |
+| 功能 83：首页今日课程跨天更新修复 | 修复跨天后仍显示昨天课程问题 | 已实现 |
+| 功能 89：双人课表分享与导入优化 | 优化双人课表分享导入，防止课表导入反了 | 待实现 |
 
 ### 中优先级（应该有）
 
@@ -3650,6 +3735,734 @@ appWidgetManager.updateAppWidget(appWidgetId, views)
 
 ---
 
-**文档版本**：2.77.0
+---
 
-**最后更新**：2026-03-03
+### 功能 84：上课自动静音恢复修复
+
+**功能描述**：修复课程结束后没有自动恢复铃声的问题，确保自动静音功能可靠工作。
+
+**问题描述**：
+- 用户反馈"课程结束，没有取消自动静音"
+- 课程结束后手机仍保持静音/振动状态，没有恢复到原有铃声模式
+
+**问题原因分析**：
+
+**1. 静音状态跟踪不完整**
+- 只保存了"原始铃声模式"，没有保存"当前是否处于自动静音状态"
+- 没有记录"静音结束时间"，无法判断是否应该恢复
+
+**2. 应用重启后状态丢失**
+- 如果用户在课程期间关闭应用或手机重启，静音结束闹钟可能无法触发
+- 系统可能因为省电策略延迟或取消后台闹钟
+
+**3. 闹钟可能被系统延迟**
+- 非精确闹钟 (`setAndAllowWhileIdle`) 可能被系统延迟触发
+- Doze 模式下闹钟触发时间不确定
+
+**解决方案**：
+
+**1. 增强静音状态持久化**
+- 新增 `KEY_IS_AUTO_SILENT_ACTIVE`：记录当前是否处于自动静音状态
+- 新增 `KEY_AUTO_SILENT_END_TIME`：记录静音应该结束的时间戳
+- 新增 `KEY_AUTO_SILENT_COURSE_ID`：记录当前静音对应的课程 ID
+
+**2. 应用启动时检查并恢复**
+- 在 `DuoScheduleApp.onCreate()` 中添加静音状态检查
+- 如果检测到静音已过期（当前时间 > 结束时间），立即恢复铃声
+- 如果静音未过期，重新调度静音结束闹钟
+
+**3. 增强闹钟可靠性**
+- 使用 `setExactAndAllowWhileIdle` 替代 `setAndAllowWhileIdle`（如果有权限）
+- 同时使用 WorkManager 作为备份机制
+
+**技术实现**：
+
+**1. RingerModeManager.kt 增强**
+```kotlin
+companion object {
+    private const val KEY_IS_AUTO_SILENT_ACTIVE = "is_auto_silent_active"
+    private const val KEY_AUTO_SILENT_END_TIME = "auto_silent_end_time"
+    private const val KEY_AUTO_SILENT_COURSE_ID = "auto_silent_course_id"
+}
+
+fun setAutoSilentActive(courseId: Long, endTimeMillis: Long) {
+    prefs.edit {
+        putBoolean(KEY_IS_AUTO_SILENT_ACTIVE, true)
+        putLong(KEY_AUTO_SILENT_END_TIME, endTimeMillis)
+        putLong(KEY_AUTO_SILENT_COURSE_ID, courseId)
+    }
+}
+
+fun isAutoSilentActive(): Boolean = prefs.getBoolean(KEY_IS_AUTO_SILENT_ACTIVE, false)
+
+fun getAutoSilentEndTime(): Long = prefs.getLong(KEY_AUTO_SILENT_END_TIME, 0)
+
+fun clearAutoSilentState() {
+    prefs.edit {
+        putBoolean(KEY_IS_AUTO_SILENT_ACTIVE, false)
+        remove(KEY_AUTO_SILENT_END_TIME)
+        remove(KEY_AUTO_SILENT_COURSE_ID)
+    }
+}
+```
+
+**2. DuoScheduleApp.kt 启动检查**
+```kotlin
+private fun checkAndRestoreRingerMode() {
+    if (!ringerModeManager.isAutoSilentActive()) return
+    
+    val endTime = ringerModeManager.getAutoSilentEndTime()
+    val now = System.currentTimeMillis()
+    
+    if (now >= endTime) {
+        // 静音已过期，恢复铃声
+        ringerModeManager.restoreRingerMode()
+        ringerModeManager.clearAutoSilentState()
+        Log.i(TAG, "启动时检测到静音已过期，已恢复铃声")
+    } else {
+        // 静音未过期，重新调度结束闹钟
+        val delayMinutes = (endTime - now) / (60 * 1000)
+        // 重新调度闹钟...
+        Log.i(TAG, "启动时检测到静音未过期，重新调度结束闹钟")
+    }
+}
+```
+
+**3. SilentModeReceiver.kt 增强**
+- 在设置静音时同时记录状态和结束时间
+- 在恢复铃声时清除状态
+
+**影响文件**：
+- `RingerModeManager.kt` - 增强状态持久化
+- `SilentModeReceiver.kt` - 增强状态管理
+- `DuoScheduleApp.kt` - 添加启动检查
+- `CourseNotificationManager.kt` - 增强调度逻辑
+
+**优先级**：高
+
+**状态**：已实现
+
+---
+
+### 功能 85：后台通知优化
+
+**功能描述**：修复应用在后台时通知不及时的问题，确保无论应用在前台还是后台，课前通知和上课中通知都能准时触发。
+
+**问题描述**：
+- 用户反馈"app在后台，没有清理通知也不及时，只有切换到前台才有通知"
+- 应用在后台时，课前通知和上课中通知无法正常触发
+- 必须切换到前台才能看到通知，影响用户体验
+
+**问题原因分析**：
+
+**1. Android 后台执行限制**
+- Android 8.0+ 对后台执行有严格限制
+- BroadcastReceiver 在后台可能无法触发
+- AlarmManager 在 Doze 模式下会被延迟
+
+**2. 通知调度时机问题**
+- `scheduleReminderNotifications()` 只在应用前台时被调用
+- 后台时没有重新调度机制
+- 闹钟可能在应用进入后台后失效
+
+**3. 前台服务启动问题**
+- `LiveUpdateService` 依赖 `OngoingCourseReceiver` 触发
+- 该 Receiver 在后台可能无法正常工作
+- 导致上课中通知无法显示
+
+**解决方案**：
+
+**1. 使用 WorkManager 替代 AlarmManager**
+- WorkManager 是 Android 推荐的后台任务调度方案
+- 支持在后台可靠执行，不受 Doze 模式影响
+- 支持约束条件（如网络状态、充电状态等）
+
+**2. 增强通知调度机制**
+- 使用 `PeriodicWorkRequest` 定期重新调度通知
+- 每 15 分钟检查一次并重新调度即将到来的通知
+- 确保通知不会因为应用在后台而失效
+
+**3. 优化前台服务启动**
+- 在 `OngoingCourseReceiver` 中直接启动前台服务
+- 使用 `startForegroundService()` 确保服务在后台也能运行
+- 添加 `FOREGROUND_SERVICE_SPECIAL_USE` 权限
+
+**4. 添加应用生命周期监听**
+- 监听应用进入后台和前台事件
+- 进入前台时立即重新调度通知
+- 进入后台时确保后台任务已正确设置
+
+**技术实现**：
+
+**1. 新增 NotificationRescheduleWorker**
+```kotlin
+class NotificationRescheduleWorker(
+    context: Context,
+    workerParams: WorkerParameters
+) : CoroutineWorker(context, workerParams) {
+
+    override suspend fun doWork(): Result {
+        try {
+            val app = applicationContext as DuoScheduleApp
+            app.notificationManager.scheduleReminderNotifications()
+            Log.i(TAG, "通知重新调度完成")
+            return Result.success()
+        } catch (e: Exception) {
+            Log.e(TAG, "通知重新调度失败", e)
+            return Result.retry()
+        }
+    }
+
+    companion object {
+        private const val TAG = "NotificationRescheduleWorker"
+        const val WORK_NAME = "notification_reschedule_work"
+
+        fun schedule(context: Context) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                .setRequiresBatteryNotLow(false)
+                .setRequiresCharging(false)
+                .build()
+
+            val workRequest = PeriodicWorkRequestBuilder<NotificationRescheduleWorker>(
+                15, TimeUnit.MINUTES
+            )
+                .setConstraints(constraints)
+                .setInitialDelay(15, TimeUnit.MINUTES)
+                .build()
+
+            WorkManager.getInstance(context)
+                .enqueueUniquePeriodicWork(
+                    WORK_NAME,
+                    ExistingPeriodicWorkPolicy.UPDATE,
+                    workRequest
+                )
+        }
+    }
+}
+```
+
+**2. 修改 OngoingCourseReceiver**
+```kotlin
+override fun onReceive(context: Context, intent: Intent) {
+    if (intent.action == ACTION_COURSE_START) {
+        val courseName = intent.getStringExtra(EXTRA_COURSE_NAME)
+        val courseLocation = intent.getStringExtra(EXTRA_COURSE_LOCATION) ?: ""
+        val duration = intent.getIntExtra(EXTRA_DURATION, 45)
+        val endHour = intent.getIntExtra(EXTRA_END_HOUR, -1)
+        val endMinute = intent.getIntExtra(EXTRA_END_MINUTE, -1)
+
+        if (courseName.isNullOrEmpty()) {
+            Log.e(TAG, "Course name is empty, skip")
+            return
+        }
+
+        // 直接启动前台服务，确保在后台也能运行
+        LiveUpdateService.start(
+            context = context,
+            courseName = courseName,
+            courseLocation = courseLocation,
+            remainingMinutes = duration,
+            endHour = endHour,
+            endMinute = endMinute
+        )
+
+        Log.d(TAG, "LiveUpdateService started from receiver")
+    }
+}
+```
+
+**3. 修改 DuoScheduleApp**
+```kotlin
+override fun onCreate() {
+    super.onCreate()
+    
+    // 启动定期重新调度任务
+    NotificationRescheduleWorker.schedule(this)
+    
+    // 监听应用生命周期
+    registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+        override fun onActivityResumed(activity: Activity) {
+            // 应用进入前台，立即重新调度通知
+            lifecycleScope.launch {
+                notificationManager.scheduleReminderNotifications()
+            }
+        }
+        
+        override fun onActivityPaused(activity: Activity) {
+            // 应用进入后台，确保后台任务已设置
+            NotificationRescheduleWorker.schedule(this@DuoScheduleApp)
+        }
+        
+        // 其他生命周期方法...
+    })
+}
+```
+
+**4. 修改 CourseNotificationManager**
+```kotlin
+suspend fun scheduleReminderNotifications() {
+    // 现有逻辑保持不变...
+    
+    // 在调度完成后，确保后台任务已设置
+    NotificationRescheduleWorker.schedule(context)
+}
+```
+
+**5. 修改 AndroidManifest.xml**
+```xml
+<service
+    android:name=".notification.LiveUpdateService"
+    android:foregroundServiceType="specialUse"
+    android:exported="false"
+    android:stopWithTask="false" />
+```
+
+**业务规则**：
+
+**1. 定期重新调度**
+- 每 15 分钟自动重新调度所有通知
+- 使用 PeriodicWorkRequest 确保在后台也能执行
+- 不受 Doze 模式影响
+
+**2. 前台切换触发**
+- 应用进入前台时立即重新调度通知
+- 确保通知状态与当前时间同步
+- 清除过期的通知
+
+**3. 前台服务保障**
+- 上课中通知使用前台服务
+- 确保在后台也能持续更新
+- 课程结束后自动停止服务
+
+**4. 权限要求**
+- FOREGROUND_SERVICE：前台服务权限
+- FOREGROUND_SERVICE_SPECIAL_USE：特殊用途前台服务
+- POST_NOTIFICATIONS：通知权限
+- SCHEDULE_EXACT_ALARM：精确闹钟权限（可选）
+
+**异常处理**：
+- WorkManager 任务失败时自动重试
+- 前台服务启动失败时回退到普通通知
+- 权限未授予时提示用户授权
+
+**优先级**：高
+
+**状态**：已实现
+
+---
+
+### 功能 88：底部导航栏液态玻璃效果重构
+
+**功能描述**：参考 AndroidLiquidGlass-master 和 AndroidLiquidGlass-kmp 项目，重构底部导航栏，实现液态玻璃效果的选中指示器，支持拖拽切换、按压动画和交互高亮等高级交互效果。
+
+**参考项目**：
+- `d:\双人课程表\AndroidLiquidGlass-master` - Android 原生版本
+- `d:\双人课程表\AndroidLiquidGlass-kmp` - Kotlin Multiplatform 版本
+
+**输入**：
+- 用户点击导航项
+- 用户拖拽选中指示器
+- 用户按压导航项
+
+**输出**：
+- 液态玻璃效果的底部导航栏
+- 选中指示器（按压时显示玻璃效果，非按压时无玻璃效果）
+- 拖拽切换动画
+- 按压缩放动画
+- 交互高亮效果
+
+**业务规则**：
+
+**1. 选中指示器玻璃效果触发时机**
+- 未点击/未按压状态：选中指示器**无玻璃效果**，只显示基础背景色
+- 点击/按压状态：选中指示器显示**完整玻璃效果**（vibrancy + blur + lens + chromaticAberration）
+- 切换过程中：选中指示器保持玻璃效果
+- 切换完成后：玻璃效果消失，恢复普通状态
+
+**2. 拖拽切换功能**
+- 支持拖拽选中指示器来切换 Tab
+- 拖拽过程中指示器跟随手指移动
+- 松手后自动吸附到最近的 Tab
+- 使用 `DampedDragAnimation` 实现阻尼动画效果
+- 快速滑动时有弹性变形效果
+
+**3. 按压动画效果**
+- 容器缩放动画：按压时缩小到 0.85 倍
+- 选中指示器缩放动画：按压时放大到 1.39 倍（78f/56f）
+- 速度弹性动画：快速滑动时指示器有弹性变形
+- 使用 spring 动画曲线实现自然过渡
+
+**4. 交互高亮效果**
+- 按压位置显示渐变高亮光斑
+- 光斑跟随手指移动
+- 使用 `InteractiveHighlight` 组件实现
+- 高亮效果与按压进度联动
+
+**5. 底栏整体样式**
+- 胶囊形状（Capsule）
+- 整体玻璃态背景（vibrancy + blur + lens）
+- 深浅模式适配
+
+**6. Tab 项布局**
+- 图标 + 文字垂直排列
+- 图标大小：24dp
+- 文字大小：10sp
+- 选中时图标放大到 1.1 倍
+- 选中时文字完全不透明，未选中时 60% 透明度
+
+**技术实现**：
+
+**1. 核心组件结构**
+```
+LiquidBottomTabs
+├── DampedDragAnimation (阻尼拖拽动画)
+├── InteractiveHighlight (交互高亮)
+├── Row (底栏容器)
+│   ├── 背景层 (玻璃态效果)
+│   ├── 内容层 (Tab 项)
+│   └── 选中指示器层 (按压时显示玻璃效果)
+└── LiquidBottomTab (单个 Tab 项)
+```
+
+**2. 动画参数**
+```kotlin
+// 阻尼动画参数
+valueAnimationSpec = spring(1f, 1000f, 0.001f)
+velocityAnimationSpec = spring(0.5f, 300f, 0.001f)
+pressProgressAnimationSpec = spring(1f, 1000f, 0.001f)
+scaleXAnimationSpec = spring(0.6f, 250f, 0.001f)
+scaleYAnimationSpec = spring(0.7f, 250f, 0.001f)
+
+// 缩放参数
+initialScale = 1f
+pressedScale = 78f / 56f  // ≈ 1.39
+```
+
+**3. 玻璃效果参数**
+```kotlin
+// 底栏背景
+vibrancy()
+blur(8.dp.toPx())
+lens(24.dp.toPx(), 24.dp.toPx())
+
+// 选中指示器（按压时）
+vibrancy()
+blur(8.dp.toPx())
+lens(10.dp.toPx() * progress, 14.dp.toPx() * progress, chromaticAberration = true)
+
+// 高亮效果
+Highlight.Default.copy(alpha = progress)
+Shadow(alpha = progress)
+InnerShadow(radius = 8.dp * progress, alpha = progress)
+```
+
+**4. 颜色系统**
+```kotlin
+// 浅色模式
+accentColor = Color(0xFF0088FF)
+containerColor = Color(0xFFFAFAFA).copy(0.4f)
+
+// 深色模式
+accentColor = Color(0xFF0091FF)
+containerColor = Color(0xFF121212).copy(0.4f)
+```
+
+**5. 文件结构**
+- `LiquidBottomTabs.kt` - 主组件，包含拖拽逻辑和动画控制
+- `LiquidBottomTab.kt` - 单个 Tab 项组件
+- `DampedDragAnimation.kt` - 阻尼拖拽动画工具类
+- `InteractiveHighlight.kt` - 交互高亮工具类
+
+**依赖组件**：
+- `backdrop` 库：`drawBackdrop`, `layerBackdrop`, `vibrancy`, `blur`, `lens`
+- `com.kyant.shapes.Capsule` - 胶囊形状
+
+**影响文件**：
+- `app/src/main/java/com/duoschedule/ui/theme/glassbottombar.kt` - 重构为 `LiquidBottomTabs.kt`
+- `app/src/main/java/com/duoschedule/ui/theme/LiquidBottomTab.kt` - 新增
+- `app/src/main/java/com/duoschedule/ui/theme/DampedDragAnimation.kt` - 新增
+- `app/src/main/java/com/duoschedule/ui/theme/InteractiveHighlight.kt` - 新增
+- `app/src/main/java/com/duoschedule/MainActivity.kt` - 更新调用方式
+
+**优先级**：高
+
+**状态**：已实现
+
+---
+
+### 功能 89：双人课表分享与导入优化
+
+**功能描述**：优化双人课表的分享和导入流程，确保对方导入时不会把"我"和"Ta"的课表搞反，提供清晰的身份识别和确认机制。
+
+**输入**：
+- 导出范围选择（双人课表）
+- 导入文件来源
+- 用户身份确认
+
+**输出**：
+- 包含真实姓名的导出文件
+- 清晰的导入预览和身份确认界面
+- 防止导入反了的确认机制
+
+**业务规则**：
+
+**1. 导出优化**
+
+**真实姓名标识**
+- 导出文件中使用用户设置的真实姓名（如"张三"、"李四"），而非"我"/"Ta"
+- 如果用户未设置自定义名称，使用默认名称"人员A"/"人员B"
+- CSV 文件中的"所属人"列显示真实姓名
+
+**分别保存设置**
+- 双人课表导出时，分别保存两个人的课表设置（开学时间、总周数、当前周次、每天节数、课程时间）
+- 原因：两个人可能在不同学校，设置可能不同
+- 设置数据结构：
+  ```
+  # Ta的设置（张三）
+  # 开学时间：2026-02-24
+  # 总周数：18
+  # 当前周次：3
+  # 每天节数：12
+  # 我的设置（李四）
+  # 开学时间：2026-02-17
+  # 总周数：16
+  # 当前周次：4
+  # 每天节数：14
+  ```
+
+**导出文件名**
+- 双人课表：`duoschedule_export_双人_张三李四_日期时间.csv`
+- 文件名中包含两个人的姓名，方便识别
+
+**2. 导入优化**
+
+**身份识别预览**
+- 导入双人课表时，显示预览界面：
+  - 左侧卡片：显示第一份课表（蓝色主题）
+    - 人员姓名（如"张三"）
+    - 课程数量
+    - 第一节课程名称（如"高等数学"）
+    - 课程时间分布概览
+  - 右侧卡片：显示第二份课表（黄色主题）
+    - 人员姓名（如"李四"）
+    - 课程数量
+    - 第一节课程名称
+    - 课程时间分布概览
+
+**手动分配机制**
+- 每份课表卡片下方显示选择器：
+  - "这份课表分配给：" → 下拉选择"我"或"Ta"
+- 两份课表必须分配给不同的人
+- 如果用户尝试将两份课表分配给同一个人，显示警告提示
+
+**颜色区分确认**
+- 使用醒目颜色区分两份课表：
+  - 第一份课表：蓝色卡片（#2196F3）
+  - 第二份课表：黄色卡片（#FFC107）
+- 卡片边框加粗，增强视觉区分
+- 分配后卡片颜色与目标人员对应：
+  - 分配给"我"：黄色边框
+  - 分配给"Ta"：蓝色边框
+
+**确认提示**
+- 分配完成后，显示确认对话框：
+  ```
+  确认导入：
+  - 张三的课表 → Ta的课表（18门课程）
+  - 李四的课表 → 我的课表（15门课程）
+  
+  是否继续？
+  ```
+- 用户点击"确认导入"后才执行导入
+
+**3. 冲突处理**
+
+**现有数据处理**
+- 如果目标设备已有课表数据，显示选择对话框：
+  - "覆盖现有课表"：删除现有数据，导入新数据
+  - "合并到现有课表"：保留现有数据，添加新课程（时间冲突时提示）
+  - "取消导入"
+
+**时间冲突检测**
+- 合并模式下，检测时间冲突：
+  - 同一人、同一天、时间重叠的课程标记为冲突
+  - 冲突课程以红色高亮显示
+  - 用户可选择保留现有或使用导入的
+
+**4. 设置导入选项**
+
+**开关选项**
+- "同时导入课表设置"（默认开启）
+- 开关开启时显示将要导入的设置内容：
+  - Ta的设置：开学时间、学期总周数、当前周次、每天节数
+  - 我的设置：开学时间、学期总周数、当前周次、每天节数
+
+**设置冲突处理**
+- 如果两份设置不同，让用户选择：
+  - "使用张三的设置"
+  - "使用李四的设置"
+  - "分别应用"（Ta的课表用张三的设置，我的课表用李四的设置）
+
+**5. 导入流程图**
+
+```
+导入双人课表文件
+  ↓
+解析文件内容
+  ↓
+识别文件类型（双人课表）
+  ↓
+显示身份识别预览界面
+  ├─ 左侧蓝色卡片：张三的课表（18门）
+  └─ 右侧黄色卡片：李四的课表（15门）
+  ↓
+用户手动分配课表
+  ├─ 张三的课表 → 选择"Ta"
+  └─ 李四的课表 → 选择"我"
+  ↓
+检测现有数据冲突
+  ├─ 无冲突 → 显示确认对话框
+  └─ 有冲突 → 显示冲突处理选项
+  ↓
+用户确认导入
+  ↓
+执行导入
+  ↓
+显示导入结果
+```
+
+**6. 异常处理**
+
+**文件格式错误**
+- 提示"文件格式错误，无法识别双人课表数据"
+- 提供重试选项
+
+**身份识别失败**
+- 如果文件中的人员姓名为空或无效，使用"人员A"/"人员B"作为默认名称
+- 提示用户手动确认身份
+
+**导入失败**
+- 显示具体错误原因
+- 提供重试选项
+- 导入前自动备份现有数据，失败时可恢复
+
+**优先级**：高
+
+**状态**：待实现
+
+---
+
+### 功能 90：液态玻璃高光效果毛刺修复
+
+**功能描述**：修复液态玻璃效果中高光（Highlight）边缘存在毛刺、不够平滑的问题，提升视觉效果的精致度。
+
+**问题描述**：
+- 液态玻璃组件（按钮、开关、底部导航栏等）的高光边缘存在明显毛刺
+- 高光过渡不够平滑，影响整体视觉质感
+- 问题在浅色模式下尤为明显
+
+**问题原因分析**：
+
+**1. BlurMaskFilter 模式问题**
+- 当前使用 `BlurMaskFilter.Blur.NORMAL` 模式
+- 该模式的模糊边缘较为锐利，容易产生锯齿感
+
+**2. blurRadius 参数过小**
+- 默认 `blurRadius = width / 2f`（约 0.25dp）
+- 模糊半径太小，无法有效平滑边缘
+
+**3. Shader falloff 参数**
+- 默认 `falloff = 1f`，衰减较快
+- 导致高光边缘过渡不够柔和
+
+**解决方案**：
+
+**1. 增大 blurRadius 参数**
+- 将 `blurRadius` 从 `width / 2f` 改为 `width * 1.5f`
+- 增加模糊半径，使边缘过渡更平滑
+
+**2. 调整 falloff 参数**
+- 将 `falloff` 从 `1f` 改为 `0.6f`
+- 降低衰减速度，使高光边缘更柔和
+
+**3. 优化 Highlight 默认值**
+- `Highlight.Default`：width = 0.5dp, blurRadius = 0.75dp
+- `Highlight.Ambient`：width = 0.5dp, blurRadius = 0.75dp
+- `Highlight.Plain`：width = 0.5dp, blurRadius = 0.75dp
+
+**技术实现**：
+
+**修改 Highlight.kt**
+```kotlin
+@Immutable
+data class Highlight(
+    val width: Dp = 0.5f.dp,
+    val blurRadius: Dp = width * 1.5f,  // 从 width / 2f 改为 width * 1.5f
+    @param:FloatRange(from = 0.0, to = 1.0) val alpha: Float = 1f,
+    val style: HighlightStyle = HighlightStyle.Default
+)
+```
+
+**修改 HighlightStyle.kt**
+```kotlin
+data class Default(
+    override val color: Color = Color.White.copy(alpha = 0.5f),
+    override val blendMode: BlendMode = BlendMode.Plus,
+    val angle: Float = 45f,
+    @param:FloatRange(from = 0.0) val falloff: Float = 0.6f  // 从 1f 改为 0.6f
+) : HighlightStyle
+```
+
+**影响文件**：
+- `Highlight.kt` - 修改 blurRadius 默认值
+- `HighlightStyle.kt` - 修改 falloff 默认值
+
+**优先级**：高
+
+**状态**：已实现
+
+---
+
+### 功能 91：课表页面标题行布局优化
+
+**功能描述**：优化"我的课表"和"Ta的课表"页面的标题行布局，将周次选择器移至与标题同行显示，移除日期范围显示，使界面更加紧凑简洁。
+
+**输入**：
+- 当前周次
+- 总周数
+- 用户点击操作
+
+**输出**：
+- 紧凑的标题行布局
+- 周次选择器与标题同行显示
+
+**业务规则**：
+
+**1. 标题行布局**
+- 标题文字（如"我的课表"）在左侧
+- 周次选择器（如"第3周"）紧跟在标题后面，同一行显示
+- 移除日期范围显示（如"3/3 - 3/9"）
+
+**2. 周次选择器样式**
+- 显示格式：第 X 周
+- 点击可展开周次选择弹窗
+- 使用小尺寸按钮样式
+
+**3. 空间利用**
+- 标题行更加紧凑
+- 减少垂直空间占用
+- 为课表内容留出更多空间
+
+**异常处理**：
+- 无
+
+**优先级**：中
+
+**状态**：已实现
+
+---
+
+**文档版本**：2.84.0
+
+**最后更新**：2026-03-17

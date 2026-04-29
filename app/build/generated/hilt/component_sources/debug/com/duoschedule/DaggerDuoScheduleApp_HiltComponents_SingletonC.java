@@ -705,6 +705,7 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
       DuoScheduleApp_MembersInjector.injectSettingsDataStore(instance, settingsDataStoreProvider.get());
       DuoScheduleApp_MembersInjector.injectRepository(instance, courseRepositoryProvider.get());
       DuoScheduleApp_MembersInjector.injectNotificationManager(instance, courseNotificationManagerProvider.get());
+      DuoScheduleApp_MembersInjector.injectRingerModeManager(instance, ringerModeManagerProvider.get());
       DuoScheduleApp_MembersInjector.injectWorkerFactory(instance, hiltWorkerFactory());
       return instance;
     }
@@ -712,6 +713,7 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
     private SilentModeReceiver injectSilentModeReceiver2(SilentModeReceiver instance2) {
       SilentModeReceiver_MembersInjector.injectSettingsDataStore(instance2, settingsDataStoreProvider.get());
       SilentModeReceiver_MembersInjector.injectCourseDao(instance2, courseDao());
+      SilentModeReceiver_MembersInjector.injectRingerModeManager(instance2, ringerModeManagerProvider.get());
       return instance2;
     }
 

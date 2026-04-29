@@ -4,6 +4,549 @@
 
 ---
 
+## [2.88.0] - 2026-03-17
+
+### 变更类型：功能优化
+
+### 状态：已实现
+
+### 变更内容
+- 功能 91：课表页面标题行布局优化
+
+### 功能详情
+
+#### 功能 91：课表页面标题行布局优化
+
+**需求描述**：
+优化"我的课表"和"Ta的课表"页面的标题行布局，将周次选择器移至与标题同行显示，移除日期范围显示，使界面更加紧凑简洁。
+
+**变更内容**：
+1. 将周次选择器从独立行移至标题行，与标题文字同行显示
+2. 移除日期范围显示（如"3/3 - 3/9"）
+3. 删除不再使用的 `WeekSelectorSection` 组件
+
+**修改文件**：
+- `app/src/main/java/com/duoschedule/ui/schedule/ScheduleScreen.kt`
+- `Product-Spec.md`
+
+---
+
+## [2.87.0] - 2026-03-17
+
+### 变更类型：Bug 修复
+
+### 状态：已实现
+
+### 修复内容
+- 功能 91：主页今日课程列表底部被底栏遮挡
+
+### 功能详情
+
+#### 功能 91：主页今日课程列表底部被底栏遮挡
+
+**问题描述**：
+主页今日课程很多时，最后一个课程会被底部导航栏遮挡，用户无法看到完整内容。
+
+**问题原因**：
+`MainScreen.kt` 中的 `Column` 使用了 `verticalScroll` 但没有为底部导航栏预留空间。底栏高度为 64dp 加上系统导航栏高度，内容滚动到底部时会被遮挡。
+
+**解决方案**：
+在 `MainScreen.kt` 的滚动 `Column` 中添加 `padding(bottom = 80.dp)`，为底栏预留足够空间，确保最后一个课程可以完整显示。
+
+**用户要求**：
+用户明确要求"不要垫高"，因此采用滚动内容底部内边距的方式，而非增加固定占位元素。
+
+**修改文件**：
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`
+
+---
+
+## [2.86.0] - 2026-03-17
+
+### 变更类型：Bug 修复
+
+### 状态：已实现
+
+### 修复内容
+- 功能 90：液态玻璃高光效果毛刺修复
+
+### 功能详情
+
+#### 功能 90：液态玻璃高光效果毛刺修复
+
+**问题描述**：
+液态玻璃组件（按钮、开关、底部导航栏等）的高光边缘存在明显毛刺，不够平滑，影响整体视觉质感。
+
+**问题原因**：
+1. `blurRadius` 参数过小（默认 `width / 2f` ≈ 0.25dp），模糊半径太小无法有效平滑边缘
+2. `falloff` 参数为 1f，衰减较快，导致高光边缘过渡不够柔和
+
+**解决方案**：
+1. 将 `blurRadius` 从 `width / 2f` 改为 `width * 1.5f`（约 0.75dp）
+2. 将 `falloff` 从 `1f` 改为 `0.6f`，降低衰减速度使边缘更柔和
+
+**修改文件**：
+- `AndroidLiquidGlass-kmp/backdrop/src/commonMain/kotlin/com/kyant/backdrop/highlight/Highlight.kt`
+- `AndroidLiquidGlass-kmp/backdrop/src/commonMain/kotlin/com/kyant/backdrop/highlight/HighlightStyle.kt`
+
+---
+
+## [2.85.0] - 2026-03-17
+
+### 变更类型：新增功能
+
+### 状态：待实现
+
+### 新增功能
+- 功能 89：双人课表分享与导入优化
+
+### 功能详情
+
+#### 功能 89：双人课表分享与导入优化
+
+**变更原因**：
+用户反馈导出双人课表分享给对方后，对方导入时可能把"我"和"Ta"的课表搞反。
+
+**核心问题**：
+- 导出文件中用"我"/"Ta"标识，对方无法识别是谁的课表
+- 导入时没有明确的身份确认机制
+- 容易把两份课表导入反了
+
+**解决方案**：
+
+**1. 导出优化**
+- 导出文件中使用真实姓名（如"张三"、"李四"），而非"我"/"Ta"
+- 分别保存两个人的课表设置（开学时间、总周数等），因为两人可能在不同学校
+- 导出文件名包含两个人的姓名：`duoschedule_export_双人_张三李四_日期时间.csv`
+
+**2. 导入优化**
+- 显示身份识别预览界面，用颜色区分两份课表（蓝色/黄色）
+- 每份课表显示：人员姓名、课程数量、第一节课程名称
+- 用户手动选择哪份课表分配给"我"或"Ta"
+- 两份课表必须分配给不同的人
+- 分配完成后显示确认对话框，用户确认后才执行导入
+
+**3. 冲突处理**
+- 如果目标设备已有课表数据，让用户选择覆盖还是合并
+- 合并模式下检测时间冲突，冲突课程以红色高亮显示
+
+**4. 设置导入选项**
+- 开关：同时导入课表设置（默认开启）
+- 如果两份设置不同，让用户选择使用哪套设置
+
+**影响文件**：
+- `CsvExporter.kt` - 导出逻辑修改
+- `CsvImporter.kt` - 导入逻辑修改
+- `ImportPreviewScreen.kt` - 新增身份确认界面
+- 导出文件格式变更
+
+---
+
+## [2.84.0] - 2026-03-17
+
+### 变更类型：Bug 修复
+
+### 状态：已实现
+
+### 修复内容
+- 功能 89：深色模式底栏图标颜色修复
+- 功能 90：底栏宽度优化
+
+### 功能详情
+
+#### 功能 89：深色模式底栏图标颜色修复
+
+**问题描述**：
+深色模式下底部导航栏图标看不清。
+
+**问题原因**：
+- 教程项目中使用 `ColorFilter.tint(contentColor)` 明确设置图标颜色（深色模式用白色）
+- 原代码没有传递正确的图标颜色，导致图标使用默认颜色在深色背景下不可见
+
+**解决方案**：
+1. 在 `LiquidBottomTabsSpec` 中添加 `ContentColorLight` 和 `ContentColorDark` 颜色定义
+2. 创建 `LocalLiquidBottomTabContentColor` CompositionLocal 来传递内容颜色
+3. 在 `LiquidBottomTabs` 组件中根据主题设置正确的 `contentColor`
+4. 在 `MainActivity` 中使用 `LocalLiquidBottomTabContentColor.current` 获取颜色并应用到 Icon 和 Text
+
+**修改文件**：
+- `app/src/main/java/com/duoschedule/ui/theme/LiquidBottomTabs.kt`
+- `app/src/main/java/com/duoschedule/ui/theme/LiquidBottomTab.kt`
+- `app/src/main/java/com/duoschedule/MainActivity.kt`
+
+#### 功能 90：底栏宽度优化
+
+**问题描述**：
+底部导航栏太宽，视觉效果不佳。
+
+**解决方案**：
+参考教程项目 `BottomTabsContent.kt` 中的实现，添加水平 padding：
+```kotlin
+Modifier.padding(horizontal = 36.dp)
+```
+
+---
+
+## [2.83.0] - 2026-03-16
+
+### 变更类型：功能优化
+
+### 状态：已实现
+
+### 新增功能
+- 功能 88：底部导航栏液态玻璃效果重构
+
+### 功能详情
+
+#### 功能 88：底部导航栏液态玻璃效果重构
+
+**变更原因**：
+参考 AndroidLiquidGlass-master 和 AndroidLiquidGlass-kmp 项目，重构底部导航栏实现液态玻璃效果。
+
+**参考项目**：
+- `d:\双人课程表\AndroidLiquidGlass-master` - Android 原生版本
+- `d:\双人课程表\AndroidLiquidGlass-kmp` - Kotlin Multiplatform 版本
+
+**优化内容**：
+
+**1. 选中指示器玻璃效果触发时机（与参考项目一致）**
+- 未点击/未按压状态：选中指示器无玻璃效果，只显示基础背景色
+- 点击/按压状态：选中指示器显示完整玻璃效果（vibrancy + blur + lens + chromaticAberration）
+- 切换过程中：选中指示器保持玻璃效果
+- 切换完成后：玻璃效果消失，恢复普通状态
+
+**2. 拖拽切换功能**
+- 支持拖拽选中指示器来切换 Tab
+- 使用 `DampedDragAnimation` 实现阻尼动画效果
+- 快速滑动时有弹性变形效果
+
+**3. 按压动画效果（与参考项目一致）**
+- 容器缩放动画：按压时缩小到 0.85 倍
+- 选中指示器缩放动画：按压时放大到 1.39 倍
+- 速度弹性动画：快速滑动时指示器有弹性变形
+
+**4. 交互高亮效果**
+- 按压位置显示渐变高亮光斑
+- 光斑跟随手指移动
+- 使用 `InteractiveHighlight` 组件实现
+
+**技术实现**：
+- 新增 `LiquidBottomTabs.kt` - 主组件
+- 新增 `LiquidBottomTab.kt` - 单个 Tab 项组件
+- 新增 `DampedDragAnimation.kt` - 阻尼拖拽动画工具类
+- 新增 `InteractiveHighlight.kt` - 交互高亮工具类
+- 重构现有 `glassbottombar.kt`
+
+---
+
+## [2.82.0] - 2026-03-11
+
+### 变更类型：功能优化
+
+### 状态：已实现
+
+### 新增功能
+- 功能 84：底部导航栏指示器样式和动画优化
+
+### 功能详情
+
+#### 功能 84：底部导航栏指示器样式和动画优化
+
+**变更原因**：
+参考 Pronto 应用的底部导航栏指示器设计，重构双人课程表底栏。
+
+**优化内容**：
+
+**1. 样式重构（与 Pronto 一致）**
+- 移除独立的指示器滑块
+- 选中项自身显示 Capsule（胶囊）背景
+- 背景使用主题色（iOS 蓝色）
+- 毛玻璃效果（blur + lens）
+
+**2. 动画效果（与 Pronto 一致）**
+- 动画时长：400ms
+- 缓动曲线：CubicBezierEasing(0.25f, 0.1f, 0.25f, 1.0f)
+- 选中项 scale 动画（按压时缩小到 0.85）
+
+**技术实现**：
+- 重构 `GlassBottomBar.kt`
+- 移除独立的指示器滑块逻辑
+- 在 `GlassBottomBarItem` 中添加选中状态背景
+- 使用 Capsule 形状作为选中背景
+- 修改 MainActivity.kt 中的调用方式
+
+---
+
+## [2.82.0] - 2026-03-11
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 修复问题
+- 功能 87：当前周次不会自动切换
+
+### 功能详情
+
+#### 功能 87：当前周次不会自动切换
+
+**变更原因**：
+用户反馈"我的课表界面和ta的课表界面和当前周次不会自动切换"，以及"设置里的也不会变"。
+
+**问题描述**：
+- 课表页面显示的周次不会根据当前日期自动更新
+- 设置页面修改开学时间后，当前周次不会自动重新计算
+- 用户需要手动修改当前周次，影响使用体验
+
+**问题原因分析**：
+- `calculateCurrentWeek()` 方法已存在，但从未被调用
+- `currentWeek` 值存储在 DataStore 中，只在用户手动设置时更新
+- 应用启动和进入前台时，没有自动计算并更新当前周次
+- 设置页面修改开学时间或学期总周数时，没有触发当前周次重新计算
+
+**解决方案**：
+
+**1. 新增 `updateCurrentWeekIfNeeded()` 方法**
+- 读取两人各自的开学时间和学期总周数
+- 使用 `calculateCurrentWeek()` 计算当前应该是第几周
+- 如果计算值与存储值不同，自动更新存储值
+
+**2. 应用启动时自动更新**
+- 在 `DuoScheduleApp.onCreate()` 中调用 `updateCurrentWeekIfNeeded()`
+- 确保应用启动时周次是最新的
+
+**3. 应用进入前台时自动更新**
+- 在 `AppLifecycleObserver.onStart()` 中调用 `updateCurrentWeekIfNeeded()`
+- 确保用户从后台切回应用时周次是最新的
+
+**4. 设置页面修改时自动更新**
+- 修改开学时间时，自动重新计算当前周次
+- 修改学期总周数时，自动重新计算当前周次
+
+**技术实现**：
+- `DuoScheduleApp.kt` - 新增 `updateCurrentWeekIfNeeded()` 方法
+- `DuoScheduleApp.kt` - 在应用启动和进入前台时调用该方法
+- `SettingsViewModel.kt` - 修改 `setPersonSemesterStart()` 和 `setPersonTotalWeeks()` 方法，在设置后自动计算当前周次
+
+**影响范围**：
+- `DuoScheduleApp.kt` - 新增自动更新周次逻辑
+- `SettingsViewModel.kt` - 设置页面修改时自动更新周次
+
+---
+
+## [2.81.0] - 2026-03-09
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 修复问题
+- 功能 86：主页今日课程最后一个卡片阴影被截断
+
+### 功能详情
+
+#### 功能 86：主页今日课程最后一个卡片阴影被截断
+
+**变更原因**：
+用户反馈"主页-今日课程最后一个卡片下面好像被截断了一样，突然阴影就没了"。
+
+**问题描述**：
+- 主页今日课程列表中，最后一个卡片的毛玻璃效果（阴影/折射）在底部被截断
+- 视觉上看起来像是卡片突然消失或被切断
+
+**问题原因分析**：
+- `ScheduleList` 组件设置了 `heightIn(max = 400.dp)` 并使用 `verticalScroll`
+- 外层 `MainScreen` 也有 `verticalScroll`，造成嵌套滚动
+- 内部滚动容器有高度限制，导致内容被裁剪
+- 卡片使用 `drawBackdrop` + `lens` 毛玻璃效果，边缘视觉效果被容器边界裁剪
+
+**解决方案**：
+- 移除 `ScheduleList` 内部的 `heightIn(max = 400.dp)` 和 `verticalScroll`
+- 让整个页面统一滚动，避免嵌套滚动问题
+- 卡片可以完整显示到底部，不再被截断
+
+**修改文件**：
+- `TodayScheduleTimeline.kt`：移除内部高度限制和滚动，简化为普通 Column
+
+---
+
+## [2.80.0] - 2026-03-09
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 修复问题
+- 功能 85：后台通知优化
+
+### 功能详情
+
+#### 功能 85：后台通知优化
+
+**变更原因**：
+用户反馈"app在后台，没有清理通知也不及时，只有切换到前台才有通知"，应用在后台时通知无法正常触发。
+
+**问题描述**：
+- 应用在后台时，课前通知和上课中通知无法正常触发
+- 必须切换到前台才能看到通知，影响用户体验
+- Android 后台执行限制导致 BroadcastReceiver 在后台可能无法触发
+- AlarmManager 在 Doze 模式下会被延迟
+
+**问题原因分析**：
+
+**1. Android 后台执行限制**
+- Android 8.0+ 对后台执行有严格限制
+- BroadcastReceiver 在后台可能无法触发
+- AlarmManager 在 Doze 模式下会被延迟
+
+**2. 通知调度时机问题**
+- `scheduleReminderNotifications()` 只在应用前台时被调用
+- 后台时没有重新调度机制
+- 闹钟可能在应用进入后台后失效
+
+**3. 前台服务启动问题**
+- `LiveUpdateService` 依赖 `OngoingCourseReceiver` 触发
+- 该 Receiver 在后台可能无法正常工作
+- 导致上课中通知无法显示
+
+**解决方案**：
+
+**1. 使用 WorkManager 定期重新调度**
+- 新增 `NotificationRescheduleWorker` 类
+- 每 15 分钟自动重新调度所有通知
+- 使用 PeriodicWorkRequest 确保在后台也能执行
+- 不受 Doze 模式影响
+
+**2. 添加应用生命周期监听**
+- 监听应用进入后台和前台事件
+- 进入前台时立即重新调度通知
+- 进入后台时确保后台任务已正确设置
+
+**3. 优化前台服务启动**
+- 在 `OngoingCourseReceiver` 中直接启动前台服务
+- 使用 `startForegroundService()` 确保服务在后台也能运行
+- 添加 `android:stopWithTask="false"` 确保服务不会被意外终止
+
+**技术实现**：
+- 新增 `NotificationRescheduleWorker.kt` - 定期重新调度通知的 Worker
+- 修改 `DuoScheduleApp.kt` - 添加生命周期监听和定期任务启动
+- 修改 `OngoingCourseReceiver.kt` - 确保前台服务正确启动
+- 修改 `AndroidManifest.xml` - 添加 `android:stopWithTask="false"` 属性
+
+**影响范围**：
+- 新增 `NotificationRescheduleWorker.kt` - 定期重新调度通知
+- `DuoScheduleApp.kt` - 添加生命周期监听
+- `OngoingCourseReceiver.kt` - 优化前台服务启动
+- `AndroidManifest.xml` - 优化服务配置
+
+---
+
+## [2.79.0] - 2026-03-08
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 修复问题
+- 功能 84：上课自动静音恢复修复
+
+### 功能详情
+
+#### 功能 84：上课自动静音恢复修复
+
+**变更原因**：
+用户反馈"课程结束，没有取消自动静音"，课程结束后手机仍保持静音/振动状态。
+
+**问题描述**：
+- 课程结束后手机仍保持静音/振动状态，没有恢复到原有铃声模式
+- 静音状态跟踪不完整，只保存了"原始铃声模式"，没有保存"当前是否处于自动静音状态"
+- 应用重启后状态丢失，闹钟可能被系统延迟或取消
+
+**解决方案**：
+
+**1. 增强静音状态持久化**
+- 新增 `KEY_IS_AUTO_SILENT_ACTIVE`：记录当前是否处于自动静音状态
+- 新增 `KEY_AUTO_SILENT_END_TIME`：记录静音应该结束的时间戳
+- 新增 `KEY_AUTO_SILENT_COURSE_ID`：记录当前静音对应的课程 ID
+
+**2. 应用启动时检查并恢复**
+- 在 `DuoScheduleApp.onCreate()` 中添加静音状态检查
+- 如果检测到静音已过期（当前时间 > 结束时间），立即恢复铃声
+- 应用进入前台时也执行检查
+
+**3. 增强闹钟调度**
+- 在调度静音开始闹钟时同时传递结束时间戳
+- 设置静音时记录状态和结束时间
+- 恢复铃声时清除状态
+
+**技术实现**：
+- `RingerModeManager.kt` - 新增 `setAutoSilentActive()`、`isAutoSilentActive()`、`getAutoSilentEndTime()`、`clearAutoSilentState()` 方法
+- `SilentModeReceiver.kt` - 设置静音时记录状态，恢复铃声时清除状态
+- `CourseNotificationManager.kt` - 调度静音闹钟时传递结束时间
+- `DuoScheduleApp.kt` - 添加 `checkAndRestoreRingerMode()` 方法
+
+**影响范围**：
+- `RingerModeManager.kt` - 增强状态持久化
+- `SilentModeReceiver.kt` - 增强状态管理
+- `CourseNotificationManager.kt` - 增强调度逻辑
+- `DuoScheduleApp.kt` - 添加启动检查
+
+---
+
+## [2.78.0] - 2026-03-08
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 修复问题
+- 功能 83：首页今日课程跨天更新修复
+
+### 功能详情
+
+#### 功能 83：首页今日课程跨天更新修复
+
+**变更原因**：
+用户反馈"上课前看还是昨天的课"，首页今日课程区域在跨天后仍显示昨天的课程数据。
+
+**问题描述**：
+- `currentDayOfWeek`（当前星期几）在 ViewModel 初始化时设置，但跨天后不会自动更新
+- `MainScreen` 中的定时任务只更新小时和分钟，没有检查日期变化
+- 导致跨天后课程列表仍显示昨天的课程
+
+**解决方案**：
+
+**1. 添加日期变化检测**
+- 在 `MainViewModel` 中添加 `lastDate` 变量记录上次日期
+- 在 `updateTime()` 方法中检测日期变化
+
+**2. 自动刷新星期数据**
+- 当检测到日期变化时，调用 `refreshCurrentDay()` 更新 `currentDayOfWeek`
+- 触发 `todayCourses` Flow 重新查询当天课程
+
+**技术实现**：
+```kotlin
+// MainViewModel.kt
+private var lastDate: LocalDate = LocalDate.now()
+
+fun updateTime() {
+    val now = LocalTime.now()
+    _currentHour.value = now.hour
+    _currentMinute.value = now.minute
+    
+    val today = LocalDate.now()
+    if (today != lastDate) {
+        lastDate = today
+        refreshCurrentDay()
+    }
+}
+```
+
+**影响文件**：
+- MainViewModel.kt - 添加日期变化检测和自动刷新逻辑
+
+---
+
 ## [2.77.0] - 2026-03-03
 
 ### 变更类型：优化
