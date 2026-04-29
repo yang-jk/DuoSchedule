@@ -2,6 +2,7 @@ package com.duoschedule;
 
 import android.app.Activity;
 import android.app.Service;
+import android.content.Context;
 import android.view.View;
 import androidx.fragment.app.Fragment;
 import androidx.hilt.work.HiltWorkerFactory;
@@ -10,24 +11,41 @@ import androidx.hilt.work.WorkerFactoryModule_ProvideFactoryFactory;
 import androidx.lifecycle.SavedStateHandle;
 import androidx.lifecycle.ViewModel;
 import androidx.work.ListenableWorker;
+import androidx.work.WorkerParameters;
 import com.duoschedule.data.local.AppDatabase;
 import com.duoschedule.data.local.CourseDao;
 import com.duoschedule.data.local.SettingsDataStore;
 import com.duoschedule.data.repository.CourseRepository;
 import com.duoschedule.di.DatabaseModule_ProvideAppDatabaseFactory;
 import com.duoschedule.di.DatabaseModule_ProvideCourseDaoFactory;
+import com.duoschedule.notification.AutoSilentWorker;
+import com.duoschedule.notification.AutoSilentWorker_AssistedFactory;
 import com.duoschedule.notification.CourseNotificationManager;
 import com.duoschedule.notification.LiveUpdateService;
 import com.duoschedule.notification.LiveUpdateService_MembersInjector;
-import com.duoschedule.notification.NotificationTestHelper;
+import com.duoschedule.notification.ReminderWorker;
+import com.duoschedule.notification.ReminderWorker_AssistedFactory;
+import com.duoschedule.notification.RescheduleWorker;
+import com.duoschedule.notification.RescheduleWorker_AssistedFactory;
+import com.duoschedule.notification.RingerModeManager;
+import com.duoschedule.notification.SilentModeReceiver;
+import com.duoschedule.notification.SilentModeReceiver_MembersInjector;
 import com.duoschedule.ui.edit.CourseEditViewModel;
 import com.duoschedule.ui.edit.CourseEditViewModel_HiltModules;
+import com.duoschedule.ui.edit.CourseEditViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.duoschedule.ui.edit.CourseEditViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
 import com.duoschedule.ui.main.MainViewModel;
 import com.duoschedule.ui.main.MainViewModel_HiltModules;
+import com.duoschedule.ui.main.MainViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.duoschedule.ui.main.MainViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
 import com.duoschedule.ui.schedule.ScheduleViewModel;
 import com.duoschedule.ui.schedule.ScheduleViewModel_HiltModules;
+import com.duoschedule.ui.schedule.ScheduleViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.duoschedule.ui.schedule.ScheduleViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
 import com.duoschedule.ui.settings.SettingsViewModel;
 import com.duoschedule.ui.settings.SettingsViewModel_HiltModules;
+import com.duoschedule.ui.settings.SettingsViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import com.duoschedule.ui.settings.SettingsViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
 import dagger.hilt.android.ActivityRetainedLifecycle;
 import dagger.hilt.android.ViewModelLifecycle;
 import dagger.hilt.android.internal.builders.ActivityComponentBuilder;
@@ -45,12 +63,11 @@ import dagger.hilt.android.internal.modules.ApplicationContextModule;
 import dagger.hilt.android.internal.modules.ApplicationContextModule_ProvideContextFactory;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.DoubleCheck;
-import dagger.internal.IdentifierNameString;
-import dagger.internal.KeepFieldType;
 import dagger.internal.LazyClassKeyMap;
 import dagger.internal.MapBuilder;
 import dagger.internal.Preconditions;
 import dagger.internal.Provider;
+import dagger.internal.SingleCheck;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -67,7 +84,8 @@ import javax.annotation.processing.Generated;
     "KotlinInternal",
     "KotlinInternalInJava",
     "cast",
-    "deprecation"
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
   private DaggerDuoScheduleApp_HiltComponents_SingletonC() {
@@ -302,7 +320,7 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
 
     private final ViewWithFragmentCImpl viewWithFragmentCImpl = this;
 
-    private ViewWithFragmentCImpl(SingletonCImpl singletonCImpl,
+    ViewWithFragmentCImpl(SingletonCImpl singletonCImpl,
         ActivityRetainedCImpl activityRetainedCImpl, ActivityCImpl activityCImpl,
         FragmentCImpl fragmentCImpl, View viewParam) {
       this.singletonCImpl = singletonCImpl;
@@ -323,9 +341,8 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
 
     private final FragmentCImpl fragmentCImpl = this;
 
-    private FragmentCImpl(SingletonCImpl singletonCImpl,
-        ActivityRetainedCImpl activityRetainedCImpl, ActivityCImpl activityCImpl,
-        Fragment fragmentParam) {
+    FragmentCImpl(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
+        ActivityCImpl activityCImpl, Fragment fragmentParam) {
       this.singletonCImpl = singletonCImpl;
       this.activityRetainedCImpl = activityRetainedCImpl;
       this.activityCImpl = activityCImpl;
@@ -353,7 +370,7 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
 
     private final ViewCImpl viewCImpl = this;
 
-    private ViewCImpl(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
+    ViewCImpl(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
         ActivityCImpl activityCImpl, View viewParam) {
       this.singletonCImpl = singletonCImpl;
       this.activityRetainedCImpl = activityRetainedCImpl;
@@ -370,12 +387,21 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
 
     private final ActivityCImpl activityCImpl = this;
 
-    private ActivityCImpl(SingletonCImpl singletonCImpl,
-        ActivityRetainedCImpl activityRetainedCImpl, Activity activityParam) {
+    ActivityCImpl(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
+        Activity activityParam) {
       this.singletonCImpl = singletonCImpl;
       this.activityRetainedCImpl = activityRetainedCImpl;
 
 
+    }
+
+    Map keySetMapOfClassOfAndBooleanBuilder() {
+      MapBuilder mapBuilder = MapBuilder.<String, Boolean>newMapBuilder(4);
+      mapBuilder.put(CourseEditViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, CourseEditViewModel_HiltModules.KeyModule.provide());
+      mapBuilder.put(MainViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, MainViewModel_HiltModules.KeyModule.provide());
+      mapBuilder.put(ScheduleViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, ScheduleViewModel_HiltModules.KeyModule.provide());
+      mapBuilder.put(SettingsViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, SettingsViewModel_HiltModules.KeyModule.provide());
+      return mapBuilder.build();
     }
 
     @Override
@@ -389,7 +415,7 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
 
     @Override
     public Map<Class<?>, Boolean> getViewModelKeys() {
-      return LazyClassKeyMap.<Boolean>of(MapBuilder.<String, Boolean>newMapBuilder(4).put(LazyClassKeyProvider.com_duoschedule_ui_edit_CourseEditViewModel, CourseEditViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_duoschedule_ui_main_MainViewModel, MainViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_duoschedule_ui_schedule_ScheduleViewModel, ScheduleViewModel_HiltModules.KeyModule.provide()).put(LazyClassKeyProvider.com_duoschedule_ui_settings_SettingsViewModel, SettingsViewModel_HiltModules.KeyModule.provide()).build());
+      return LazyClassKeyMap.<Boolean>of(keySetMapOfClassOfAndBooleanBuilder());
     }
 
     @Override
@@ -406,29 +432,6 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
     public ViewComponentBuilder viewComponentBuilder() {
       return new ViewCBuilder(singletonCImpl, activityRetainedCImpl, activityCImpl);
     }
-
-    @IdentifierNameString
-    private static final class LazyClassKeyProvider {
-      static String com_duoschedule_ui_schedule_ScheduleViewModel = "com.duoschedule.ui.schedule.ScheduleViewModel";
-
-      static String com_duoschedule_ui_edit_CourseEditViewModel = "com.duoschedule.ui.edit.CourseEditViewModel";
-
-      static String com_duoschedule_ui_settings_SettingsViewModel = "com.duoschedule.ui.settings.SettingsViewModel";
-
-      static String com_duoschedule_ui_main_MainViewModel = "com.duoschedule.ui.main.MainViewModel";
-
-      @KeepFieldType
-      ScheduleViewModel com_duoschedule_ui_schedule_ScheduleViewModel2;
-
-      @KeepFieldType
-      CourseEditViewModel com_duoschedule_ui_edit_CourseEditViewModel2;
-
-      @KeepFieldType
-      SettingsViewModel com_duoschedule_ui_settings_SettingsViewModel2;
-
-      @KeepFieldType
-      MainViewModel com_duoschedule_ui_main_MainViewModel2;
-    }
   }
 
   private static final class ViewModelCImpl extends DuoScheduleApp_HiltComponents.ViewModelC {
@@ -438,22 +441,30 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
 
     private final ViewModelCImpl viewModelCImpl = this;
 
-    private Provider<CourseEditViewModel> courseEditViewModelProvider;
+    Provider<CourseEditViewModel> courseEditViewModelProvider;
 
-    private Provider<MainViewModel> mainViewModelProvider;
+    Provider<MainViewModel> mainViewModelProvider;
 
-    private Provider<ScheduleViewModel> scheduleViewModelProvider;
+    Provider<ScheduleViewModel> scheduleViewModelProvider;
 
-    private Provider<SettingsViewModel> settingsViewModelProvider;
+    Provider<SettingsViewModel> settingsViewModelProvider;
 
-    private ViewModelCImpl(SingletonCImpl singletonCImpl,
-        ActivityRetainedCImpl activityRetainedCImpl, SavedStateHandle savedStateHandleParam,
-        ViewModelLifecycle viewModelLifecycleParam) {
+    ViewModelCImpl(SingletonCImpl singletonCImpl, ActivityRetainedCImpl activityRetainedCImpl,
+        SavedStateHandle savedStateHandleParam, ViewModelLifecycle viewModelLifecycleParam) {
       this.singletonCImpl = singletonCImpl;
       this.activityRetainedCImpl = activityRetainedCImpl;
 
       initialize(savedStateHandleParam, viewModelLifecycleParam);
 
+    }
+
+    Map hiltViewModelMapMapOfClassOfAndProviderOfViewModelBuilder() {
+      MapBuilder mapBuilder = MapBuilder.<String, javax.inject.Provider<ViewModel>>newMapBuilder(4);
+      mapBuilder.put(CourseEditViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) (courseEditViewModelProvider)));
+      mapBuilder.put(MainViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) (mainViewModelProvider)));
+      mapBuilder.put(ScheduleViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) (scheduleViewModelProvider)));
+      mapBuilder.put(SettingsViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) (settingsViewModelProvider)));
+      return mapBuilder.build();
     }
 
     @SuppressWarnings("unchecked")
@@ -467,35 +478,12 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
 
     @Override
     public Map<Class<?>, javax.inject.Provider<ViewModel>> getHiltViewModelMap() {
-      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(MapBuilder.<String, javax.inject.Provider<ViewModel>>newMapBuilder(4).put(LazyClassKeyProvider.com_duoschedule_ui_edit_CourseEditViewModel, ((Provider) courseEditViewModelProvider)).put(LazyClassKeyProvider.com_duoschedule_ui_main_MainViewModel, ((Provider) mainViewModelProvider)).put(LazyClassKeyProvider.com_duoschedule_ui_schedule_ScheduleViewModel, ((Provider) scheduleViewModelProvider)).put(LazyClassKeyProvider.com_duoschedule_ui_settings_SettingsViewModel, ((Provider) settingsViewModelProvider)).build());
+      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(hiltViewModelMapMapOfClassOfAndProviderOfViewModelBuilder());
     }
 
     @Override
     public Map<Class<?>, Object> getHiltViewModelAssistedMap() {
       return Collections.<Class<?>, Object>emptyMap();
-    }
-
-    @IdentifierNameString
-    private static final class LazyClassKeyProvider {
-      static String com_duoschedule_ui_schedule_ScheduleViewModel = "com.duoschedule.ui.schedule.ScheduleViewModel";
-
-      static String com_duoschedule_ui_main_MainViewModel = "com.duoschedule.ui.main.MainViewModel";
-
-      static String com_duoschedule_ui_edit_CourseEditViewModel = "com.duoschedule.ui.edit.CourseEditViewModel";
-
-      static String com_duoschedule_ui_settings_SettingsViewModel = "com.duoschedule.ui.settings.SettingsViewModel";
-
-      @KeepFieldType
-      ScheduleViewModel com_duoschedule_ui_schedule_ScheduleViewModel2;
-
-      @KeepFieldType
-      MainViewModel com_duoschedule_ui_main_MainViewModel2;
-
-      @KeepFieldType
-      CourseEditViewModel com_duoschedule_ui_edit_CourseEditViewModel2;
-
-      @KeepFieldType
-      SettingsViewModel com_duoschedule_ui_settings_SettingsViewModel2;
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
@@ -515,21 +503,21 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
         this.id = id;
       }
 
-      @SuppressWarnings("unchecked")
       @Override
+      @SuppressWarnings("unchecked")
       public T get() {
         switch (id) {
-          case 0: // com.duoschedule.ui.edit.CourseEditViewModel 
-          return (T) new CourseEditViewModel(singletonCImpl.courseRepositoryProvider.get());
+          case 0: // com.duoschedule.ui.edit.CourseEditViewModel
+          return (T) new CourseEditViewModel(singletonCImpl.courseRepositoryProvider.get(), singletonCImpl.courseNotificationManagerProvider.get());
 
-          case 1: // com.duoschedule.ui.main.MainViewModel 
+          case 1: // com.duoschedule.ui.main.MainViewModel
           return (T) new MainViewModel(singletonCImpl.courseRepositoryProvider.get());
 
-          case 2: // com.duoschedule.ui.schedule.ScheduleViewModel 
+          case 2: // com.duoschedule.ui.schedule.ScheduleViewModel
           return (T) new ScheduleViewModel(singletonCImpl.courseRepositoryProvider.get());
 
-          case 3: // com.duoschedule.ui.settings.SettingsViewModel 
-          return (T) new SettingsViewModel(singletonCImpl.courseRepositoryProvider.get(), singletonCImpl.notificationTestHelperProvider.get());
+          case 3: // com.duoschedule.ui.settings.SettingsViewModel
+          return (T) new SettingsViewModel(singletonCImpl.courseRepositoryProvider.get(), singletonCImpl.courseNotificationManagerProvider.get());
 
           default: throw new AssertionError(id);
         }
@@ -542,9 +530,9 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
 
     private final ActivityRetainedCImpl activityRetainedCImpl = this;
 
-    private Provider<ActivityRetainedLifecycle> provideActivityRetainedLifecycleProvider;
+    Provider<ActivityRetainedLifecycle> provideActivityRetainedLifecycleProvider;
 
-    private ActivityRetainedCImpl(SingletonCImpl singletonCImpl,
+    ActivityRetainedCImpl(SingletonCImpl singletonCImpl,
         SavedStateHandleHolder savedStateHandleHolderParam) {
       this.singletonCImpl = singletonCImpl;
 
@@ -581,11 +569,11 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
         this.id = id;
       }
 
-      @SuppressWarnings("unchecked")
       @Override
+      @SuppressWarnings("unchecked")
       public T get() {
         switch (id) {
-          case 0: // dagger.hilt.android.ActivityRetainedLifecycle 
+          case 0: // dagger.hilt.android.ActivityRetainedLifecycle
           return (T) ActivityRetainedComponentManager_LifecycleModule_ProvideActivityRetainedLifecycleFactory.provideActivityRetainedLifecycle();
 
           default: throw new AssertionError(id);
@@ -599,7 +587,7 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
 
     private final ServiceCImpl serviceCImpl = this;
 
-    private ServiceCImpl(SingletonCImpl singletonCImpl, Service serviceParam) {
+    ServiceCImpl(SingletonCImpl singletonCImpl, Service serviceParam) {
       this.singletonCImpl = singletonCImpl;
 
 
@@ -622,42 +610,79 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
 
     private final SingletonCImpl singletonCImpl = this;
 
-    private Provider<AppDatabase> provideAppDatabaseProvider;
+    Provider<AppDatabase> provideAppDatabaseProvider;
 
-    private Provider<SettingsDataStore> settingsDataStoreProvider;
+    Provider<SettingsDataStore> settingsDataStoreProvider;
 
-    private Provider<CourseNotificationManager> courseNotificationManagerProvider;
+    Provider<CourseRepository> courseRepositoryProvider;
 
-    private Provider<CourseRepository> courseRepositoryProvider;
+    Provider<RingerModeManager> ringerModeManagerProvider;
 
-    private Provider<NotificationTestHelper> notificationTestHelperProvider;
+    Provider<CourseNotificationManager> courseNotificationManagerProvider;
 
-    private SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
+    Provider<AutoSilentWorker_AssistedFactory> autoSilentWorker_AssistedFactoryProvider;
+
+    Provider<ReminderWorker_AssistedFactory> reminderWorker_AssistedFactoryProvider;
+
+    Provider<RescheduleWorker_AssistedFactory> rescheduleWorker_AssistedFactoryProvider;
+
+    SingletonCImpl(ApplicationContextModule applicationContextModuleParam) {
       this.applicationContextModule = applicationContextModuleParam;
       initialize(applicationContextModuleParam);
 
     }
 
-    private CourseDao courseDao() {
+    CourseDao courseDao() {
       return DatabaseModule_ProvideCourseDaoFactory.provideCourseDao(provideAppDatabaseProvider.get());
     }
 
-    private HiltWorkerFactory hiltWorkerFactory() {
-      return WorkerFactoryModule_ProvideFactoryFactory.provideFactory(Collections.<String, javax.inject.Provider<WorkerAssistedFactory<? extends ListenableWorker>>>emptyMap());
+    Map mapOfStringAndProviderOfWorkerAssistedFactoryOfBuilder() {
+      MapBuilder mapBuilder = MapBuilder.<String, javax.inject.Provider<WorkerAssistedFactory<? extends ListenableWorker>>>newMapBuilder(3);
+      mapBuilder.put("com.duoschedule.notification.AutoSilentWorker", ((Provider) (autoSilentWorker_AssistedFactoryProvider)));
+      mapBuilder.put("com.duoschedule.notification.ReminderWorker", ((Provider) (reminderWorker_AssistedFactoryProvider)));
+      mapBuilder.put("com.duoschedule.notification.RescheduleWorker", ((Provider) (rescheduleWorker_AssistedFactoryProvider)));
+      return mapBuilder.build();
+    }
+
+    Map<String, javax.inject.Provider<WorkerAssistedFactory<? extends ListenableWorker>>> mapOfStringAndProviderOfWorkerAssistedFactoryOf(
+        ) {
+      return mapOfStringAndProviderOfWorkerAssistedFactoryOfBuilder();
+    }
+
+    HiltWorkerFactory hiltWorkerFactory() {
+      return WorkerFactoryModule_ProvideFactoryFactory.provideFactory(mapOfStringAndProviderOfWorkerAssistedFactoryOf());
     }
 
     @SuppressWarnings("unchecked")
     private void initialize(final ApplicationContextModule applicationContextModuleParam) {
       this.provideAppDatabaseProvider = DoubleCheck.provider(new SwitchingProvider<AppDatabase>(singletonCImpl, 0));
-      this.settingsDataStoreProvider = DoubleCheck.provider(new SwitchingProvider<SettingsDataStore>(singletonCImpl, 2));
-      this.courseNotificationManagerProvider = DoubleCheck.provider(new SwitchingProvider<CourseNotificationManager>(singletonCImpl, 1));
-      this.courseRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<CourseRepository>(singletonCImpl, 3));
-      this.notificationTestHelperProvider = DoubleCheck.provider(new SwitchingProvider<NotificationTestHelper>(singletonCImpl, 4));
+      this.settingsDataStoreProvider = DoubleCheck.provider(new SwitchingProvider<SettingsDataStore>(singletonCImpl, 1));
+      this.courseRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<CourseRepository>(singletonCImpl, 2));
+      this.ringerModeManagerProvider = DoubleCheck.provider(new SwitchingProvider<RingerModeManager>(singletonCImpl, 4));
+      this.courseNotificationManagerProvider = DoubleCheck.provider(new SwitchingProvider<CourseNotificationManager>(singletonCImpl, 3));
+      this.autoSilentWorker_AssistedFactoryProvider = SingleCheck.provider(new SwitchingProvider<AutoSilentWorker_AssistedFactory>(singletonCImpl, 5));
+      this.reminderWorker_AssistedFactoryProvider = SingleCheck.provider(new SwitchingProvider<ReminderWorker_AssistedFactory>(singletonCImpl, 6));
+      this.rescheduleWorker_AssistedFactoryProvider = SingleCheck.provider(new SwitchingProvider<RescheduleWorker_AssistedFactory>(singletonCImpl, 7));
     }
 
     @Override
     public void injectDuoScheduleApp(DuoScheduleApp duoScheduleApp) {
       injectDuoScheduleApp2(duoScheduleApp);
+    }
+
+    @Override
+    public AppDatabase getDatabase() {
+      return provideAppDatabaseProvider.get();
+    }
+
+    @Override
+    public SettingsDataStore getSettingsDataStore() {
+      return settingsDataStoreProvider.get();
+    }
+
+    @Override
+    public void injectSilentModeReceiver(SilentModeReceiver silentModeReceiver) {
+      injectSilentModeReceiver2(silentModeReceiver);
     }
 
     @Override
@@ -677,9 +702,17 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
 
     private DuoScheduleApp injectDuoScheduleApp2(DuoScheduleApp instance) {
       DuoScheduleApp_MembersInjector.injectDatabase(instance, provideAppDatabaseProvider.get());
+      DuoScheduleApp_MembersInjector.injectSettingsDataStore(instance, settingsDataStoreProvider.get());
+      DuoScheduleApp_MembersInjector.injectRepository(instance, courseRepositoryProvider.get());
       DuoScheduleApp_MembersInjector.injectNotificationManager(instance, courseNotificationManagerProvider.get());
       DuoScheduleApp_MembersInjector.injectWorkerFactory(instance, hiltWorkerFactory());
       return instance;
+    }
+
+    private SilentModeReceiver injectSilentModeReceiver2(SilentModeReceiver instance2) {
+      SilentModeReceiver_MembersInjector.injectSettingsDataStore(instance2, settingsDataStoreProvider.get());
+      SilentModeReceiver_MembersInjector.injectCourseDao(instance2, courseDao());
+      return instance2;
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
@@ -692,24 +725,48 @@ public final class DaggerDuoScheduleApp_HiltComponents_SingletonC {
         this.id = id;
       }
 
-      @SuppressWarnings("unchecked")
       @Override
+      @SuppressWarnings("unchecked")
       public T get() {
         switch (id) {
-          case 0: // com.duoschedule.data.local.AppDatabase 
+          case 0: // com.duoschedule.data.local.AppDatabase
           return (T) DatabaseModule_ProvideAppDatabaseFactory.provideAppDatabase(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 1: // com.duoschedule.notification.CourseNotificationManager 
-          return (T) new CourseNotificationManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.courseDao(), singletonCImpl.settingsDataStoreProvider.get());
-
-          case 2: // com.duoschedule.data.local.SettingsDataStore 
+          case 1: // com.duoschedule.data.local.SettingsDataStore
           return (T) new SettingsDataStore(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 3: // com.duoschedule.data.repository.CourseRepository 
+          case 2: // com.duoschedule.data.repository.CourseRepository
           return (T) new CourseRepository(singletonCImpl.courseDao(), singletonCImpl.settingsDataStoreProvider.get());
 
-          case 4: // com.duoschedule.notification.NotificationTestHelper 
-          return (T) new NotificationTestHelper(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.courseNotificationManagerProvider.get(), singletonCImpl.settingsDataStoreProvider.get());
+          case 3: // com.duoschedule.notification.CourseNotificationManager
+          return (T) new CourseNotificationManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.courseDao(), singletonCImpl.settingsDataStoreProvider.get(), singletonCImpl.ringerModeManagerProvider.get());
+
+          case 4: // com.duoschedule.notification.RingerModeManager
+          return (T) new RingerModeManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
+
+          case 5: // com.duoschedule.notification.AutoSilentWorker_AssistedFactory
+          return (T) new AutoSilentWorker_AssistedFactory() {
+            @Override
+            public AutoSilentWorker create(Context context, WorkerParameters workerParams) {
+              return new AutoSilentWorker(context, workerParams, singletonCImpl.ringerModeManagerProvider.get(), singletonCImpl.settingsDataStoreProvider.get(), singletonCImpl.courseDao());
+            }
+          };
+
+          case 6: // com.duoschedule.notification.ReminderWorker_AssistedFactory
+          return (T) new ReminderWorker_AssistedFactory() {
+            @Override
+            public ReminderWorker create(Context context2, WorkerParameters workerParams2) {
+              return new ReminderWorker(context2, workerParams2, singletonCImpl.courseNotificationManagerProvider.get(), singletonCImpl.settingsDataStoreProvider.get());
+            }
+          };
+
+          case 7: // com.duoschedule.notification.RescheduleWorker_AssistedFactory
+          return (T) new RescheduleWorker_AssistedFactory() {
+            @Override
+            public RescheduleWorker create(Context context3, WorkerParameters workerParams3) {
+              return new RescheduleWorker(context3, workerParams3, singletonCImpl.courseNotificationManagerProvider.get(), singletonCImpl.settingsDataStoreProvider.get(), singletonCImpl.courseDao());
+            }
+          };
 
           default: throw new AssertionError(id);
         }

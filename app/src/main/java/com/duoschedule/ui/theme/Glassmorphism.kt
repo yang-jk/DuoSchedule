@@ -1,16 +1,14 @@
 package com.duoschedule.ui.theme
 
-import android.os.Build
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.isSystemInDarkTheme
-import com.duoschedule.ui.theme.LocalDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kyant.capsule.ContinuousRoundedRectangle
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,6 +23,11 @@ import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.duoschedule.ui.theme.BackgroundsDark
+import com.duoschedule.ui.theme.BackgroundsLight
+import com.duoschedule.ui.theme.BorderRadius
+import com.duoschedule.ui.theme.Elevation
+import com.duoschedule.ui.theme.Spacing
 
 object GlassmorphismColors {
     val LightCardBackground = Color(0xFFFFFFFF)
@@ -91,7 +94,7 @@ fun glassmorphismGradientBrush(darkTheme: Boolean = LocalDarkTheme.current): Bru
 @Composable
 fun GlassmorphismCard(
     modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(16.dp),
+    shape: Shape = ContinuousRoundedRectangle(16.dp),
     elevation: Dp = 8.dp,
     borderWidth: Dp = 1.dp,
     content: @Composable ColumnScope.() -> Unit
@@ -129,22 +132,22 @@ fun GlassmorphismCard(
 
 /**
  * 扁平卡片组件 - 用于首页和其他页面的卡片样式
- * 浅色模式：背景 #FFFFFF
- * 深色模式：背景 #242424
+ * 浅色模式：背景 BackgroundsLight.Secondary
+ * 深色模式：背景 BackgroundsDark.Secondary
  */
 @Composable
 fun FlatCard(
     modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(16.dp),
-    elevation: Dp = 2.dp,
-    contentPadding: PaddingValues = PaddingValues(16.dp),
+    shape: Shape = ContinuousRoundedRectangle(BorderRadius.lg),
+    elevation: Dp = Elevation.Level1,
+    contentPadding: PaddingValues = PaddingValues(Spacing.lg),
     content: @Composable ColumnScope.() -> Unit
 ) {
     val darkTheme = LocalDarkTheme.current
     val backgroundColor = if (darkTheme) {
-        Color(0xFF242424)
+        BackgroundsDark.Secondary
     } else {
-        Color(0xFFFFFFFF)
+        BackgroundsLight.Secondary
     }
 
     Surface(
@@ -164,7 +167,7 @@ fun FlatCard(
 @Composable
 fun GlassmorphismSurface(
     modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(8.dp),
+    shape: Shape = ContinuousRoundedRectangle(8.dp),
     color: Color = MaterialTheme.colorScheme.primary,
     content: @Composable RowScope.() -> Unit
 ) {
@@ -212,7 +215,7 @@ fun GlassmorphismBottomBar(
             .border(
                 width = 1.dp,
                 color = borderColor,
-                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+                shape = ContinuousRoundedRectangle(topStart = 20.dp, topEnd = 20.dp)
             )
     ) {
         Row(
@@ -227,7 +230,7 @@ fun GlassmorphismBottomBar(
 }
 
 fun Modifier.glassmorphism(
-    shape: RoundedCornerShape = RoundedCornerShape(16.dp),
+    shape: Shape = ContinuousRoundedRectangle(16.dp),
     elevation: Dp = 8.dp,
     borderWidth: Dp = 1.dp,
     isDarkTheme: Boolean = false
@@ -258,7 +261,7 @@ fun Modifier.glassmorphism(
 
 @Composable
 fun Modifier.animatedGlassmorphism(
-    shape: RoundedCornerShape = RoundedCornerShape(16.dp),
+    shape: Shape = ContinuousRoundedRectangle(16.dp),
     elevation: Dp = 8.dp,
     borderWidth: Dp = 1.dp,
     animated: Boolean = true
@@ -320,7 +323,7 @@ fun SmartRecommendationCard(
         end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
     )
     
-    val shape = RoundedCornerShape(16.dp)
+    val shape = ContinuousRoundedRectangle(16.dp)
     
     Box(
         modifier = modifier

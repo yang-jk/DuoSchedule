@@ -1,13 +1,13 @@
 package com.duoschedule.ui.settings;
 
 import com.duoschedule.data.repository.CourseRepository;
-import com.duoschedule.notification.NotificationTestHelper;
+import com.duoschedule.notification.CourseNotificationManager;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
+import dagger.internal.Provider;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
-import javax.inject.Provider;
 
 @ScopeMetadata
 @QualifierMetadata
@@ -22,31 +22,32 @@ import javax.inject.Provider;
     "KotlinInternal",
     "KotlinInternalInJava",
     "cast",
-    "deprecation"
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class SettingsViewModel_Factory implements Factory<SettingsViewModel> {
   private final Provider<CourseRepository> repositoryProvider;
 
-  private final Provider<NotificationTestHelper> testHelperProvider;
+  private final Provider<CourseNotificationManager> notificationManagerProvider;
 
-  public SettingsViewModel_Factory(Provider<CourseRepository> repositoryProvider,
-      Provider<NotificationTestHelper> testHelperProvider) {
+  private SettingsViewModel_Factory(Provider<CourseRepository> repositoryProvider,
+      Provider<CourseNotificationManager> notificationManagerProvider) {
     this.repositoryProvider = repositoryProvider;
-    this.testHelperProvider = testHelperProvider;
+    this.notificationManagerProvider = notificationManagerProvider;
   }
 
   @Override
   public SettingsViewModel get() {
-    return newInstance(repositoryProvider.get(), testHelperProvider.get());
+    return newInstance(repositoryProvider.get(), notificationManagerProvider.get());
   }
 
   public static SettingsViewModel_Factory create(Provider<CourseRepository> repositoryProvider,
-      Provider<NotificationTestHelper> testHelperProvider) {
-    return new SettingsViewModel_Factory(repositoryProvider, testHelperProvider);
+      Provider<CourseNotificationManager> notificationManagerProvider) {
+    return new SettingsViewModel_Factory(repositoryProvider, notificationManagerProvider);
   }
 
   public static SettingsViewModel newInstance(CourseRepository repository,
-      NotificationTestHelper testHelper) {
-    return new SettingsViewModel(repository, testHelper);
+      CourseNotificationManager notificationManager) {
+    return new SettingsViewModel(repository, notificationManager);
   }
 }

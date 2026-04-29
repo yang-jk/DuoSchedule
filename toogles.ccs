@@ -1,0 +1,591 @@
+/* Dark Examples */
+
+box-sizing: border-box;
+
+position: relative;
+width: 170px;
+height: 180px;
+
+background: #000000;
+border: 1px solid rgba(0, 0, 0, 0.1);
+border-radius: 22px;
+
+
+/* Toggle - Switch */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 2px;
+gap: 11px;
+
+position: relative;
+width: 64px;
+height: 28px;
+left: 50px;
+top: 70px;
+
+background: #30D158;
+border-radius: 100px;
+
+
+/* Frame */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 10px;
+
+width: 21px;
+height: 10px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 1;
+
+
+/* AX Label */
+
+width: 1px;
+height: 10px;
+
+background: #FFFFFF;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Knob */
+
+width: 39px;
+height: 24px;
+
+background: #FFFFFF;
+border-radius: 100px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Toggle - Switch */
+
+position: relative;
+width: 64px;
+height: 28px;
+left: 50px;
+top: 114px;
+
+background: rgba(235, 235, 245, 0.3);
+border-radius: 100px;
+
+
+/* Frame */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 10px;
+
+position: absolute;
+width: 21px;
+height: 10px;
+left: 41px;
+top: 9px;
+
+
+
+/* AX Label */
+
+box-sizing: border-box;
+
+width: 10px;
+height: 10px;
+
+border: 1px solid #A6A6A6;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Knob */
+
+position: absolute;
+width: 39px;
+left: 2px;
+top: 7.14%;
+bottom: 7.14%;
+
+background: #FFFFFF;
+border-radius: 100px;
+
+
+/* Mode */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 3px 6px;
+gap: 4px;
+
+position: relative;
+width: 54px;
+height: 19px;
+right: 10px;
+top: 10px;
+
+background: rgba(120, 120, 128, 0.32);
+border: 1px solid rgba(235, 235, 245, 0.7);
+border-radius: 14px;
+
+
+/* Union */
+
+width: 7.93px;
+height: 9.15px;
+
+background: rgba(235, 235, 245, 0.7);
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Vector */
+
+position: absolute;
+left: 11.11%;
+right: 74.21%;
+top: 25.91%;
+bottom: 25.91%;
+
+/* Labels/Secondary */
+background: rgba(60, 60, 67, 0.6);
+
+
+/* Vector */
+
+position: absolute;
+left: 16.6%;
+right: 79.7%;
+top: 44.73%;
+bottom: 44.74%;
+
+/* Labels/Secondary */
+background: rgba(60, 60, 67, 0.6);
+
+
+/* Dark */
+
+width: 30.07px;
+height: 13px;
+
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 590;
+font-size: 11px;
+line-height: 13px;
+/* identical to box height, or 118% */
+display: flex;
+align-items: center;
+letter-spacing: -0.4px;
+
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 1;
+
+
+/* Light Examples */
+
+box-sizing: border-box;
+
+position: relative;
+width: 170px;
+height: 180px;
+
+background: #FFFFFF;
+border: 1px solid rgba(0, 0, 0, 0.1);
+border-radius: 22px;
+
+
+/* Toggle - Switch */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 2px;
+gap: 11px;
+
+position: relative;
+width: 64px;
+height: 28px;
+left: 50px;
+top: 70px;
+
+background: #34C759;
+border-radius: 100px;
+
+
+/* Frame */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 10px;
+
+width: 21px;
+height: 10px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 1;
+
+
+/* AX Label */
+
+width: 1px;
+height: 10px;
+
+background: #FFFFFF;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Knob */
+
+width: 39px;
+height: 24px;
+
+background: #FFFFFF;
+border-radius: 100px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Toggle - Switch */
+
+position: relative;
+width: 64px;
+height: 28px;
+left: 50px;
+top: 114px;
+
+background: rgba(60, 60, 67, 0.3);
+border-radius: 100px;
+
+
+/* Frame */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 10px;
+
+position: absolute;
+width: 21px;
+height: 10px;
+left: 41px;
+top: 9px;
+
+
+
+/* AX Label */
+
+box-sizing: border-box;
+
+width: 10px;
+height: 10px;
+
+border: 1px solid #B3B3B3;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Knob */
+
+position: absolute;
+width: 39px;
+left: 2px;
+top: 7.14%;
+bottom: 7.14%;
+
+background: #FFFFFF;
+border-radius: 100px;
+
+
+/* Mode */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 3px 6px;
+gap: 4px;
+
+position: relative;
+width: 54px;
+height: 19px;
+right: 10px;
+top: 10px;
+
+background: rgba(120, 120, 128, 0.16);
+border: 1px solid rgba(60, 60, 67, 0.6);
+border-radius: 14px;
+
+
+/* Union */
+
+width: 7.93px;
+height: 9.15px;
+
+background: rgba(60, 60, 67, 0.6);
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Vector */
+
+position: absolute;
+left: 11.11%;
+right: 74.21%;
+top: 25.91%;
+bottom: 25.91%;
+
+/* Labels/Secondary */
+background: rgba(60, 60, 67, 0.6);
+
+
+/* Vector */
+
+position: absolute;
+left: 16.6%;
+right: 79.7%;
+top: 44.73%;
+bottom: 44.74%;
+
+/* Labels/Secondary */
+background: rgba(60, 60, 67, 0.6);
+
+
+/* Light */
+
+width: 30.07px;
+height: 13px;
+
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 590;
+font-size: 11px;
+line-height: 13px;
+/* identical to box height, or 118% */
+display: flex;
+align-items: center;
+letter-spacing: -0.4px;
+
+color: #000000;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 1;
+
+
+
+
+box-sizing: border-box;
+
+position: relative;
+width: 304px;
+height: 320px;
+
+background: #F5F5F5;
+border: 1px solid rgba(0, 0, 0, 0.4);
+border-radius: 22px;
+
+
+/* Toggle - Switch */
+
+box-sizing: border-box;
+
+position: relative;
+width: 104px;
+height: 120px;
+left: 100px;
+top: 100px;
+
+border: 1px dashed #6155F5;
+border-radius: 5px;
+
+
+/* State=Off */
+
+position: absolute;
+width: 64px;
+height: 28px;
+left: 20px;
+top: 67px;
+
+background: rgba(60, 60, 67, 0.3);
+border-radius: 100px;
+
+
+/* Frame */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 10px;
+
+position: absolute;
+width: 21px;
+height: 10px;
+left: 41px;
+top: 9px;
+
+
+
+/* AX Label */
+
+box-sizing: border-box;
+
+width: 10px;
+height: 10px;
+
+border: 1px solid #B3B3B3;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Knob */
+
+position: absolute;
+width: 39px;
+left: 2px;
+top: 7.14%;
+bottom: 7.14%;
+
+background: #FFFFFF;
+border-radius: 100px;
+
+
+/* State=On */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 2px;
+gap: 11px;
+
+position: absolute;
+width: 64px;
+height: 28px;
+left: 20px;
+top: 20px;
+
+background: #34C759;
+border-radius: 100px;
+
+
+/* Frame */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+gap: 10px;
+
+width: 21px;
+height: 10px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 1;
+
+
+/* AX Label */
+
+width: 1px;
+height: 10px;
+
+background: #FFFFFF;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Knob */
+
+width: 39px;
+height: 24px;
+
+background: #FFFFFF;
+border-radius: 100px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;

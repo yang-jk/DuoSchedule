@@ -1,6 +1,1968 @@
-# 产品变更记录 (Changelog)
+# 产品变更记录
 
 本文档记录产品需求文档的所有变更历史，遵循语义化版本规范。
+
+---
+
+## [2.77.0] - 2026-03-03
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 优化功能
+- 功能 82：课表课程卡片内边距优化
+
+### 功能详情
+
+#### 功能 82：课表课程卡片内边距优化
+
+**变更原因**：
+用户反馈课表界面课程名称和背景格子左右和上下距离过大，导致内容显示不够紧凑，空间利用率不高。
+
+**解决方案**：
+
+**1. 内边距调整**
+- 原内边距：水平 4dp，垂直 3dp
+- 新内边距：水平 2dp，垂直 2dp
+- 大幅减少课程名称/地点与卡片边缘的距离
+
+**2. 视觉效果**
+- 课程卡片内容更紧凑
+- 文字与背景色块边缘距离更合理
+- 课程名称和地点能利用更多卡片空间
+
+**技术实现**：
+- 修改 `ScheduleScreen.kt` 中 `CourseOverlayCard` 组件的 padding 参数
+- 从 `padding(horizontal = 4.dp, vertical = 3.dp)` 改为 `padding(horizontal = 2.dp, vertical = 2.dp)`
+
+---
+
+## [2.76.0] - 2026-03-03
+
+### 变更类型：新增功能
+
+### 状态：已实现
+
+### 新增功能
+- 功能 81：课程字体大小自定义设置
+
+### 功能详情
+
+#### 功能 81：课程字体大小自定义设置
+
+**变更原因**：
+用户反馈课表中课程名称和地点的字体大小不够灵活，部分用户希望字体更大以便于阅读，部分用户希望字体更小以显示更多内容。
+
+**解决方案**：
+
+**1. 课程名称字号设置**
+- 设置位置：设置 → 显示设置 → 课表字体
+- 可选字号：10sp、11sp、12sp（默认）、13sp、14sp、15sp、16sp
+- 影响范围：课表格子中的课程名称文字
+
+**2. 上课地点字号设置**
+- 设置位置：设置 → 显示设置 → 课表字体
+- 可选字号：9sp、10sp、11sp（默认）、12sp、13sp、14sp
+- 影响范围：课表格子中的上课地点文字
+
+**技术实现**：
+- SettingsDataStore.kt：新增 `courseNameFontSize` 和 `courseLocationFontSize` 配置项
+- CourseRepository.kt：新增对应的 Flow 和设置方法
+- SettingsViewModel.kt：新增字体大小 StateFlow 和设置方法
+- ScheduleViewModel.kt：新增字体大小 StateFlow
+- DisplaySettingsScreen.kt：新增字体大小设置 UI
+- ScheduleScreen.kt：CourseOverlayCard 使用自定义字体大小
+
+---
+
+## [2.73.0] - 2026-03-02
+
+### 变更类型：重构
+
+### 状态：待开发
+
+### 重构功能
+- 功能 5：桌面小组件 - 全面重构
+
+### 功能详情
+
+#### 功能 5：桌面小组件（重构）
+
+**变更原因**：
+用户反馈现有小组件存在多个问题：视觉样式不好看、刷新/性能问题、负一屏找不到组件、功能不够用。需要全面重构小组件功能。
+
+**问题描述**：
+- 视觉样式不符合用户期望
+- 刷新机制不够智能
+- 在小米负一屏（桌面助手）中找不到小组件
+- 只有一种尺寸和显示内容，功能单一
+
+**解决方案**：
+
+**1. 多种尺寸规格**
+
+| 尺寸 | 名称 | 显示内容 |
+|------|------|----------|
+| 2×2 | 空闲时间小组件 | 显示两人当前共同的空闲时间 |
+| 4×2 | 我的今日课程小组件 | 仅显示"我"的今日课程列表 |
+| 4×2 | Ta的今日课程小组件 | 仅显示"Ta"的今日课程列表 |
+
+**2. 个人独立小组件**
+- 为两个人分别创建独立的今日课程小组件
+- "我的今日课程小组件"：显示"我"（PersonB）的课程，使用黄色主题色
+- "Ta的今日课程小组件"：显示"Ta"（PersonA）的课程， 使用蓝色主题色
+- 点击各自小组件跳转到对应的课表页面
+
+**3. iOS 风格设计**
+- 采用 iOS 风格视觉设计
+- 圆角卡片样式（16dp 圆角）
+- 浅色/深色模式自适应
+- 毛玻璃背景效果
+
+**4. 智能刷新机制**
+- 课程状态变化时自动刷新
+- 屏幕亮起时刷新
+- 最小刷新间隔：1分钟
+
+**5. MIUI/HyperOS负一屏支持**
+- 确保在负一屏小组件列表中可见所有小组件
+- 适配 MIUI 小组件规范
+
+**技术实现要点**：
+- 创建多个小组件 Receiver 和配置文件
+- 实现智能刷新机制
+- 优化负一屏可见性
+- iOS 风格 UI 设计
+
+**影响文件**：
+- `widget/ScheduleWidgetReceiverMIUI.kt` - 重构
+- `widget/FreeTimeWidget.kt` - 新增空闲时间小组件
+- `widget/MyCourseWidget.kt` - 新增我的课程小组件
+- `widget/TaCourseWidget.kt` - 新增Ta的课程小组件
+- `res/xml/widget_info_*.xml` - 多个小组件配置文件
+- `res/layout/widget_*.xml` - 多个小组件布局文件
+- `AndroidManifest.xml` - 注册多个小组件
+
+---
+
+## [2.72.0] - 2026-03-02
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 优化功能
+- 功能 5：桌面小组件 - MIUI/HyperOS适配
+
+### 功能详情
+
+#### 功能 5：桌面小组件 MIUI/HyperOS适配（优化）
+
+**变更原因**：
+用户反馈在MIUI/HyperOS设备的负一屏（桌面助手）添加小组件时，小组件刷新不及时或无法正常显示，需要适配MIUI/HyperOS专用的小组件规范。
+
+**问题描述**：
+- 原有小组件未针对MIUI/HyperOS进行专门适配
+- 在小米负一屏添加时刷新机制不完善
+- 未使用独立进程运行小组件，可能导致性能问题
+
+**解决方案**：
+- 移除标准Android小组件，只保留MIUI专用小组件
+- 创建MIUI专用小组件配置文件 `schedule_widget_info_miui.xml`
+- 创建MIUI专用小组件Receiver `ScheduleWidgetReceiverMIUI`
+- 使用独立进程（:widgetProvider）运行小组件
+- 支持MIUI小组件exposure刷新模式
+- 同时适配vivo小组件规范
+
+**技术实现**：
+
+**1. MIUI小组件Receiver**
+```kotlin
+class ScheduleWidgetReceiverMIUI : AppWidgetProvider() {
+    override fun onReceive(context: Context, intent: Intent) {
+        when (intent.action) {
+            ACTION_MIUI_APPWIDGET_UPDATE,
+            ACTION_MIUI_EXPOSURE -> {
+                // 处理MIUI专用刷新
+            }
+        }
+    }
+}
+```
+
+**2. AndroidManifest.xml配置**
+```xml
+<receiver
+    android:name=".widget.ScheduleWidgetReceiverMIUI"
+    android:label="@string/widget_name"
+    android:exported="true"
+    android:process=":widgetProvider">
+    <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        <action android:name="miui.appwidget.action.APPWIDGET_UPDATE" />
+    </intent-filter>
+    <meta-data android:name="miuiWidget" android:value="true" />
+    <meta-data android:name="miuiWidgetRefresh" android:value="exposure" />
+    <meta-data android:name="miuiWidgetRefreshMinInterval" android:value="10000" />
+    <meta-data android:name="vivo_widget" android:value="true" />
+    <meta-data android:name="vivoWidgetVersion" android:value="1" />
+</receiver>
+```
+
+**影响文件**：
+- `res/xml/schedule_widget_info_miui.xml` - MIUI小组件配置（唯一）
+- `widget/ScheduleWidgetReceiverMIUI.kt` - MIUI小组件Receiver（唯一）
+- `AndroidManifest.xml` - 更新小组件声明
+- `res/values/strings.xml` - 移除多余字符串
+- 删除 `schedule_widget_info.xml` - 不再需要标准配置
+- 删除 `ScheduleWidgetReceiver.kt` - 不再需要标准Receiver
+
+---
+
+## [2.71.0] - 2026-03-02
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 优化功能
+- 功能 79：空闲时段显示优化
+
+### 功能详情
+
+#### 功能 79：空闲时段显示优化（新增）
+
+**变更原因**：
+用户反馈主页空闲时段卡片显示的是最晚的时段，而不是离现在最近的时段，不符合用户预期。
+
+**问题描述**：
+- 空闲时段卡片右侧显示的是最后一个（最晚的）空闲时段
+- 用户期望看到离现在最近的空闲时段，方便安排接下来的活动
+
+**解决方案**：
+- 修改 `FreeTimeSection.kt` 中的显示逻辑
+- 将 `freeTimeSlots.last()` 改为 `freeTimeSlots.first()`
+- 变量名从 `latestSlot` 改为 `nearestSlot`
+
+**技术实现**：
+```kotlin
+// 修改前
+val latestSlot = freeTimeSlots.last()
+
+// 修改后
+val nearestSlot = freeTimeSlots.first()
+```
+
+**影响文件**：
+- `FreeTimeSection.kt` - 修改显示逻辑
+
+---
+
+## [2.70.0] - 2026-03-01
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 优化功能
+- 功能 77：启动阶段页面切换卡顿优化
+
+### 功能详情
+
+#### 功能 77：启动阶段页面切换卡顿优化（新增）
+
+**变更原因**：
+用户反馈应用启动后前几秒钟切换页面时出现明显卡顿和掉帧现象，影响使用体验。
+
+**问题描述**：
+- 应用启动后的前几秒钟内，使用底部导航栏切换页面时出现卡顿
+- 第一次切换页面必卡，后续切换相对流畅
+- 掉帧明显，影响用户体验和应用流畅度感知
+
+**问题原因分析**：
+
+**1. ViewModel 的 Flow 订阅策略问题**
+- `ScheduleViewModel` 使用 `SharingStarted.Lazily`，导致首次访问时才初始化
+- 首次切换页面时，ViewModel 和 Flow 订阅同时初始化，造成卡顿
+
+**2. Compose 首次组合开销大**
+- 页面组件（`MainScreen`、`ScheduleScreen`）结构复杂
+- 首次切换到新页面时，Compose 需要进行首次组合（Composition）
+- 创建所有 Composable 函数、解析类型、创建布局节点等开销大
+
+**3. 预加载不够充分**
+- `ComposeWarmup` 只预热了基础组件，没有预热实际页面组件
+- 没有在应用启动时预初始化 ViewModel 和数据
+
+**解决方案**：
+
+**1. 优化 Flow 订阅策略**
+- 将 `ScheduleViewModel` 中所有 Flow 的 `SharingStarted.Lazily` 改为 `SharingStarted.Eagerly`
+- 确保应用启动时立即订阅所有关键数据流
+- 与 `MainViewModel` 保持一致的订阅策略
+
+**2. 增强组件预热**
+- 扩展 `ComposeWarmup`，添加实际页面组件的预热（`WarmupScreenComponents`）
+- 预热主页卡片列表、课表网格头等复杂组件
+- 预热 `LazyColumn` 和课程卡片组件
+
+**3. 增强数据预加载**
+- 在 `DuoScheduleApp` 中预加载 Repository 的关键数据
+- 预取课程数据、人员名称、周次信息、节次信息等
+- 使用协程并发预取所有关键数据
+
+**4. 优化动画配置**
+- 减少页面切换动画时长：300ms → 250ms
+- 减少底部导航栏动画时长：200ms → 150ms
+- 移除底栏动画的延迟，让动画更直接响应
+
+**技术实现**：
+
+**1. ScheduleViewModel.kt**
+```kotlin
+// 所有 Flow 改为 SharingStarted.Eagerly
+val personAName: StateFlow<String> = getCachedFlow("personAName") {
+    repository.getPersonAName()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "Ta")
+}
+
+private val personACourses = repository.getCoursesByPerson(PersonType.PERSON_A)
+    .shareIn(viewModelScope, SharingStarted.Eagerly, replay = 1)
+```
+
+**2. ComposeWarmup.kt**
+```kotlin
+// 添加页面组件预热
+@Composable
+private fun WarmupScreenComponents() {
+    // 预热主页卡片列表
+    LazyColumn { /* ... */ }
+    
+    // 预热课表网格头
+    Box { /* ... */ }
+}
+
+// 优化预热时间
+delay(500) // 启动延迟从 2000ms 减少到 500ms
+delay(500) // 预热时间从 300ms 增加到 500ms
+```
+
+**3. DuoScheduleApp.kt**
+```kotlin
+// 添加 Repository 注入
+@Inject
+lateinit var repository: CourseRepository
+
+// 预加载关键数据
+kotlinx.coroutines.coroutineScope {
+    listOf(
+        async { repository.getCoursesByPerson(PersonType.PERSON_A).first() },
+        async { repository.getPersonAName().first() },
+        // ... 其他数据
+    ).awaitAll()
+}
+```
+
+**4. Navigation.kt**
+```kotlin
+// 优化动画时长
+private val iosTransitionSpec = tween<IntOffset>(durationMillis = 250, easing = FastOutSlowInEasing)
+private val iosFadeSpec = tween<Float>(durationMillis = 250, easing = FastOutSlowInEasing)
+```
+
+**5. MainActivity.kt**
+```kotlin
+// 减少底部导航栏动画时长
+val scale by animateFloatAsState(
+    targetValue = when {
+        isPressed -> 0.9f
+        isSelected -> 1.05f
+        else -> 1f
+    },
+    animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
+    label = "nav_item_scale"
+)
+```
+
+**预期效果**：
+- 应用启动时即开始预加载所有关键数据和组件
+- 首次切换页面无卡顿，响应流畅
+- 整体切换流畅度显著提升
+- 用户体验显著改善，应用感知更流畅
+
+**影响文件**：
+- `ScheduleViewModel.kt` - Flow 订阅策略优化
+- `ComposeWarmup.kt` - 添加页面组件预热
+- `DuoScheduleApp.kt` - 添加数据预加载
+- `Navigation.kt` - 页面切换动画优化
+- `MainActivity.kt` - 底部导航栏动画优化
+- `Product-Spec.md` - 新增功能 77
+- `Product-Spec-CHANGELOG.md` - 记录本次优化
+
+**优先级**：高
+
+**状态**：已实现
+
+---
+
+## [2.69.0] - 2026-02-28
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 优化功能
+- 功能 76：去除开屏页面
+
+### 功能详情
+
+#### 功能 76：去除开屏页面（新增）
+
+**变更原因**：
+用户希望应用启动时直接进入主界面，无需等待开屏页面。
+
+**问题描述**：
+- 应用启动时显示一个带应用图标的开屏页面（Splash Screen）
+- 开屏页面持续 200ms，用户需要等待才能看到内容
+- 影响用户体验，增加启动时间感知
+
+**解决方案**：
+- 移除 AndroidManifest.xml 中 MainActivity 的 Splash 主题引用
+- 移除 MainActivity.kt 中的 `installSplashScreen()` 调用
+- 应用直接使用主主题启动，无开屏延迟
+
+**技术实现**：
+- 修改 `AndroidManifest.xml`：移除 `android:theme="@style/Theme.DuoSchedule.Splash"` 属性
+- 修改 `MainActivity.kt`：移除 `installSplashScreen()` 相关代码
+
+**影响文件**：
+- AndroidManifest.xml
+- MainActivity.kt
+- Product-Spec.md - 新增功能 76
+
+---
+
+## [2.68.0] - 2026-02-28
+
+### 变更类型：新增
+
+### 状态：待开发
+
+### 新增功能
+- 功能 75：首次页面切换卡顿优化
+
+### 功能详情
+
+#### 功能 75：首次页面切换卡顿优化（新增）
+
+**变更原因**：
+用户反馈应用启动后，无论等待多久，第一次使用底部导航栏切换页面时必然出现卡顿，后续切换则流畅。
+
+**问题描述**：
+- 应用启动后，第一次用底栏切换页面必卡
+- 后续切换流畅，只有第一次卡顿
+- 影响用户体验，给人应用性能差的印象
+
+**问题原因分析**：
+
+**1. Compose 首帧渲染开销**
+- 第一次切换到新页面时，Compose 需要进行首次组合（Composition）
+- 首次组合需要创建所有 Composable 函数、解析类型、创建布局节点等
+- 后续切换可以复用已创建的组件，因此更流畅
+
+**2. ViewModel 首次初始化**
+- 每个页面的 ViewModel 在首次访问时才初始化
+- ViewModel 初始化涉及依赖注入、数据库查询等
+- MainViewModel、ScheduleViewModel 等都有多个 Flow 需要首次订阅
+
+**3. Flow 首次订阅延迟**
+- 使用 `SharingStarted.WhileSubscribed(5000)` 策略
+- Flow 在首次订阅时才开始收集数据
+- 数据库查询、DataStore 读取等都在首次切换时触发
+
+**4. ComposeWarmup 预热不充分**
+- 当前预热只覆盖了基础组件
+- 没有预热应用特定的组件（如课程卡片、课表格子等）
+- 没有预热 ViewModel 和 Flow 订阅
+
+**解决方案**：
+
+**1. 增强预加载策略**
+- 在 Application 启动时预初始化所有 ViewModel
+- 预订阅关键数据 Flow，使用 `SharingStarted.Lazily` 或 `shareIn`
+- 预加载所有页面的初始数据
+
+**2. 优化 Flow 订阅策略**
+- 将关键数据的 `SharingStarted.WhileSubscribed(5000)` 改为 `SharingStarted.Lazily`
+- 使用 `shareIn` 共享数据流，避免重复订阅
+- 在 Application 中预热关键数据
+
+**3. 增强组件预热**
+- 扩展 ComposeWarmup，预热应用特定组件
+- 预热课程卡片、课表格子、设置项等
+- 预热动画组件和过渡效果
+
+**4. 页面预加载**
+- 在启动时预加载所有底部导航页面
+- 使用 `LaunchedEffect` 在后台预组合页面
+- 利用 Compose 的组合缓存机制
+
+**技术实现要点**：
+- 修改 `DuoScheduleApp.kt` - 增强预加载逻辑
+- 修改 `MainViewModel.kt` - 优化 Flow 订阅策略
+- 修改 `ScheduleViewModel.kt` - 优化 Flow 订阅策略
+- 修改 `ComposeWarmup.kt` - 增强组件预热
+- 修改 `CourseRepository.kt` - 优化数据预取
+
+**影响文件**：
+- DuoScheduleApp.kt
+- MainViewModel.kt
+- ScheduleViewModel.kt
+- ComposeWarmup.kt
+- CourseRepository.kt
+- Product-Spec.md - 新增功能 75
+
+---
+
+## [2.67.0] - 2026-02-28
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 优化功能
+- 功能 34：课前通知标题优化
+
+### 功能详情
+
+#### 功能 34：课前通知标题优化（优化）
+
+**变更原因**：
+用户反馈课前通知的主标题显示"Upcoming Class"不够直观，希望直接显示课程名称。
+
+**变更内容**：
+
+**1. 通知标题变更**
+- 原标题：固定显示"Upcoming Class"
+- 新标题：显示课程名称（如"高等数学"）
+
+**2. 通知内容变更**
+- 原内容：课程名称 · 地点 · 提前分钟数
+- 新内容：地点 · 开始时间（如"教学楼A101 · 08:00"）
+
+**3. 展开通知内容**
+- 原内容：课程名称、地点、开始时间、提前分钟数分行显示
+- 新内容：地点、开始时间、提前分钟数分行显示
+
+**技术实现**：
+- 修改 `PromotedNotificationBuilder.kt` 中的 `buildReminderNotification` 方法
+- 将 `setContentTitle` 从固定字符串改为 `courseName` 参数
+- 将 `setContentText` 从课程名称+地点+时间改为地点+时间
+
+**影响文件**：
+- PromotedNotificationBuilder.kt - 通知构建逻辑修改
+- Product-Spec.md - 功能 34 业务规则更新
+
+---
+
+## [2.66.0] - 2026-02-28
+
+### 变更类型：修复
+
+### 状态：已实现
+
+### 修复问题
+- 功能 74：时间选择器 BottomSheet 手势冲突修复
+
+### 功能详情
+
+#### 功能 74：时间选择器 BottomSheet 手势冲突修复（修复）
+
+**变更原因**：
+用户反馈在课表时间设置的 BottomSheet 中滑动选择时间时，很容易误触下滑手势导致页面关闭，影响用户体验。
+
+**问题描述**：
+- 在课表时间设置的 BottomSheet 中滑动选择时间时，垂直滑动手势被外层的 ModalBottomSheet 捕获
+- 用户在滚轮选择器上滑动选择时间时，很容易误触下滑手势导致 BottomSheet 关闭
+- 影响用户体验，需要重新打开 BottomSheet 再次设置
+
+**解决方案**：
+
+**1. GlassBottomSheet 组件增强**
+- 添加 `enableDismissOnSwipe` 参数，控制是否允许手势关闭
+- 默认值为 `true`，保持向后兼容
+
+**2. 手势关闭禁用实现**
+- 当 `enableDismissOnSwipe` 为 false 时，创建一个内部的 SheetState
+- 通过 `confirmValueChange` 回调阻止状态变为 `SheetValue.Hidden`
+- 用户只能通过点击"取消"按钮关闭 BottomSheet
+
+**3. TimeRangeBottomSheet 适配**
+- 设置 `enableDismissOnSwipe = false`
+- 只允许通过点击"取消"按钮关闭
+
+**技术实现要点**：
+- 修改 `GlassBottomSheet.kt`，添加 `enableDismissOnSwipe` 参数
+- 使用 `rememberModalBottomSheetState` 创建内部 SheetState
+- 设置 `confirmValueChange = { newValue -> newValue != SheetValue.Hidden }`
+- 修改 `TimeRangeBottomSheet.kt`，传入 `enableDismissOnSwipe = false`
+
+**影响文件**：
+- GlassBottomSheet.kt - 添加手势关闭控制参数
+- TimeRangeBottomSheet.kt - 禁用手势关闭
+- Product-Spec.md - 新增功能 74
+
+---
+
+## [2.66.0] - 2026-02-28
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 性能优化
+- 功能 75：首次页面切换卡顿优化
+
+### 功能详情
+
+#### 功能 75：首次页面切换卡顿优化（新增）
+
+**变更原因**：
+用户反馈应用启动后，第一次使用底部导航栏切换页面时必然出现卡顿，后续切换则流畅。
+
+**问题描述**：
+- 应用启动后，第一次用底栏切换页面必卡
+- 后续切换流畅，只有第一次卡顿
+- 影响用户体验，给人应用性能差的印象
+
+**问题原因分析**：
+
+1. **Compose 首帧渲染开销**
+   - 第一次切换到新页面时，Compose 需要进行首次组合（Composition）
+   - 首次组合需要创建所有 Composable 函数、解析类型、创建布局节点等
+   - 后续切换可以复用已创建的组件，因此更流畅
+
+2. **ViewModel 首次初始化**
+   - 每个页面的 ViewModel 在首次访问时才初始化
+   - ViewModel 初始化涉及依赖注入、数据库查询等
+   - MainViewModel、ScheduleViewModel 等都有多个 Flow 需要首次订阅
+
+3. **Flow 首次订阅延迟**
+   - 使用 `SharingStarted.WhileSubscribed(5000)` 策略
+   - Flow 在首次订阅时才开始收集数据
+   - 数据库查询、DataStore 读取等都在首次切换时触发
+
+4. **ComposeWarmup 预热不充分**
+   - 当前预热只覆盖了基础组件
+   - 没有预热应用特定的组件（如课程卡片、课表格子等）
+   - 没有预热 ViewModel 和 Flow 订阅
+
+**解决方案**：
+
+1. **优化 Flow 订阅策略**
+   - 将所有 `SharingStarted.WhileSubscribed(5000)` 改为 `SharingStarted.Lazily`
+   - `Lazily` 策略会在 StateFlow 创建时立即开始收集数据，而不是等到第一个订阅者
+   - 这样在应用启动时就开始预加载数据，首次切换时无需等待
+
+2. **增强 ComposeWarmup**
+   - 添加 `WarmupScheduleComponents()` 预热课表组件
+   - 添加 `WarmupCourseComponents()` 预热课程卡片组件
+   - 将预热时间从 150ms 增加到 300ms，确保充分预热
+
+3. **Application 预加载**
+   - 在 `DuoScheduleApp.onCreate()` 中添加 `preloadViewModels()`
+   - 预加载数据库课程数据
+   - 预加载所有设置数据
+   - 使用 PerformanceMonitor 追踪预加载性能
+
+4. **优化动画配置**
+   - 底栏动画从 250ms 减少到 200ms
+   - 底栏动画添加 50ms 延迟，让页面先开始切换
+   - 简化底部导航切换动画，移除复杂的方向检测逻辑
+   - 使用统一的滑动动画，减少计算开销
+
+**技术实现**：
+
+1. MainViewModel.kt - 所有 Flow 改为 `SharingStarted.Lazily`
+2. ScheduleViewModel.kt - 所有 Flow 改为 `SharingStarted.Lazily`
+3. ComposeWarmup.kt - 添加课程和课表组件预热
+4. DuoScheduleApp.kt - 添加 `preloadViewModels()` 方法
+5. MainActivity.kt - 底栏动画优化（200ms + 50ms 延迟）
+6. Navigation.kt - 简化页面切换动画
+
+**预期效果**：
+- 应用启动时即开始预加载数据和组件
+- 首次切换页面无卡顿
+- 整体切换流畅度提升
+- 用户体验显著改善
+
+**影响文件**：
+- MainViewModel.kt - Flow 订阅策略优化
+- ScheduleViewModel.kt - Flow 订阅策略优化
+- ComposeWarmup.kt - 添加课程和课表组件预热
+- DuoScheduleApp.kt - 添加 ViewModel 预加载
+- MainActivity.kt - 底栏动画优化
+- Navigation.kt - 页面切换动画简化
+
+---
+
+## [2.65.0] - 2026-02-28
+
+### 变更类型：新增
+
+### 状态：已实现
+
+### 新增功能
+- 功能 73：iOS 风格页面切换动画
+
+### 功能详情
+
+#### 功能 73：iOS 风格页面切换动画（新增）
+
+**变更原因**：
+用户反馈当前页面切换动画效果不喜欢、不符合直觉、不够流畅，希望改为 iOS 风格的滑动切换效果。
+
+**问题描述**：
+- 当前底部导航栏切换使用简单的淡入淡出动画，缺乏方向感
+- 页面内部跳转（如进入设置子页面、课程编辑页面）同样使用淡入淡出，不符合用户直觉
+- 动画效果单调，用户体验不佳
+
+**变更内容**：
+
+**1. 底部导航栏切换动画**
+- 切换到右侧页面：新页面从右侧滑入，当前页面向左滑出
+- 切换到左侧页面：新页面从左侧滑入，当前页面向右滑出
+- 动画时长：250ms
+- 缓动曲线：FastOutSlowInEasing
+
+**2. 页面内部跳转动画（进入二级页面）**
+- 新页面从右侧滑入
+- 当前页面向左滑出（位移量为屏幕宽度的 30%）
+- 动画时长：300ms
+- 缓动曲线：FastOutSlowInEasing
+
+**3. 返回动画（返回上一页）**
+- 当前页面向右滑出
+- 上一页从左侧滑入（从 -30% 位置滑入到 0）
+- 动画时长：300ms
+- 缓动曲线：FastOutSlowInEasing
+
+**4. 动画参数**
+- 页面滑动位移量：屏幕宽度
+- 背景页面位移量：屏幕宽度的 30%
+- 动画时长：底部导航切换 250ms，页面跳转 300ms
+- 缓动曲线：FastOutSlowInEasing（开始快、结束慢）
+
+**技术实现要点**：
+- 修改 Navigation.kt 重构 NavHost 的 enterTransition、exitTransition、popEnterTransition、popExitTransition
+- 使用 slideInHorizontally 和 slideOutHorizontally 实现滑动效果
+- 底部导航栏切换时检测目标页面在当前页面的左侧还是右侧，根据方向设置滑动方向
+
+**影响文件**：
+- Navigation.kt - 重构页面切换动画
+- AnimationSpecs.kt - 添加 iOS 风格动画配置
+- Product-Spec.md - 新增功能 73
+
+---
+
+## [2.64.0] - 2026-02-28
+
+### 变更类型：修改
+
+### 状态：开发中
+
+### 修改功能
+- 功能 72：课表格子长按操作（菜单样式修改）
+
+### 功能详情
+
+#### 功能 72：课表格子长按操作（修改）
+
+**变更原因**：
+用户希望菜单在按住的格子上方弹出，并采用横向并排文字的样式，与设置界面风格一致。
+
+**变更内容**：
+
+**1. 菜单位置变更**
+- 菜单从手指位置弹出改为在按住的格子上方弹出
+- 通过 `onGloballyPositioned` 获取格子位置，定位菜单
+
+**2. 菜单布局变更**
+- 从垂直列表改为横向并排布局（Row）
+- 菜单项仅显示文字，不显示图标
+- 菜单项之间有分隔线
+
+**3. 菜单视觉设计**
+- 使用 Liquid Glass 效果（参考设置界面 GlassCard 样式）
+- 深色模式配色：
+  - 背景：半透明深色 + 模糊效果
+  - 文字：浅色文字（LabelsDark.Primary）
+  - 分隔线：半透明白色
+- 浅色模式配色：
+  - 背景：半透明白色 + 模糊效果
+  - 文字：深色文字（LabelsLight.Primary）
+  - 分隔线：半透明黑色
+- 菜单高度：44dp
+- 菜单项内边距：水平 16dp，垂直 12dp
+- 菜单圆角：16dp（BorderRadius.iOS26.container）
+- 破坏性操作（删除）使用红色文字
+
+**影响文件**：
+- `CourseContextMenu.kt` - 重构为横向菜单组件
+
+---
+
+## [2.63.0] - 2026-02-28
+
+### 变更类型：新增
+
+### 状态：已实现
+
+### 新增功能
+- 功能 72：课表格子长按操作
+
+### 功能详情
+
+#### 功能 72：课表格子长按操作（新增）
+
+**变更原因**：
+用户希望通过长按课表格子快速进行复制、粘贴、删除等操作，提升课程管理效率。
+
+**变更内容**：
+
+**1. 长按触发范围**
+- 所有格子都支持长按操作（包括有课和无课的格子）
+- 长按时间阈值：500ms
+- 长按触发时有触觉反馈（震动）
+
+**2. 有课程格子的操作菜单**
+- 复制：复制当前课程到剪贴板
+- 编辑：进入课程编辑界面
+- 删除：删除当前课程
+
+**3. 空白格子的操作菜单**
+- 粘贴：粘贴已复制的课程到当前格子（仅在剪贴板有课程时显示）
+- 添加课程：进入课程添加界面，自动预选当前格子的星期和节次
+
+**4. 复制功能**
+- 复制课程的全部信息：课程名称、地点、老师、周次
+- 复制后课程存储在内存剪贴板中（不持久化）
+- 复制成功后显示 Toast 提示"已复制"
+
+**5. 粘贴功能**
+- 粘贴时自动更新星期和节次为新格子的位置
+- 粘贴时自动设置所属人为当前课表的所有者
+- 粘贴前检测时间冲突：
+  - 如目标格子已有课程，弹出确认对话框，提示用户选择覆盖或取消
+  - 如无冲突，直接粘贴保存
+- 粘贴成功后显示 Toast 提示"已粘贴"
+
+**6. 删除功能**
+- 删除前弹出确认对话框，提示用户确认删除
+- 确认后删除课程
+- 删除成功后显示 Toast 提示"已删除"
+
+**7. 编辑功能**
+- 直接进入课程编辑界面
+- 与点击课程格子的行为一致
+
+**8. 跨课表操作**
+- 不支持跨课表复制/粘贴
+- 复制的课程只能在同一课表内粘贴
+
+**9. 操作菜单样式**
+- 采用 ContextMenu 形式
+- 在手指位置附近弹出
+- 菜单项使用图标 + 文字
+
+**10. 格子选中状态**
+- 长按格子触发菜单时，被选中的格子显示蓝色边框高亮
+- 边框颜色：主题蓝色（#4789FE）
+- 边框宽度：2dp
+- 边框圆角：8dp
+- 菜单消失后边框自动消失
+
+**11. 剪贴板管理**
+- 剪贴板只保存最近一次复制的课程
+- 应用重启后剪贴板清空
+- 不提供撤销功能
+
+**技术实现要点**：
+- 使用 Compose 的 `combinedClickable` 修饰符实现长按检测
+- 使用 `DropdownMenu` 组件实现 ContextMenu
+- 创建 `CourseClipboard` 单例对象管理剪贴板
+- 复用现有的时间冲突检测逻辑
+
+**影响文件**：
+- ScheduleScreen.kt - 添加长按手势和 ContextMenu
+- ScheduleViewModel.kt - 添加复制、粘贴、删除等操作方法
+- 新增 CourseClipboard.kt - 课程剪贴板管理
+- Product-Spec.md - 新增功能 72
+
+---
+
+## [2.62.0] - 2026-02-28
+
+### 变更类型：功能优化
+
+### 状态：已实现
+
+### 功能调整
+- 功能 16：课表空白格子交互优化（原"点击格子自动选择星期和节次"）
+
+### 功能详情
+
+#### 功能 16：课表空白格子交互优化（调整 + 已实现）
+
+**变更原因**：
+用户反馈点击空白格子直接进入添加课程界面容易误触，希望改为两步操作，提供更明确的意图确认。
+
+**变更内容**：
+
+**1. 空白格子交互改为两步操作**
+- 第一次点击空白格子：显示灰色半透明遮罩 + 居中加号图标
+- 第二次点击同一格子：进入课程添加界面
+
+**2. 遮罩交互逻辑**
+- 点击其他格子：原格子遮罩消失，新格子显示遮罩
+- 点击格子外区域（时间列、头部区域）：遮罩消失，恢复原状
+- 点击有课程的格子：遮罩消失，直接进入编辑/预览界面
+- 遮罩不会自动消失
+
+**3. 已有课程格子保持原有行为**
+- 点击有课程的格子：直接进入编辑/预览界面
+- 不显示遮罩中间状态
+
+**4. 遮罩样式**
+- 背景：灰色半透明（深色模式 25% 白色，浅色模式 18% 黑色）
+- 图标：白色加号图标，居中显示
+- 图标大小：24dp
+- 遮罩覆盖整个格子区域
+- 无边框
+
+**技术实现**：
+- 新增 `EmptySlotPosition` 数据类记录选中格子位置
+- 在 `WeeklyScheduleGrid` 中管理 `selectedEmptySlot` 状态
+- 修改 `CourseSlot` 组件支持两步点击逻辑和遮罩UI
+- 在时间列和头部区域添加点击清除遮罩的逻辑
+
+**影响文件**：
+- ScheduleScreen.kt - 空白格子点击交互逻辑重构
+- Product-Spec.md - 功能 16 描述更新
+
+---
+
+## [2.61.0] - 2026-02-28
+
+### 变更类型：新增
+
+### 状态：已实现
+
+### 新增功能
+- 功能 71：课表周切换滑动动画重构
+
+### 功能详情
+
+#### 功能 71：课表周切换滑动动画重构（新增）
+
+**变更原因**：
+用户反馈课表页面左右滑动切换周数时，动画存在闪烁、跟随不流畅、松手动画不自然、边界处理异常等问题，需要重构整个滑动动画逻辑。
+
+**问题描述**：
+
+当前动画实现存在以下问题：
+1. **闪烁/跳动**：滑动过程中课表内容出现闪烁或跳动
+2. **跟随不流畅**：课表没有完全跟随手指移动，有延迟或卡顿
+3. **松手动画不自然**：松手后切换动画不够平滑自然
+4. **边界处理有问题**：边界滑动时表现异常或有 bug
+
+**变更内容**：
+
+**1. 滑动方向与切换关系**
+- 向左滑动：切换到下一周（类似翻书效果）
+- 向右滑动：切换到上一周
+- 与用户直觉一致：想看后面的内容就向左滑，想看前面的内容就向右滑
+
+**2. 跟随手指效果**
+- 课表内容实时跟随手指位置移动
+- 手指到哪，课表就移动到哪
+- 无延迟、无卡顿、无闪烁
+- 滑动过程中可以看到相邻周的内容从屏幕边缘滑入
+
+**3. 切换判定逻辑**
+- **松手即切换**：只要用户松手，就切换到滑动方向的相邻周
+- 无论滑动距离多短，只要松手就触发切换
+- 切换方向根据滑动方向确定：
+  - 向左滑动松手 → 切换到下一周
+  - 向右滑动松手 → 切换到上一周
+
+**4. 边界处理**
+- **硬边界**：到达边界后课表无法继续滑动，完全停止
+- 第一周：无法向右滑动（无法查看上一周）
+- 最后一周：无法向左滑动（无法查看下一周）
+- 边界时提供触觉反馈（震动）
+
+**5. 动画参数**
+- 切换动画时长：200ms（快速响应，干脆利落）
+- 缓动曲线：EaseInOutCubic（开始慢、中间快、结束慢，更有弹性感）
+- 动画流畅无闪烁
+
+**6. 视觉效果**
+- 当前周课表跟随手指移动
+- 相邻周课表从屏幕边缘滑入
+- 滑动过程中可以看到两周边缘的内容
+- 松手后平滑过渡到目标周
+
+**技术实现**：
+
+**1. 动画架构**
+- 使用 `Animatable` 管理滑动偏移量
+- 使用 `detectHorizontalDragGestures` 检测水平滑动手势
+- 使用 `offset` 修饰符实时更新课表位置
+- 预加载当前周、上一周、下一周三周的课程数据
+
+**2. 位置计算**
+- 当前周：`offset = dragOffset`
+- 上一周：`offset = dragOffset - screenWidth`（在当前周左侧）
+- 下一周：`offset = dragOffset + screenWidth`（在当前周右侧）
+
+**3. 边界处理**
+- 第一周时：限制向右滑动的最大距离为 0
+- 最后一周时：限制向左滑动的最大距离为 0
+- 边界时触发触觉反馈
+
+**4. 切换逻辑**
+- 松手时根据滑动方向确定目标周
+- 使用 `animateTo` 平滑过渡到目标位置
+- 切换完成后更新 `selectedWeek` 状态
+
+**5. 防闪烁措施**
+- 使用 `key` 确保课表组件正确复用
+- 避免在滑动过程中重新创建组件
+- 使用 `remember` 缓存计算结果
+- 确保数据预加载完成后再显示
+
+**影响文件**：
+- ScheduleScreen.kt - 重构滑动动画逻辑
+- Product-Spec.md - 新增功能 71
+
+---
+
+## [2.60.0] - 2026-02-28
+
+### 变更类型：新增 + 优化
+
+### 状态：待开发
+
+### 新增功能
+- 功能 70：数据导出导入功能优化
+
+### 功能详情
+
+#### 功能 70：数据导出导入功能优化（新增 + 优化）
+
+**变更原因**：
+用户反馈数据导出导入功能存在多个问题，需要优化。
+
+**问题描述**：
+
+**1. 导出数据错误**
+- 人员名称导出错误：导出文件中的人员名称始终为默认值（"Ta"、"我"），而非用户设置的自定义名称
+- 总周数导出错误：导出文件中的学期总周数与设置不符
+
+**2. 导出导入逻辑解耦**
+- 格式不兼容：导出文件无法直接导入，需要手动调整格式
+- 设置信息未导入：导出包含设置信息，但导入时不读取这些设置
+- 所属人逻辑不一致：导出包含两个人的课程，但导入模板只记录一个人的课程
+
+**3. 外部应用无法触发导入**
+- 通过微信"更多打开方式"选择"双人课程表"打开CSV文件时，应用启动但未进入导入流程
+
+**变更内容**：
+
+**1. 导出数据修复**
+- 检查导出调用链，确保用户设置的人员名称正确传递到导出方法
+- 检查 `SettingsDataStore` 中总周数的读取逻辑，确保导出时获取正确的值
+
+**2. 导出范围选择**
+- 导出时显示选择对话框，提供三个选项：
+  - 仅我的课表：只导出 PersonB 的课程和设置
+  - 仅Ta的课表：只导出 PersonA 的课程和设置
+  - 双人课表：导出两个人的完整数据（默认选项）
+- 导出文件名根据选择动态生成
+
+**3. 导入功能优化 - 自动识别文件类型**
+
+**类型1：应用导出CSV（完整格式）**
+- 识别标志：文件开头包含 `# 双人课程表导出文件` 或 `# 版本:` 注释行
+- 导入流程：自动解析 → 显示完整预览（设置+双人课程）→ 用户确认 → 直接导入
+- 无需选择目标人员，按原所属人自动导入
+
+**类型2：模板CSV（简化格式）**
+- 识别标志：文件开头为表头行或不包含应用导出标志
+- 导入流程：解析课程 → 显示预览 → 用户选择目标人员 → 导入
+
+**导入流程图**
+```
+导入CSV文件
+  ↓
+解析文件内容
+  ↓
+识别文件类型
+  ├─ 应用导出CSV → 显示完整预览 → 用户确认 → 导入设置+双人课程
+  └─ 模板CSV → 显示课程预览 → 用户选择目标人员 → 导入单人课程
+```
+
+**4. 外部应用打开CSV文件导入**
+- 在 `MainActivity.onCreate()` 中添加 Intent 处理逻辑
+- 支持 `ACTION_VIEW` 和 `ACTION_SEND` 两种 Intent
+- 提取文件 URI 并导航到导入预览页面
+
+**技术实现要点**：
+- 修改 `CsvExporter.kt` - 修复人员名称和总周数导出问题，添加文件类型识别逻辑
+- 修改 `DataManagementScreen.kt` - 添加导出范围选择对话框
+- 修改 `ImportPreviewScreen.kt` - 根据文件类型显示不同预览界面
+- 修改 `MainActivity.kt` - 添加外部 Intent 处理逻辑
+
+**影响文件**：
+- CsvExporter.kt - 导出数据修复，文件类型识别，导入逻辑优化
+- DataManagementScreen.kt - 导出范围选择
+- ImportPreviewScreen.kt - 根据文件类型显示不同预览
+- MainActivity.kt - 外部 Intent 处理
+- Product-Spec.md - 新增功能 70
+
+---
+
+## [2.59.0] - 2026-02-28
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 优化功能
+- 功能 24：周数选择器布局优化
+
+### 功能详情
+
+#### 功能 24：周数选择器布局优化
+
+**变更原因**：
+用户反馈周数选择器居中显示显得空旷，占用太多垂直空间。
+
+**变更内容**：
+- 改为紧凑的行内布局（Row）
+- 周数选择器在左侧，日期范围在右侧
+- 缩小字体和内边距，减少空间占用
+- 保留左右滑动切换周数的手势操作
+- 保留点击展开周数选择弹窗功能
+
+**布局对比**：
+```
+旧布局（垂直居中）：          新布局（行内紧凑）：
+┌─────────────────────┐      ┌─────────────────────┐
+│                     │      │ [第 X 周 ▼]  2/24-3/2│
+│    [第 X 周 ▼]      │      └─────────────────────┘
+│      2/24 - 3/2     │
+│                     │
+└─────────────────────┘
+```
+
+**影响文件**：
+- 修改 `ScheduleScreen.kt` - 重构 `WeekSelectorSection` 组件为行内布局
+
+---
+
+## [2.58.0] - 2026-02-28
+
+### 变更类型：修复
+
+### 状态：已实现
+
+### 修复问题
+- 功能 69：课表周日期计算修复
+
+### 问题详情
+
+#### 功能 69：课表周日期计算修复
+
+**问题描述**：
+- 当用户设置开学时间为非周一（如周三）时，课表列头显示的日期与实际星期几不匹配
+- 例如：开学日期设为 2026-02-25（周三），第 1 周显示的日期应该是周一 2/23 到周日 3/1，但实际显示错误
+
+**问题原因**：
+- `getWeekDates` 方法直接将开学日期作为每周的起始日期
+- 没有考虑开学日期可能不是周一的情况
+- 导致返回的日期列表第一个元素是开学日期本身，而不是该周的周一
+
+**解决方案**：
+- 使用 `TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)` 找到开学日期所在周的周一
+- 以该周一作为第 1 周的起始日期
+- 后续周数在此基础上正确计算
+
+**影响文件**：
+- 修改 `SettingsDataStore.kt` - 修复 `getWeekDates` 方法
+
+---
+
+## [2.57.0] - 2026-02-28
+
+### 变更类型：修复
+
+### 状态：已实现
+
+### 修复问题
+- 功能 67：上课自动静音权限问题修复
+
+### 问题详情
+
+#### 功能 67：上课自动静音权限问题修复
+
+**问题描述**：
+- 用户在系统设置的"通知使用权限"（勿扰权限）列表中找不到该应用
+- 自动静音功能无法正常工作
+
+**问题原因**：
+- AndroidManifest.xml 缺少 `ACCESS_NOTIFICATION_POLICY` 权限声明
+- 没有这个权限声明，应用不会出现在系统的勿扰模式权限授权列表中
+- `notificationManager.isNotificationPolicyAccessGranted` 始终返回 false
+
+**解决方案**：
+- 在 AndroidManifest.xml 中添加 `ACCESS_NOTIFICATION_POLICY` 权限声明
+
+**影响文件**：
+- 修改 `AndroidManifest.xml` - 添加 ACCESS_NOTIFICATION_POLICY 权限
+
+---
+
+## [2.56.0] - 2026-02-28
+
+### 变更类型：新增
+
+### 状态：已实现
+
+### 新增功能
+- 功能 67：上课自动静音
+
+### 功能详情
+
+#### 功能 67：上课自动静音（新增 + 已实现）
+
+**变更原因**：
+用户希望在上课时自动静音，避免手机突然响起造成尴尬，课程结束后自动恢复铃声。
+
+**变更内容**：
+
+**1. 静音模式类型（用户可选）**
+- 静音模式：完全静音，来电和通知都无声音
+- 振动模式：来电/通知时振动提醒，不发声
+- 勿扰模式：可设置例外（如允许联系人来电）
+- 默认值：振动模式
+
+**2. 触发时机**
+- 课程开始时立即触发静音
+- 不提前静音，避免过早影响用户
+
+**3. 恢复时机**
+- 课程结束时立即恢复铃声
+- 连续课程处理：如果下一节课在 10 分钟内开始，保持静音状态直到所有连续课程结束
+- 恢复后自动还原为用户原有的铃声模式
+
+**4. 适用对象**
+- 仅对"我的课程"生效
+- 不处理 Ta 的课程
+
+**5. 权限处理**
+- 需要 `ACCESS_NOTIFICATION_POLICY` 权限（勿扰模式权限）
+- Android 7.0+ 需要用户手动在系统设置中授权
+- 在通知设置页面显示权限状态
+- 提供跳转到系统设置的入口
+- 权限未授予时显示引导提示
+
+**6. 设置入口**
+- 位置：设置 → 通知设置
+- 设置项：上课自动静音开关、静音模式类型选择、权限状态显示、跳转系统设置按钮
+
+**7. 默认状态**
+- 功能默认开启
+- 静音模式默认为振动模式
+
+**技术实现**：
+
+**1. 新增文件**
+- `RingerModeManager.kt` - 铃声模式管理工具类
+- `AutoSilentWorker.kt` - 自动静音调度任务
+
+**2. 修改文件**
+- `SettingsDataStore.kt` - 添加静音配置存储
+- `CourseRepository.kt` - 添加静音配置访问方法
+- `CourseNotificationManager.kt` - 集成静音功能调度
+- `NotificationSettingsScreen.kt` - 添加静音设置 UI
+- `SettingsViewModel.kt` - 添加静音设置相关方法
+
+**影响文件**：
+- 新增 `RingerModeManager.kt` - 铃声模式管理工具类
+- 新增 `AutoSilentWorker.kt` - 自动静音调度任务
+- 修改 `NotificationSettingsScreen.kt` - 添加静音设置 UI
+- 修改 `SettingsDataStore.kt` - 添加静音配置存储
+- 修改 `CourseNotificationManager.kt` - 集成静音功能
+- Product-Spec.md - 更新功能 67 状态为已实现
+
+---
+
+## [2.55.0] - 2026-02-28
+
+### 变更类型：新增
+
+### 状态：待开发
+
+### 新增功能
+- 功能 67：上课自动静音
+
+### 功能详情
+
+#### 功能 67：上课自动静音（新增）
+
+**变更原因**：
+用户希望在上课时自动静音，避免手机突然响起造成尴尬，课程结束后自动恢复铃声。
+
+**变更内容**：
+
+**1. 静音模式类型（用户可选）**
+- 静音模式：完全静音，来电和通知都无声音
+- 振动模式：来电/通知时振动提醒，不发声
+- 勿扰模式：可设置例外（如允许联系人来电）
+- 默认值：振动模式
+
+**2. 触发时机**
+- 课程开始时立即触发静音
+- 不提前静音，避免过早影响用户
+
+**3. 恢复时机**
+- 课程结束时立即恢复铃声
+- 连续课程处理：如果下一节课在 10 分钟内开始，保持静音状态直到所有连续课程结束
+- 恢复后自动还原为用户原有的铃声模式
+
+**4. 适用对象**
+- 仅对"我的课程"生效
+- 不处理 Ta 的课程
+
+**5. 权限处理**
+- 需要 `ACCESS_NOTIFICATION_POLICY` 权限（勿扰模式权限）
+- Android 7.0+ 需要用户手动在系统设置中授权
+- 在通知设置页面显示权限状态
+- 提供跳转到系统设置的入口
+- 权限未授予时显示引导提示
+
+**6. 设置入口**
+- 位置：设置 → 通知设置
+- 设置项：上课自动静音开关、静音模式类型选择、权限状态显示、跳转系统设置按钮
+
+**7. 默认状态**
+- 功能默认开启
+- 静音模式默认为振动模式
+
+**技术实现要点**：
+- 使用 `NotificationManager.isNotificationPolicyAccessGranted()` 检查权限
+- 使用 `AudioManager.setRingerMode()` 设置铃声模式
+- 使用 `WorkManager` 调度静音和恢复任务
+- 静音前保存用户当前的铃声模式，恢复时还原
+
+**影响文件**：
+- 新增 `RingerModeManager.kt` - 铃声模式管理工具类
+- 新增 `AutoSilentWorker.kt` - 自动静音调度任务
+- 修改 `NotificationSettingsScreen.kt` - 添加静音设置 UI
+- 修改 `SettingsDataStore.kt` - 添加静音配置存储
+- 修改 `CourseNotificationManager.kt` - 集成静音功能
+- Product-Spec.md - 新增功能 67
+
+---
+
+## [2.54.0] - 2026-02-28
+
+### 变更类型：功能优化
+
+### 状态：已实现
+
+### 功能优化
+- 功能 4：共同空闲时间显示优化
+
+### 功能详情
+
+#### 功能 4：共同空闲时间显示优化（优化）
+
+**变更原因**：
+用户反馈空闲时间多于一个时显示不完整，且希望点击空闲时间区域能查看所有空闲时间，同时过去的空闲时间不应该显示。
+
+**变更内容**：
+
+**1. 过滤过去的空闲时间**
+- 空闲时间计算时根据当前时间过滤
+- 只显示当前时间之后的空闲时段
+- 如果当前时间在某空闲时段中间，则从当前时间开始显示剩余部分
+
+**2. 点击查看所有空闲时间**
+- 点击空闲时间卡片弹出 BottomSheet 显示所有空闲时间列表
+- 列表中每个时段可点击查看详情
+- 列表显示时段时间和时长
+
+**3. UI 优化**
+- 卡片提示文字从"点击查看详情"改为"点击查看全部"
+- 新增 AllFreeTimeSlotsSheet 组件显示所有空闲时间
+- 新增 FreeTimeSlotItem 组件显示单个时段列表项
+
+**技术实现**：
+- MainViewModel.kt - calculateFreeTimeSlots 方法增加当前时间参数，过滤过去的空闲时间
+- FreeTimeSection.kt - 新增 AllFreeTimeSlotsSheet 和 FreeTimeSlotItem 组件
+- FreeTimeSection.kt - FreeTimeCard 增加点击查看全部功能
+- Product-Spec.md - 更新功能 4 的业务规则
+
+**影响文件**：
+- `app/src/main/java/com/duoschedule/ui/main/MainViewModel.kt`
+- `app/src/main/java/com/duoschedule/ui/main/components/FreeTimeSection.kt`
+- `Product-Spec.md`
+
+**用户体验提升**：
+- 空闲时间显示更加准确，不再显示已过去的时间
+- 用户可以方便地查看所有空闲时间
+- 列表展示更加清晰，信息更完整
+
+---
+
+## [2.53.0] - 2026-02-28
+
+### 变更类型：功能优化
+
+### 状态：已实现
+
+### 功能新增
+- 功能 66：课表周切换平移动画优化
+
+### 功能详情
+
+#### 功能 66：课表周切换平移动画优化（新增）
+
+**变更原因**：
+用户反馈课表页面左右滑动切换周数时，原有的淡入淡出动画不够直观，希望改为平滑的平移动画，让整个课表跟随滑动方向平移切换。
+
+**变更内容**：
+
+**1. 动画效果变更**
+- 原动画：淡入淡出（fadeIn + fadeOut）
+- 新动画：水平平移（slideInHorizontally + slideOutHorizontally）
+- 动画时长：从 150ms 调整为 300ms
+- 缓动曲线：FastOutSlowInEasing
+
+**2. 平移方向逻辑**
+- 向左滑动（切换到下一周）：新内容从右侧滑入，旧内容向左滑出
+- 向右滑动（切换到上一周）：新内容从左侧滑入，旧内容向右滑出
+- 与用户滑动方向一致，符合直觉
+
+**技术实现**：
+- ScheduleScreen.kt - 修改 AnimatedContent 的 transitionSpec
+- 使用 slideInHorizontally 和 slideOutHorizontally 替代 fadeIn 和 fadeOut
+- 根据 lastDragDirection 动态设置平移方向
+- Product-Spec.md - 新增功能 66
+
+**影响文件**：
+- `app/src/main/java/com/duoschedule/ui/schedule/ScheduleScreen.kt`
+- `Product-Spec.md`
+
+**用户体验提升**：
+- 切换周数时动画更加流畅自然
+- 平移方向与滑动方向一致，符合用户直觉
+- 视觉连贯性更好，用户能清晰感知周数的变化
+
+---
+
+## [2.52.0] - 2026-02-28
+
+### 变更类型：重构
+
+### 状态：已实现
+
+### 功能新增
+- 功能 65：时间选择器 BottomSheet 重构
+
+### 功能详情
+
+#### 功能 65：时间选择器 BottomSheet 重构（新增）
+
+**变更原因**：
+用户反馈时间设置里的时间选择器需要改为 BottomSheet 形式，取消选中区域的灰色背景框，选中项改为蓝色，未选中项改为灰色，标题需要动态显示课节和时长。
+
+**变更内容**：
+
+**1. BottomSheet 形式**
+- 将原有的 Dialog 改为 BottomSheet 形式
+- 使用 GlassBottomSheet 组件，保持与项目整体风格一致
+- 从底部滑出，提供更好的操作体验
+
+**2. 滚轮选择器样式优化**
+- 取消选中区域的灰色背景框
+- 选中项文字颜色：蓝色（iOS 26 TintBlue #0A84FF）
+- 未选中项文字颜色：灰色（LabelsVibrantSecondary）
+- 选中项字号放大（20sp），未选中项字号较小（16sp）
+- 添加平滑的颜色和字号动画过渡
+
+**3. 标题格式优化**
+- 标题改为动态格式："请调节第n节课的时间"
+- 副标题显示时长："本节x分钟"，根据选择动态调整
+
+**4. 时间显示格式**
+- 开始时间和结束时间中间用横杠（-）连接
+- 时间格式：HH:mm - HH:mm
+
+**技术实现**：
+- TimeRangeBottomSheet.kt - 新增 BottomSheet 组件
+- PeriodTimesSettingsScreen.kt - 更新使用新的 BottomSheet
+- Product-Spec.md - 新增功能 65
+
+**影响文件**：
+- app/src/main/java/com/duoschedule/ui/settings/components/TimeRangeBottomSheet.kt（新增）
+- app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt（修改）
+- Product-Spec.md（更新）
+
+---
+
+## [2.51.0] - 2026-02-28
+
+### 变更类型：重构
+
+### 状态：已实现
+
+### 功能新增
+- 功能 64：时间选择器重构
+
+### 功能详情
+
+#### 功能 64：时间选择器重构（新增）
+
+**变更原因**：
+用户反馈时间设置里的时间选择器太难用，滚轮滚动不够流畅，开始时间和结束时间分开显示不够直观，整体体验不佳。
+
+**变更内容**：
+
+**1. 滚轮选择器重构**
+- 采用与节次选择器相同的滚轮实现方式
+- 使用 LazyColumn + snapFlingBehavior 实现流畅的 snap 滚动效果
+- 选中项高亮显示，使用主题色
+- 选中项字号放大（20sp），未选中项字号较小（16sp）
+- 添加平滑的颜色和字号动画过渡（150ms，FastOutSlowInEasing）
+- 选中区域使用浅色背景高亮（深色模式 20% 白色，浅色模式 15% 黑色）
+
+**2. 时间范围选择布局优化**
+- 开始时间和结束时间并排显示，方便对比
+- 开始时间使用蓝色（Ta 的主题色），结束时间使用黄色（我的主题色）
+- 自动计算并显示时长（如"45分钟"、"1小时30分钟"）
+- 弹窗宽度扩大到屏幕的 92%，提供更大的操作空间
+
+**3. 组件架构优化**
+- `WheelPicker` - 通用滚轮选择器组件
+- `TimeWheelPicker` - 单时间选择器（小时 + 分钟）
+- `TimeRangeWheelPicker` - 时间范围选择器（开始 + 结束）
+- 重构 `TimeRangeAlert` 使用新的时间选择器组件
+
+**技术实现**：
+- WheelTimePicker.kt - 完全重构滚轮选择器
+- InputDialogs.kt - 重构 TimeRangeAlert 组件
+- Product-Spec.md - 新增功能 64
+
+**影响文件**：
+- WheelTimePicker.kt - 滚轮选择器重构
+- InputDialogs.kt - 时间选择弹窗重构
+- Product-Spec.md - 文档更新
+
+---
+
+## [2.50.0] - 2026-02-28
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 功能新增
+- 功能 63：新增课程界面布局优化
+
+### 功能详情
+
+#### 功能 63：新增课程界面布局优化（新增）
+
+**变更原因**：
+用户反馈新增课程界面中，教室地点和上课老师输入区域占用过多空间，标题和输入框垂直排列导致不必要的留白。
+
+**变更内容**：
+
+**1. 教室地点布局优化**
+- 从垂直布局（图标 + 标题在上，输入框在下）改为水平布局
+- 新布局：图标 + 标题 + 输入框 在同一行
+- 标题固定宽度 72dp，输入框自适应剩余空间
+- 输入框单行显示，placeholder 简化为"点击输入"
+
+**2. 上课老师布局优化**
+- 从垂直布局改为水平布局
+- 新布局：图标 + 标题 + 输入框 在同一行
+- 标题固定宽度 72dp，输入框自适应剩余空间
+- 输入框单行显示，placeholder 简化为"点击输入（可选）"
+
+**3. 历史建议样式优化**
+- 上课老师的历史建议从垂直列表改为水平排列的 Chip 样式
+- 更紧凑的显示，不占用过多垂直空间
+
+**技术实现**：
+- CourseEditScreen.kt - 修改 `LocationInputRow` 和 `TeacherInputRow` 为水平布局
+- CourseEditScreen.kt - 新增 `SuggestionChip` 组件
+- Product-Spec.md - 新增功能 63
+
+**影响文件**：
+- CourseEditScreen.kt - 布局优化
+- Product-Spec.md - 文档更新
+
+---
+
+## [2.49.0] - 2026-02-27
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 功能调整
+- 功能 61：课表虚线边框开关 → 课表网格线分隔设置
+
+### 功能详情
+
+#### 功能 61：课表网格线分隔设置（调整）
+
+**变更原因**：
+用户希望将课表格子的虚线边框改为更简洁的横线和竖线分隔，并将设置项从"课表设置"移动到"显示设置"中。
+
+**变更内容**：
+
+**1. 分隔线样式调整**
+- 从虚线边框改为横线和竖线分隔
+- 移除虚线效果（PathEffect.dashPathEffect）
+- 使用简单的实线分隔各格子
+- 线宽：1dp
+- 颜色：浅色模式 `#20000000`，深色模式 `#40FFFFFF`
+
+**2. 设置位置调整**
+- 从"设置 → 课表设置 → 课表外观设置"移动到"设置 → 显示设置 → 课表外观"
+- 设置项名称从"显示虚线边框"改为"显示网格线分隔"
+- 移除"Ta的虚线边框"设置项（合并为单一设置）
+
+**3. 设置表述优化**
+- 设置项名称：显示网格线分隔
+- 副标题：在课表格子之间显示横线和竖线分隔
+
+**技术实现**：
+- ScheduleScreen.kt - 将虚线边框改为横线和竖线分隔
+- DisplaySettingsScreen.kt - 添加网格线分隔设置开关
+- ScheduleSettingsScreen.kt - 移除原有的虚线边框设置
+- SettingsDataStore.kt - 保持 `showDashedBorder` 配置项（语义上改为网格线分隔）
+- Product-Spec.md - 更新功能 61 描述
+
+**影响文件**：
+- ScheduleScreen.kt - 分隔线样式调整
+- DisplaySettingsScreen.kt - 添加设置开关
+- ScheduleSettingsScreen.kt - 移除设置项
+- Product-Spec.md - 功能描述更新
+
+---
+
+## [2.48.0] - 2026-02-27
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 新增功能
+- 功能 61：课表虚线边框开关
+
+### 功能详情
+
+#### 功能 61：课表虚线边框开关（新增）
+
+**问题描述**：
+- 之前虚线只显示在空格子上，用户希望虚线作为格子分隔线显示在所有格子上
+- 用户希望可以控制虚线的显示/隐藏
+
+**解决方案**：
+
+**1. 虚线样式调整**
+- 虚线应用于所有格子（有课和无课的格子）
+- 作为格子分隔线使用
+- 虚线参数：线段长度 6dp，间隔 4dp，线宽 1dp
+
+**2. 添加虚线开关**
+- 开关位置：设置 → 课表设置 → 课表外观设置
+- 默认状态：开启（显示虚线边框）
+- 用户可自由控制虚线显示
+
+**技术实现**：
+- SettingsDataStore.kt：添加 `showDashedBorder` 配置项
+- CourseRepository.kt：添加 `getShowDashedBorder()` 和 `setShowDashedBorder()` 方法
+- ScheduleViewModel.kt：添加 `showDashedBorder` StateFlow
+- ScheduleScreen.kt：根据配置显示/隐藏虚线边框
+- ScheduleSettingsScreen.kt：添加开关 UI 组件
+
+**影响文件**：
+- ScheduleScreen.kt - 虚线样式调整和开关支持
+- ScheduleViewModel.kt - 添加虚线开关读取
+- SettingsDataStore.kt - 添加虚线开关存储
+- CourseRepository.kt - 添加虚线开关访问方法
+- ScheduleSettingsScreen.kt - 添加开关 UI
+- Product-Spec.md - 新增功能 61 描述
+
+---
+
+## [2.47.0] - 2026-02-27
+
+### 变更类型：优化 + Bug修复
+
+### 状态：已实现
+
+### 新增功能
+- 功能 60：课表界面优化
+
+### 功能详情
+
+#### 功能 60：课表界面优化（新增）
+
+**问题描述**：
+- 课表中没有课程的空格子显示为灰色块，视觉上显得杂乱
+- 首次打开课表页面时，格子数量会先多后少，出现闪烁现象
+- 左右滑动切换周数时，滑动阈值过高，感觉滑不动
+
+**解决方案**：
+
+**1. 空格子改为虚线边框样式**
+- 移除空格子的灰色背景填充
+- 改为虚线边框样式，视觉更轻量
+- 虚线参数：线段长度 6dp，间隔 4dp，线宽 1.5dp
+- 边框颜色：浅色模式 `#20000000`，深色模式 `#40FFFFFF`
+
+**2. 修复首次加载闪烁问题**
+- 添加数据加载状态检查
+- 在数据完全加载前显示加载指示器
+- 修复 ViewModel 中 totalPeriods 默认值从 12 改为 5
+
+**3. 优化滑动切换灵敏度**
+- 将滑动阈值从 100dp 降低到 60dp
+- 更容易触发周数切换
+
+**影响文件**：
+- ScheduleScreen.kt - 空格子样式、加载状态、滑动阈值
+- ScheduleViewModel.kt - totalPeriods 默认值
+- Product-Spec.md - 新增功能 60 描述
+
+---
+
+## [2.46.0] - 2026-02-27
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 新增功能
+- 功能 59：返回按钮大小优化
+
+### 功能详情
+
+#### 功能 59：返回按钮大小优化（新增）
+
+**问题描述**：
+- 当前返回按钮使用 `GlassSymbolIconButton` 组件，默认大小为 48dp
+- 按钮在页面顶部显得过大，与其他元素不协调
+- 用户反馈按钮太大，影响视觉美观
+
+**解决方案**：
+- 将 `ComponentSize.LiquidGlassButton.IconButtonSize` 从 48dp 调整为 40dp
+- 按钮更加紧凑，与页面其他元素更协调
+
+**技术实现**：
+- 修改 `DesignTokens.kt` 中的 `IconButtonSize` 常量
+- 从 48.dp 改为 40.dp
+
+**影响文件**：
+- DesignTokens.kt - IconButtonSize 常量调整
+- Product-Spec.md - 新增功能 59 描述
+
+---
+
+## [2.45.0] - 2026-02-27
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 修复问题
+- 功能 58：深色/浅色模式切换后部分页面背景显示异常
+
+### 功能详情
+
+#### 功能 58：深色/浅色模式切换后部分页面背景显示异常（修复）
+
+**问题描述**：
+- 手机系统为深色模式时，手动在应用内切换到浅色模式后，部分页面背景显示异常
+- 背景色没有正确跟随主题变化
+
+**问题原因**：
+
+**1. MainActivity.kt 中的 backdrop 缓存问题**
+- `rememberLayerBackdrop` 创建的 backdrop 在初始化时捕获了 `backgroundColor`
+- 当主题切换时，`backgroundColor` 变化了，但 backdrop 不会自动更新
+- 因为 `remember` 会缓存初始值
+
+**2. 多个页面使用 `Color.Transparent` 作为容器背景**
+- 以下页面使用了 `containerColor = Color.Transparent`：
+  - DisplaySettingsScreen.kt
+  - UserSettingsScreen.kt
+  - ScheduleSettingsScreen.kt
+  - DataManagementScreen.kt
+  - CourseEditScreen.kt
+- 这会导致在某些情况下背景显示异常
+
+**解决方案**：
+
+**1. 修复 MainActivity.kt 中的 backdrop**
+- 为 `rememberLayerBackdrop` 添加 `key` 参数，使用 `darkTheme` 作为 key
+- 当 `darkTheme` 变化时，backdrop 会重新创建，从而获取新的背景色
+
+**2. 修复所有页面的容器背景色**
+- 将所有 `containerColor = Color.Transparent` 改为 `containerColor = MaterialTheme.colorScheme.background`
+- 确保背景色跟随主题变化
+
+**影响文件**：
+- MainActivity.kt - 添加 backdrop 的 key 参数
+- DisplaySettingsScreen.kt - 修复容器背景色
+- UserSettingsScreen.kt - 修复容器背景色
+- ScheduleSettingsScreen.kt - 修复容器背景色
+- DataManagementScreen.kt - 修复容器背景色
+- CourseEditScreen.kt - 修复容器背景色
+
+---
+
+## [2.44.0] - 2026-02-27
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 新增功能
+- 功能 57：设置项点击交互优化
+
+### 功能详情
+
+#### 功能 57：设置项点击交互优化（新增）
+
+**变更原因**：
+显示设置页面中"主题设置"和"今日课程设置"需要先点击横条查看信息，再点击下方按钮才能弹出选择弹窗，操作步骤繁琐。需要简化交互流程，改为点击横条直接弹出弹窗。
+
+**变更内容**：
+
+**1. 交互方式变更**
+- 主题设置：点击"深色模式"横条直接弹出主题模式选择弹窗
+- 今日课程设置：点击"今日课程显示模式"横条直接弹出显示模式选择弹窗
+- 移除原有的"选择主题模式"和"选择显示模式"按钮
+
+**2. 横条样式优化**
+- 横条整体可点击，添加点击涟漪效果
+- 右侧显示当前选中值（如"跟随系统"、"都显示"）
+- 右侧添加箭头图标，提示可点击
+
+**3. 视觉反馈**
+- 点击横条时有涟漪动画效果
+- 横条可点击区域覆盖整行
+
+**技术实现要点**：
+- 将 Row 组件添加 `clickable` 修饰符
+- 移除 ButtonPrimary 按钮
+- 添加右侧箭头图标（Icons.Default.ChevronRight 或类似）
+
+**影响文件**：
+- Product-Spec.md - 新增功能 57 描述
+- DisplaySettingsScreen.kt - 交互方式重构
+
+---
+
+## [2.43.0] - 2026-02-27
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 功能调整
+- 统一文档中"我"和"Ta"的顺序，将所有"我"放在"Ta"前面
+
+### 功能详情
+
+#### 文档顺序统一（优化）
+
+**变更原因**：
+产品文档中部分描述将"Ta"放在"我"前面，与用户视角不一致。需要统一为"我"在前、"Ta"在后的顺序，更符合用户习惯。
+
+**变更内容**：
+
+**1. 功能编号调整**
+- 功能 8：原"Ta的课表页面"调整为"我的课表页面"
+- 功能 9：原"我的课表页面"调整为"Ta的课表页面"
+
+**2. 功能描述顺序调整**
+- 用户设置二级页面：从"Ta的名称、我的名称"调整为"我的名称、Ta的名称"
+- 导出范围：从"仅Ta的课表、仅我的课表"调整为"仅我的课表、仅Ta的课表"
+
+**3. 术语表更新**
+- 移除术语表中的"人员A"和"人员B"标注，简化描述
+
+**影响文件**：
+- Product-Spec.md - 功能编号互换，描述顺序统一
+
+---
+
+## [2.42.0] - 2026-02-27
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 新增功能
+- 功能 56：底部导航栏 iOS 26 风格优化
+
+### 功能详情
+
+#### 功能 56：底部导航栏 iOS 26 风格优化（新增）
+
+**变更原因**：
+根据 Figma iOS 26 设计规范（非最小化版本），重构底部导航栏，优化选中状态的视觉效果，采用圆角矩形背景高亮设计，提升视觉一致性。
+
+**变更内容**：
+
+**1. 选中状态设计优化**
+- 选中项背景：圆角矩形高亮背景（药丸形状）
+  - 浅色模式：`#EDEDED`（浅灰色）
+  - 深色模式：`#121212`（深灰色）
+- 背景圆角：100dp
+- 背景尺寸：72dp × 54dp（非最小化版本）
+
+**2. 图标和文字颜色调整**
+- 选中状态：
+  - 浅色模式：`#0088FF`（iOS 蓝色）
+  - 深色模式：`#0091FF`（iOS 蓝色）
+- 未选中状态：
+  - 浅色模式：`#1A1A1A`（深灰色）
+  - 深色模式：`#F5F5F5`（浅灰色）
+
+**3. 布局结构优化**
+- 图标和文字包裹在选中背景内
+- 图标大小：18dp
+- 文字大小：10sp
+- 图标与文字间距：1dp
+- 按钮间距：-8dp（负间距，让按钮视觉上更紧凑）
+
+**技术实现要点**：
+- 更新 `DesignTokens.kt` 添加 `IOS26Colors.TabBar` 颜色定义
+- 重构 `MainActivity.kt` 中的 `IOSStyleNavItem` 组件
+- 调整 `IOSStyleBottomNavBar` 中的 Row 间距为负值
 
 ---
 
@@ -2093,6 +4055,6 @@
 
 ---
 
-**文档版本**：2.38.0
+**文档版本**：2.73.0
 
-**最后更新**：2026-02-26
+**最后更新**：2026-03-02

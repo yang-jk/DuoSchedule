@@ -1,40 +1,119 @@
-<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     
+    <!-- 玻璃拟态背景层 -->
+    <path
+        android:fillColor="#26007AFF"
+        android:pathData="M54,6
+                         A48,48 0 0,1 54,102
+                         A48,48 0 0,1 6,54
+                         A48,48 0 0,1 54,6Z"/>
+    
+    <!-- 玻璃高光层 -->
+    <path
+        android:fillColor="#4DFFFFFF"
+        android:pathData="M54,8
+                         A46,46 0 0,1 54,100
+                         A46,46 0 0,1 8,54
+                         A46,46 0 0,1 54,8Z"/>
+    
+    <!-- 时间元素 - 时钟外环 -->
+    <path
+        android:strokeColor="#CC007AFF"
+        android:strokeWidth="3"
+        android:fillColor="#00000000"
+        android:pathData="M54,16
+                         A38,38 0 0,1 54,92
+                         A38,38 0 0,1 16,54
+                         A38,38 0 0,1 54,16Z"/>
+    
+    <!-- 时钟刻度 -->
+    <path
+        android:strokeColor="#99FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M54,20 L54,24
+                         M54,84 L54,88
+                         M20,54 L24,54
+                         M84,54 L88,54"/>
+    
+    <!-- 双人元素 - 人形 A (左侧，橙色) -->
+    <!-- 头部 -->
+    <path
+        android:fillColor="#E6FFB74D"
+        android:pathData="M44,42
+                         A6,6 0 0,1 44,54
+                         A6,6 0 0,1 38,48
+                         A6,6 0 0,1 44,42Z"/>
+    <!-- 身体 -->
+    <path
+        android:fillColor="#D9FFB74D"
+        android:pathData="M44,56
+                         C44,56 38,68 38,72
+                         C38,74 40,76 44,76
+                         C48,76 50,74 50,72
+                         C50,68 44,56 44,56Z"/>
+    
+    <!-- 双人元素 - 人形 B (右侧，蓝色) -->
+    <!-- 头部 -->
+    <path
+        android:fillColor="#E64789FE"
+        android:pathData="M64,42
+                         A6,6 0 0,1 64,54
+                         A6,6 0 0,1 58,48
+                         A6,6 0 0,1 64,42Z"/>
+    <!-- 身体 -->
+    <path
+        android:fillColor="#D94789FE"
+        android:pathData="M64,56
+                         C64,56 58,68 58,72
+                         C58,74 60,76 64,76
+                         C68,76 70,74 70,72
+                         C70,68 64,56 64,56Z"/>
+    
+    <!-- 课程元素 - 书本抽象 -->
+    <path
+        android:fillColor="#4DFFFFFF"
+        android:pathData="M36,80 L54,74 L72,80 L72,84
+                         C72,86 70,87 68,87
+                         L40,87 C38,87 36,86 36,84 Z"/>
+    <path
+        android:strokeColor="#80FFFFFF"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M54,74 L54,87"/>
+    
+    <!-- 玻璃边框光晕 -->
+    <path
+        android:strokeColor="#33FFFFFF"
+        android:strokeWidth="1"
+        android:fillColor="#00000000"
+        android:pathData="M54,7
+                         A47,47 0 0,1 54,101
+                         A47,47 0 0,1 7,54
+                         A47,47 0 0,1 54,7Z"/>
+    
+    <!-- 时间指针 -->
+    <path
+        android:strokeColor="#B3FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M54,54 L54,38"/>
+    <path
+        android:strokeColor="#B3FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M54,54 L66,54"/>
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,30
-                         L54,54
-                         L78,54
-                         A24,24 0 0,1 54,78
-                         A24,24 0 0,1 30,54
-                         A24,24 0 0,1 54,30Z"/>
-    
-    <path
-        android:fillColor="#4ECDC4"
-        android:pathData="M54,30
-                         A24,24 0 0,1 78,54
-                         L54,54
-                         Z"/>
-    
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M42,48
-                         L42,60
-                         L48,60
-                         L48,48
-                         Z"/>
-    
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M60,48
-                         L60,60
-                         L66,60
-                         L66,48
-                         Z"/>
-
+        android:pathData="M54,51
+                         A3,3 0 0,1 54,57
+                         A3,3 0 0,1 51,54
+                         A3,3 0 0,1 54,51Z"/>
 </vector>

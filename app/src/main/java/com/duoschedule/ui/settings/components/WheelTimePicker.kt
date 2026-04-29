@@ -1,213 +1,202 @@
 package com.duoschedule.ui.settings.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
+import androidx.compose.ui.unit.sp
+import com.duoschedule.ui.theme.*
+import kotlin.math.abs
 
-private val ItemHeight = 48.dp
-private const val VisibleItemsCount = 5
-private const val PaddingItemsCount = 2
+private val WheelItemHeight = 48.dp
+private const val WheelVisibleItems = 3
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WheelPicker(
     items: List<String>,
     selectedIndex: Int,
     onSelectedChange: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selectedColor: Color = getPersonBColor()
 ) {
+    val itemHeight = WheelItemHeight
+    val visibleItems = WheelVisibleItems
+    val unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
+
     val listState = rememberLazyListState(
-        initialFirstVisibleItemIndex = maxOf(0, selectedIndex - PaddingItemsCount)
+        initialFirstVisibleItemIndex = selectedIndex.coerceIn(0, items.size - 1)
     )
-    val coroutineScope = rememberCoroutineScope()
-    
+
     val centerItemIndex by remember {
         derivedStateOf {
-            listState.firstVisibleItemIndex + PaddingItemsCount
-        }
-    }
-    
-    LaunchedEffect(selectedIndex) {
-        val targetIndex = selectedIndex - PaddingItemsCount
-        if (listState.firstVisibleItemIndex != targetIndex && targetIndex >= 0) {
-            coroutineScope.launch {
-                listState.scrollToItem(targetIndex)
-            }
-        }
-    }
-    
-    LaunchedEffect(centerItemIndex, listState.isScrollInProgress) {
-        if (!listState.isScrollInProgress) {
-            val actualIndex = centerItemIndex - PaddingItemsCount
-            if (actualIndex in items.indices && actualIndex != selectedIndex) {
-                onSelectedChange(actualIndex)
-            }
-        }
-    }
-    
-    Box(
-        modifier = modifier.height(ItemHeight * VisibleItemsCount)
-    ) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
-        ) {
-            items(PaddingItemsCount) {
-                WheelPickerItem(
-                    text = "",
-                    isSelected = false
-                )
-            }
-            
-            items.forEachIndexed { index, item ->
-                item {
-                    WheelPickerItem(
-                        text = item,
-                        isSelected = index == selectedIndex
-                    )
+            val layoutInfo = listState.layoutInfo
+            if (layoutInfo.visibleItemsInfo.isEmpty()) {
+                selectedIndex
+            } else {
+                val viewportCenter = layoutInfo.viewportEndOffset + layoutInfo.viewportStartOffset
+                val centerOffset = viewportCenter / 2
+
+                var closestItem = layoutInfo.visibleItemsInfo.first()
+                var closestDistance = abs(centerOffset - (closestItem.offset + closestItem.size / 2))
+
+                for (item in layoutInfo.visibleItemsInfo) {
+                    val itemCenter = item.offset + item.size / 2
+                    val distance = abs(centerOffset - itemCenter)
+                    if (distance < closestDistance) {
+                        closestDistance = distance
+                        closestItem = item
+                    }
                 }
-            }
-            
-            items(PaddingItemsCount) {
-                WheelPickerItem(
-                    text = "",
-                    isSelected = false
-                )
+                closestItem.index
             }
         }
-        
+    }
+
+    val darkTheme = LocalDarkTheme.current
+    val selectionBackground = if (darkTheme) {
+        Color(0x20FFFFFF)
+    } else {
+        Color(0x15000000)
+    }
+
+    Box(
+        modifier = modifier
+            .height(itemHeight * visibleItems)
+    ) {
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
                 .fillMaxWidth()
-                .height(ItemHeight)
-                .background(
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    RoundedCornerShape(8.dp)
-                )
+                .height(itemHeight)
+                .clip(ContinuousRoundedRectangle(12.dp))
+                .background(selectionBackground)
         )
-        
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .height(ItemHeight * 2)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surface,
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-        
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(ItemHeight * 2)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            MaterialTheme.colorScheme.surface
-                        )
-                    )
-                )
-        )
-    }
-}
 
-@Composable
-private fun WheelPickerItem(
-    text: String,
-    isSelected: Boolean
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(ItemHeight),
-        contentAlignment = Alignment.Center
-    ) {
-        if (text.isNotEmpty()) {
-            Text(
-                text = text,
-                style = if (isSelected) {
-                    MaterialTheme.typography.titleLarge
-                } else {
-                    MaterialTheme.typography.bodyLarge
-                },
-                color = if (isSelected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                },
-                textAlign = TextAlign.Center
-            )
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            flingBehavior = rememberSnapFlingBehavior(lazyListState = listState),
+            contentPadding = PaddingValues(top = itemHeight, bottom = itemHeight)
+        ) {
+            items(items.size) { index ->
+                val isSelected = index == centerItemIndex
+
+                val animatedColor by animateColorAsState(
+                    targetValue = if (isSelected) selectedColor else unselectedColor,
+                    animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
+                    label = "text_color"
+                )
+
+                val animatedFontSize by animateIntAsState(
+                    targetValue = if (isSelected) 20 else 16,
+                    animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
+                    label = "font_size"
+                )
+
+                val animatedFontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(itemHeight),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = items[index],
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontSize = animatedFontSize.sp,
+                        fontWeight = animatedFontWeight,
+                        color = animatedColor,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(centerItemIndex) {
+        if (centerItemIndex in items.indices && centerItemIndex != selectedIndex) {
+            onSelectedChange(centerItemIndex)
+        }
+    }
+
+    LaunchedEffect(selectedIndex) {
+        val targetIndex = selectedIndex.coerceIn(0, items.size - 1)
+        if (centerItemIndex != targetIndex) {
+            listState.animateScrollToItem(targetIndex)
         }
     }
 }
 
 @Composable
-fun WheelTimePicker(
-    initialHour: Int,
-    initialMinute: Int,
+fun TimeWheelPicker(
+    selectedHour: Int,
+    selectedMinute: Int,
     onTimeChange: (hour: Int, minute: Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selectedColor: Color = getPersonBColor()
 ) {
-    var selectedHour by remember { mutableIntStateOf(initialHour) }
-    var selectedMinute by remember { mutableIntStateOf(initialMinute) }
-    
     val hours = remember { (0..23).map { it.toString().padStart(2, '0') } }
     val minutes = remember { (0..59).map { it.toString().padStart(2, '0') } }
-    
-    LaunchedEffect(selectedHour, selectedMinute) {
-        onTimeChange(selectedHour, selectedMinute)
+
+    var currentHour by remember(selectedHour) { mutableIntStateOf(selectedHour) }
+    var currentMinute by remember(selectedMinute) { mutableIntStateOf(selectedMinute) }
+
+    LaunchedEffect(currentHour, currentMinute) {
+        onTimeChange(currentHour, currentMinute)
     }
-    
+
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier,
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
         WheelPicker(
             items = hours,
-            selectedIndex = selectedHour,
-            onSelectedChange = { selectedHour = it },
-            modifier = Modifier.width(80.dp)
+            selectedIndex = currentHour,
+            onSelectedChange = { currentHour = it },
+            modifier = Modifier.width(72.dp),
+            selectedColor = selectedColor
         )
-        
+
         Text(
             text = ":",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(horizontal = 8.dp)
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 4.dp)
         )
-        
+
         WheelPicker(
             items = minutes,
-            selectedIndex = selectedMinute,
-            onSelectedChange = { selectedMinute = it },
-            modifier = Modifier.width(80.dp)
+            selectedIndex = currentMinute,
+            onSelectedChange = { currentMinute = it },
+            modifier = Modifier.width(72.dp),
+            selectedColor = selectedColor
         )
     }
 }
 
 @Composable
-fun WheelTimeRangePicker(
+fun TimeRangeWheelPicker(
     initialStartHour: Int,
     initialStartMinute: Int,
     initialEndHour: Int,
@@ -219,86 +208,87 @@ fun WheelTimeRangePicker(
     var startMinute by remember { mutableIntStateOf(initialStartMinute) }
     var endHour by remember { mutableIntStateOf(initialEndHour) }
     var endMinute by remember { mutableIntStateOf(initialEndMinute) }
-    
-    val hours = remember { (0..23).map { it.toString().padStart(2, '0') } }
-    val minutes = remember { (0..59).map { it.toString().padStart(2, '0') } }
-    
+
+    val startColor = getPersonBColor()
+    val endColor = getPersonAColor()
+
     LaunchedEffect(startHour, startMinute, endHour, endMinute) {
         onTimeRangeChange(startHour, startMinute, endHour, endMinute)
     }
-    
+
     Column(
         modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "开始时间",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            WheelPicker(
-                items = hours,
-                selectedIndex = startHour,
-                onSelectedChange = { startHour = it },
-                modifier = Modifier.width(80.dp)
-            )
-            
-            Text(
-                text = ":",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-            
-            WheelPicker(
-                items = minutes,
-                selectedIndex = startMinute,
-                onSelectedChange = { startMinute = it },
-                modifier = Modifier.width(80.dp)
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "开始",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TimeWheelPicker(
+                    selectedHour = startHour,
+                    selectedMinute = startMinute,
+                    onTimeChange = { h, m -> startHour = h; startMinute = m },
+                    selectedColor = startColor
+                )
+            }
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = "结束",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TimeWheelPicker(
+                    selectedHour = endHour,
+                    selectedMinute = endMinute,
+                    onTimeChange = { h, m -> endHour = h; endMinute = m },
+                    selectedColor = endColor
+                )
+            }
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = "结束时间",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            WheelPicker(
-                items = hours,
-                selectedIndex = endHour,
-                onSelectedChange = { endHour = it },
-                modifier = Modifier.width(80.dp)
-            )
-            
-            Text(
-                text = ":",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-            
-            WheelPicker(
-                items = minutes,
-                selectedIndex = endMinute,
-                onSelectedChange = { endMinute = it },
-                modifier = Modifier.width(80.dp)
-            )
+
+        val durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
+        val isValid = durationMinutes > 0
+
+        if (isValid) {
+            val durationText = when {
+                durationMinutes >= 60 -> {
+                    val hours = durationMinutes / 60
+                    val mins = durationMinutes % 60
+                    if (mins > 0) "${hours}小时${mins}分钟" else "${hours}小时"
+                }
+                else -> "${durationMinutes}分钟"
+            }
+
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                shape = ContinuousRoundedRectangle(8.dp)
+            ) {
+                Text(
+                    text = "时长: $durationText",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
         }
     }
 }

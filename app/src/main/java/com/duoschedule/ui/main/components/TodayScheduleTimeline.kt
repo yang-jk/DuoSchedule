@@ -1,51 +1,47 @@
 package com.duoschedule.ui.main.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Coffee
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalDensity
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.TodayCourseDisplayMode
-import com.duoschedule.ui.theme.CourseEndedColor
-import com.duoschedule.ui.theme.getPersonAColor
-import com.duoschedule.ui.theme.getPersonBColor
+import com.duoschedule.ui.theme.*
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-private val CARD_HEIGHT = 84.dp
-private val CARD_SPACING = 8.dp
-private val CARD_CORNER_RADIUS = 14.dp
+private val CARD_MIN_HEIGHT = 72.dp
+private val CARD_SPACING = Spacing.sm
+private val TIMELINE_WIDTH = 48.dp
 
 data class TimeSlot(
     val time: LocalTime,
@@ -64,7 +60,7 @@ data class CourseInfo(
 )
 
 @Composable
-fun TodayScheduleTimeline(
+fun ScheduleList(
     personACourses: List<Course>,
     personBCourses: List<Course>,
     displayMode: TodayCourseDisplayMode,
@@ -73,7 +69,8 @@ fun TodayScheduleTimeline(
     periodTimesA: List<String>,
     periodTimesB: List<String>,
     onCourseClick: (Course, PersonType) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
     val allTimeSlots = remember(personACourses, personBCourses, displayMode, currentHour, currentMinute) {
         calculateTimeSlots(
@@ -100,24 +97,22 @@ fun TodayScheduleTimeline(
     }
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .heightIn(max = 450.dp)
-            .verticalScroll(rememberScrollState()),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(CARD_SPACING)
     ) {
         timeSlots.forEach { slot ->
             if (displayMode == TodayCourseDisplayMode.BOTH) {
                 DualColumnTimeSlotRow(
                     timeSlot = slot,
-                    onCourseClick = onCourseClick
+                    onCourseClick = onCourseClick,
+                    backdrop = backdrop
                 )
             } else {
                 SingleColumnTimeSlotRow(
                     timeSlot = slot,
                     displayMode = displayMode,
-                    onCourseClick = onCourseClick
+                    onCourseClick = onCourseClick,
+                    backdrop = backdrop
                 )
             }
         }
@@ -127,50 +122,59 @@ fun TodayScheduleTimeline(
 @Composable
 private fun DualColumnTimeSlotRow(
     timeSlot: TimeSlot,
-    onCourseClick: (Course, PersonType) -> Unit
+    onCourseClick: (Course, PersonType) -> Unit,
+    backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
-    val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
-    val hasCoursesA = timeSlot.coursesA.isNotEmpty()
-    val hasCoursesB = timeSlot.coursesB.isNotEmpty()
+    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    val timeText = timeSlot.time.format(timeFormatter)
+    val labelsTertiary = getLabelsVibrantTertiary()
+    val darkTheme = LocalDarkTheme.current
 
     Row(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
     ) {
-        TimeScaleColumn(
-            time = timeSlot.time.format(timeFormatter),
-            isCurrentHour = timeSlot.isCurrentHour
-        )
-
+        Box(
+            modifier = Modifier.width(TIMELINE_WIDTH),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Text(
+                text = timeText,
+                style = MaterialTheme.typography.labelSmall,
+                color = labelsTertiary,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+        
         Row(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
         ) {
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(CARD_SPACING)
             ) {
                 timeSlot.coursesB.forEach { courseInfo ->
-                    UnifiedCourseCard(
+                    TodayCourseCardItem(
                         courseInfo = courseInfo,
-                        onClick = {
-                            onCourseClick(courseInfo.course, PersonType.PERSON_B)
-                        }
+                        personColor = getPersonBColor(),
+                        onClick = { onCourseClick(courseInfo.course, PersonType.PERSON_B) },
+                        modifier = Modifier.fillMaxWidth(),
+                        backdrop = backdrop
                     )
                 }
             }
-
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(CARD_SPACING)
             ) {
                 timeSlot.coursesA.forEach { courseInfo ->
-                    UnifiedCourseCard(
+                    TodayCourseCardItem(
                         courseInfo = courseInfo,
-                        onClick = {
-                            onCourseClick(courseInfo.course, PersonType.PERSON_A)
-                        }
+                        personColor = getPersonAColor(),
+                        onClick = { onCourseClick(courseInfo.course, PersonType.PERSON_A) },
+                        modifier = Modifier.fillMaxWidth(),
+                        backdrop = backdrop
                     )
                 }
             }
@@ -182,250 +186,213 @@ private fun DualColumnTimeSlotRow(
 private fun SingleColumnTimeSlotRow(
     timeSlot: TimeSlot,
     displayMode: TodayCourseDisplayMode,
-    onCourseClick: (Course, PersonType) -> Unit
+    onCourseClick: (Course, PersonType) -> Unit,
+    backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
-    val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
-    val courses = if (displayMode == TodayCourseDisplayMode.TA_ONLY) {
-        timeSlot.coursesA
-    } else {
-        timeSlot.coursesB
+    val courses = when (displayMode) {
+        TodayCourseDisplayMode.TA_ONLY -> timeSlot.coursesA
+        TodayCourseDisplayMode.SELF_ONLY -> timeSlot.coursesB
+        TodayCourseDisplayMode.BOTH -> emptyList()
+    }
+    
+    val personColor = when (displayMode) {
+        TodayCourseDisplayMode.TA_ONLY -> getPersonAColor()
+        TodayCourseDisplayMode.SELF_ONLY -> getPersonBColor()
+        TodayCourseDisplayMode.BOTH -> Color.Transparent
+    }
+    
+    val personType = when (displayMode) {
+        TodayCourseDisplayMode.TA_ONLY -> PersonType.PERSON_A
+        TodayCourseDisplayMode.SELF_ONLY -> PersonType.PERSON_B
+        TodayCourseDisplayMode.BOTH -> PersonType.PERSON_A
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        TimeScaleColumn(
-            time = timeSlot.time.format(timeFormatter),
-            isCurrentHour = timeSlot.isCurrentHour
-        )
+    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    val timeText = timeSlot.time.format(timeFormatter)
+    val labelsTertiary = getLabelsVibrantTertiary()
 
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+    ) {
+        Box(
+            modifier = Modifier.width(TIMELINE_WIDTH),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Text(
+                text = timeText,
+                style = MaterialTheme.typography.labelSmall,
+                color = labelsTertiary,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+        
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 8.dp),
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(CARD_SPACING)
         ) {
             courses.forEach { courseInfo ->
-                AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn(
-                        animationSpec = tween(200, easing = FastOutSlowInEasing)
-                    ) + slideInHorizontally(
-                        animationSpec = tween(200, easing = FastOutSlowInEasing),
-                        initialOffsetX = { it / 4 }
-                    )
-                ) {
-                    UnifiedCourseCard(
-                        courseInfo = courseInfo,
-                        onClick = {
-                            val personType = if (courseInfo.isPersonA) PersonType.PERSON_A else PersonType.PERSON_B
-                            onCourseClick(courseInfo.course, personType)
-                        }
-                    )
-                }
+                TodayCourseCardItem(
+                    courseInfo = courseInfo,
+                    personColor = personColor,
+                    onClick = { onCourseClick(courseInfo.course, personType) },
+                    modifier = Modifier.fillMaxWidth(),
+                    backdrop = backdrop
+                )
             }
         }
     }
 }
 
 @Composable
-private fun TimeScaleColumn(
-    time: String,
-    isCurrentHour: Boolean
-) {
-    Column(
-        modifier = Modifier.width(48.dp),
-        horizontalAlignment = Alignment.Start
-    ) {
-        Text(
-            text = time,
-            style = MaterialTheme.typography.labelMedium.copy(
-                fontWeight = if (isCurrentHour) FontWeight.Bold else FontWeight.Normal
-            ),
-            color = if (isCurrentHour) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            }
-        )
-        if (isCurrentHour) {
-            Box(
-                modifier = Modifier
-                    .padding(top = 2.dp)
-                    .width(24.dp)
-                    .height(2.dp)
-                    .background(
-                        MaterialTheme.colorScheme.primary,
-                        RoundedCornerShape(1.dp)
-                    )
-            )
-        }
-    }
-}
-
-@Composable
-private fun UnifiedCourseCard(
+private fun TodayCourseCardItem(
     courseInfo: CourseInfo,
-    onClick: () -> Unit
+    personColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
-    val personColor = if (courseInfo.isPersonA) getPersonAColor() else getPersonBColor()
-    val effectiveColor = if (courseInfo.hasEnded) CourseEndedColor else personColor
-    val blockAlpha = if (courseInfo.hasEnded) 0.5f else 1f
-    val isOngoing = courseInfo.isOngoing
+    val darkTheme = LocalDarkTheme.current
+    val labelsPrimary = getLabelsVibrantPrimary()
+    val labelsSecondary = getLabelsVibrantSecondary()
+    val labelsTertiary = getLabelsVibrantTertiary()
+    val density = LocalDensity.current
+    
+    val alpha = if (courseInfo.hasEnded) 0.5f else 1f
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = tween(durationMillis = AnimationDuration.Micro, easing = FastOutSlowInEasing),
+        label = "scale"
+    )
+
+    val shape = ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(CARD_HEIGHT)
-            .alpha(blockAlpha)
-            .clip(RoundedCornerShape(CARD_CORNER_RADIUS))
-            .background(
-                if (isOngoing) {
-                    effectiveColor.copy(alpha = 0.15f)
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+        modifier = modifier
+            .heightIn(min = CARD_MIN_HEIGHT)
+            .alpha(alpha)
+            .scale(scale)
+            .drawBackdrop(
+                backdrop = backdrop,
+                shape = { shape },
+                effects = {
+                    vibrancy()
+                    blur(with(density) { 4.dp.toPx() })
+                    lens(
+                        refractionHeight = with(density) { 8.dp.toPx() },
+                        refractionAmount = with(density) { 16.dp.toPx() },
+                        chromaticAberration = true
+                    )
+                },
+                onDrawSurface = {
+                    drawRect(if (darkTheme) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.03f))
                 }
             )
-            .then(
-                if (isOngoing) {
-                    Modifier.drawBehind {
-                        drawRoundRect(
-                            color = effectiveColor,
-                            style = Stroke(width = 2.dp.toPx()),
-                            cornerRadius = CornerRadius(CARD_CORNER_RADIUS.toPx())
-                        )
-                    }
-                } else {
-                    Modifier
-                }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
             )
-            .clickable(onClick = onClick)
     ) {
         Row(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxWidth()
         ) {
             Box(
                 modifier = Modifier
-                    .width(5.dp)
+                    .width(4.dp)
                     .fillMaxHeight()
-                    .clip(RoundedCornerShape(topStart = CARD_CORNER_RADIUS, bottomStart = CARD_CORNER_RADIUS))
-                    .background(effectiveColor)
+                    .background(personColor)
             )
-
+            
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.SpaceBetween
+                    .padding(horizontal = Spacing.md, vertical = Spacing.sm)
+                    .padding(start = 4.dp),
+                verticalArrangement = Arrangement.Center
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = courseInfo.course.name,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    if (isOngoing) {
-                        Box(
-                            modifier = Modifier
-                                .padding(start = 6.dp)
-                                .background(
-                                    effectiveColor.copy(alpha = 0.2f),
-                                    RoundedCornerShape(4.dp)
-                                )
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "进行中",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 10.sp
-                                ),
-                                color = effectiveColor
-                            )
-                        }
-                    }
-                }
-
                 Text(
-                    text = courseInfo.course.location.ifEmpty { "未设置地点" },
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.Medium
+                    text = courseInfo.course.name,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold
                     ),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                    color = labelsPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = courseInfo.course.getTimeString(),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Medium
-                        ),
-                        color = effectiveColor,
-                        maxLines = 1
-                    )
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = courseInfo.course.location,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = labelsSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        Text(
+                            text = "·",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = labelsTertiary
+                        )
+                        
+                        Text(
+                            text = courseInfo.course.getEndTimeString(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = labelsTertiary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     
                     if (courseInfo.periodText.isNotEmpty()) {
                         Text(
                             text = courseInfo.periodText,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            maxLines = 1
+                            color = labelsTertiary
                         )
                     }
                 }
+                
+                if (courseInfo.isOngoing && courseInfo.progress > 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { courseInfo.progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(3.dp)
+                            .clip(ContinuousRoundedRectangle(1.5.dp)),
+                        color = personColor,
+                        trackColor = if (darkTheme) Color.White.copy(alpha = 0.1f) else Color.Black.copy(alpha = 0.06f),
+                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                    )
+                }
             }
         }
-    }
-}
-
-@Composable
-private fun FreeTimeSlotCard() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(CARD_HEIGHT)
-            .clip(RoundedCornerShape(CARD_CORNER_RADIUS))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(CARD_CORNER_RADIUS)
+        
+        if (courseInfo.isOngoing) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+                    .size(6.dp)
+                    .background(personColor, CircleShape)
             )
-            .padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.Coffee,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.size(20.dp)
-        )
-        Text(
-            text = "空闲",
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.Medium
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-        )
+        }
     }
 }
 
@@ -438,87 +405,72 @@ private fun calculateTimeSlots(
     periodTimesA: List<String>,
     periodTimesB: List<String>
 ): List<TimeSlot> {
-    val slots = mutableListOf<TimeSlot>()
+    val currentTime = LocalTime.of(currentHour, currentMinute)
     val currentMinutes = currentHour * 60 + currentMinute
-
-    val startHour = 6
-    val endHour = 22
-
-    for (hour in startHour..endHour) {
-        val time = LocalTime.of(hour, 0)
-        val isCurrentHour = hour == currentHour
-
-        val coursesA = personACourses
-            .filter { course ->
-                val courseStartHour = course.startHour
-                courseStartHour == hour
-            }
-            .map { course ->
-                createCourseInfo(course, true, currentHour, currentMinute, currentMinutes, periodTimesA)
-            }
-            .distinctBy { it.course.id }
-
-        val coursesB = personBCourses
-            .filter { course ->
-                val courseStartHour = course.startHour
-                courseStartHour == hour
-            }
-            .map { course ->
-                createCourseInfo(course, false, currentHour, currentMinute, currentMinutes, periodTimesB)
-            }
-            .distinctBy { it.course.id }
-
-        slots.add(TimeSlot(
-            time = time,
-            coursesA = coursesA,
-            coursesB = coursesB,
-            isCurrentHour = isCurrentHour
-        ))
-    }
-
-    return slots
-}
-
-private fun createCourseInfo(
-    course: Course,
-    isPersonA: Boolean,
-    currentHour: Int,
-    currentMinute: Int,
-    currentMinutes: Int,
-    periodTimes: List<String>
-): CourseInfo {
-    val hasEnded = course.hasEnded(currentHour, currentMinute)
-    val isOngoing = course.isOngoing(currentHour, currentMinute, 1) && !hasEnded
-
-    val progress = if (isOngoing) {
+    
+    val allCourses = mutableListOf<Pair<Course, Boolean>>()
+    personACourses.forEach { allCourses.add(it to true) }
+    personBCourses.forEach { allCourses.add(it to false) }
+    
+    val timeMap = mutableMapOf<LocalTime, MutableList<CourseInfo>>()
+    
+    allCourses.forEach { (course, isPersonA) ->
+        val courseStartTime = LocalTime.of(course.startHour, course.startMinute)
+        val courseEndTime = LocalTime.of(course.endHour, course.endMinute)
+        
         val courseStartMinutes = course.startHour * 60 + course.startMinute
         val courseEndMinutes = course.endHour * 60 + course.endMinute
-        val courseDuration = courseEndMinutes - courseStartMinutes
-        val elapsed = currentMinutes - courseStartMinutes
-        (elapsed.toFloat() / courseDuration.toFloat()).coerceIn(0f, 1f)
-    } else 0f
-
-    val periodText = getPeriodText(course, periodTimes)
-
-    return CourseInfo(
-        course = course,
-        isPersonA = isPersonA,
-        hasEnded = hasEnded,
-        isOngoing = isOngoing,
-        progress = progress,
-        periodText = periodText
-    )
+        
+        val hasEnded = currentMinutes > courseEndMinutes
+        val isOngoing = currentMinutes in courseStartMinutes until courseEndMinutes
+        
+        val progress = if (isOngoing) {
+            (currentMinutes - courseStartMinutes).toFloat() / (courseEndMinutes - courseStartMinutes)
+        } else 0f
+        
+        val periodTimes = if (isPersonA) periodTimesA else periodTimesB
+        val periodText = getPeriodText(course, periodTimes)
+        
+        val courseInfo = CourseInfo(
+            course = course,
+            isPersonA = isPersonA,
+            hasEnded = hasEnded,
+            isOngoing = isOngoing,
+            progress = progress,
+            periodText = periodText
+        )
+        
+        timeMap.getOrPut(courseStartTime) { mutableListOf() }.add(courseInfo)
+    }
+    
+    return timeMap.keys.sorted().map { time ->
+        val courses = timeMap[time] ?: emptyList()
+        TimeSlot(
+            time = time,
+            coursesA = courses.filter { it.isPersonA },
+            coursesB = courses.filter { !it.isPersonA },
+            isCurrentHour = time.hour == currentHour
+        )
+    }
 }
 
 private fun getPeriodText(course: Course, periodTimes: List<String>): String {
+    if (course.startPeriod > 0 && course.endPeriod > 0) {
+        return if (course.startPeriod == course.endPeriod) {
+            "第${course.startPeriod}节"
+        } else {
+            "第${course.startPeriod}-${course.endPeriod}节"
+        }
+    }
+    
     if (periodTimes.isEmpty()) return ""
-
+    
     val courseStartMinutes = course.startHour * 60 + course.startMinute
     val courseEndMinutes = course.endHour * 60 + course.endMinute
-
+    
     var startPeriod = -1
     var endPeriod = -1
-
+    
     for ((index, periodTime) in periodTimes.withIndex()) {
         val parts = periodTime.split("-")
         if (parts.size == 2) {
@@ -529,7 +481,7 @@ private fun getPeriodText(course: Course, periodTimes: List<String>): String {
                     (startParts[1].toIntOrNull() ?: 0)
                 val periodEndMinutes = (endParts[0].toIntOrNull() ?: 0) * 60 +
                     (endParts[1].toIntOrNull() ?: 0)
-
+                
                 if (startPeriod == -1 && courseStartMinutes >= periodStartMinutes && courseStartMinutes < periodEndMinutes) {
                     startPeriod = index + 1
                 }
@@ -539,7 +491,7 @@ private fun getPeriodText(course: Course, periodTimes: List<String>): String {
             }
         }
     }
-
+    
     return if (startPeriod > 0 && endPeriod > 0) {
         if (startPeriod == endPeriod) {
             "第${startPeriod}节"

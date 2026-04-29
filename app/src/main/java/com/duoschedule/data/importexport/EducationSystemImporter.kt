@@ -238,6 +238,7 @@ object EducationSystemImporter {
                     )
                 )
             } catch (e: Exception) {
+                Log.w(TAG, "解析课程单元格失败: $block", e)
             }
         }
         

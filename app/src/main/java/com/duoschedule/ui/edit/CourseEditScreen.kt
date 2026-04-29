@@ -1,25 +1,48 @@
 package com.duoschedule.ui.edit
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
+import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.WeekType
-import com.duoschedule.ui.theme.getDialogBackgroundColor
-import com.duoschedule.ui.theme.getPersonAColor
-import com.duoschedule.ui.theme.getPersonBColor
+import com.duoschedule.ui.settings.components.SettingsDefaults
+import com.duoschedule.ui.settings.components.SettingsSection
+import com.duoschedule.ui.theme.Separator
+import com.duoschedule.ui.theme.*
+import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.platform.LocalDensity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,13 +61,15 @@ fun CourseEditScreen(
     val courseHistory by viewModel.courseHistory.collectAsState()
     val teacherHistory by viewModel.teacherHistory.collectAsState()
 
-    val personAColor = getPersonAColor()
-    val personBColor = getPersonBColor()
-
     val weekPickerState = rememberModalBottomSheetState()
     val periodPickerState = rememberModalBottomSheetState()
     var showWeekPicker by remember { mutableStateOf(false) }
     var showPeriodPicker by remember { mutableStateOf(false) }
+
+    val darkTheme = LocalDarkTheme.current
+    val labelsPrimary = getLabelsVibrantPrimary()
+    val labelsSecondary = getLabelsVibrantSecondary()
+    val labelsTertiary = getLabelsVibrantTertiary()
 
     LaunchedEffect(courseId) {
         if (courseId != null && courseId > 0) {
@@ -72,26 +97,11 @@ fun CourseEditScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(if (state.isEditing) "编辑课程" else "添加课程") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
-                    }
-                },
-                actions = {
-                    if (state.isEditing) {
-                        IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = "删除")
-                        }
-                    }
-                    IconButton(onClick = viewModel::saveCourse) {
-                        Icon(Icons.Default.Check, contentDescription = "保存")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+            CourseEditTopBar(
+                isEditing = state.isEditing,
+                onNavigateBack = onNavigateBack,
+                onDelete = { showDeleteDialog = true },
+                onSave = viewModel::saveCourse
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -100,241 +110,73 @@ fun CourseEditScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(top = Spacing.md, bottom = Spacing.iOS26.groupSpacing),
+            verticalArrangement = Arrangement.spacedBy(Spacing.lg)
         ) {
             item {
-                state.errorMessage?.let { error ->
-                    Card(
-                        shape = MaterialTheme.shapes.medium,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                    ) {
-                        Text(
-                            text = error,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
+                AnimatedVisibility(
+                    visible = state.errorMessage != null,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    ErrorMessageCard(
+                        message = state.errorMessage ?: "",
+                        modifier = Modifier.padding(horizontal = Spacing.lg)
+                    )
                 }
             }
 
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = "课程名称",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        OutlinedTextField(
-                            value = state.name,
-                            onValueChange = { 
-                                viewModel.setName(it)
-                                showCourseNameSuggestions = it.isNotEmpty()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.medium,
-                            singleLine = true,
-                            placeholder = { Text("请输入课程名称") },
-                            isError = state.name.isBlank() && state.errorMessage != null,
-                            trailingIcon = {
-                                if (state.name.isNotEmpty()) {
-                                    IconButton(onClick = { viewModel.setName("") }) {
-                                        Icon(Icons.Default.Clear, contentDescription = "清除")
-                                    }
-                                }
-                            }
-                        )
-
-                        if (showCourseNameSuggestions && courseHistory.isNotEmpty()) {
-                            val filteredHistory = courseHistory.filter {
-                                it.name.contains(state.name, ignoreCase = true) && it.name != state.name
-                            }.take(3)
-
-                            if (filteredHistory.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "历史课程",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                filteredHistory.forEach { history ->
-                                    Surface(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                viewModel.selectFromHistory(history)
-                                                showCourseNameSuggestions = false
-                                            },
-                                        shape = RoundedCornerShape(16.dp),
-                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                    ) {
-                                        Text(
-                                            text = history.name,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            modifier = Modifier.padding(12.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                }
-                            }
-                        }
-                    }
-                }
+                CourseNameSection(
+                    name = state.name,
+                    onNameChange = { 
+                        viewModel.setName(it)
+                        showCourseNameSuggestions = it.isNotEmpty()
+                    },
+                    courseHistory = courseHistory,
+                    showSuggestions = showCourseNameSuggestions,
+                    onSuggestionClick = { history ->
+                        viewModel.selectFromHistory(history)
+                        showCourseNameSuggestions = false
+                    },
+                    onDismissSuggestions = { showCourseNameSuggestions = false }
+                )
             }
 
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = "所属课表",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            SelectableChip(
-                                selected = state.personType == PersonType.PERSON_A,
-                                onClick = { viewModel.setPersonType(PersonType.PERSON_A) },
-                                label = "Ta的课表",
-                                selectedColor = personAColor,
-                                modifier = Modifier.weight(1f)
-                            )
-                            SelectableChip(
-                                selected = state.personType == PersonType.PERSON_B,
-                                onClick = { viewModel.setPersonType(PersonType.PERSON_B) },
-                                label = "我的课表",
-                                selectedColor = personBColor,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-                }
+                PersonTypeSection(
+                    personType = state.personType,
+                    onPersonTypeChange = viewModel::setPersonType
+                )
             }
 
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        SettingItem(
-                            icon = Icons.Default.Schedule,
-                            title = "上课时间",
-                            value = getPeriodDisplayText(state.dayOfWeek, state.startPeriod, state.endPeriod),
-                            onClick = { showPeriodPicker = true }
-                        )
-
-                        Divider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                        SettingItem(
-                            icon = Icons.Default.CalendarMonth,
-                            title = "上课周数",
-                            value = getWeekDisplayText(state.selectedWeeks, totalWeeks),
-                            onClick = { showWeekPicker = true }
-                        )
-
-                        Divider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                        SettingItem(
-                            icon = Icons.Default.LocationOn,
-                            title = "教室地点",
-                            value = state.location.ifEmpty { "点击输入" },
-                            onClick = {},
-                            isEditable = true,
-                            editableValue = state.location,
-                            onValueChange = viewModel::setLocation
-                        )
-
-                        Divider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                        Column {
-                            SettingItem(
-                                icon = Icons.Default.Person,
-                                title = "上课老师",
-                                value = state.teacher.ifEmpty { "点击输入（可选）" },
-                                onClick = {},
-                                isEditable = true,
-                                editableValue = state.teacher,
-                                onValueChange = { 
-                                    viewModel.setTeacher(it)
-                                    showTeacherSuggestions = it.isNotEmpty()
-                                }
-                            )
-
-                            if (showTeacherSuggestions && teacherHistory.isNotEmpty()) {
-                                val filteredTeachers = teacherHistory.filter {
-                                    it.contains(state.teacher, ignoreCase = true) && it != state.teacher
-                                }.take(3)
-
-                                if (filteredTeachers.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    filteredTeachers.forEach { teacher ->
-                                        Surface(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable {
-                                                    viewModel.setTeacher(teacher)
-                                                    showTeacherSuggestions = false
-                                                },
-                                            shape = RoundedCornerShape(16.dp),
-                                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                        ) {
-                                            Text(
-                                                text = teacher,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                modifier = Modifier.padding(12.dp)
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                    }
-                                }
-                            }
-                        }
+                CourseDetailsSection(
+                    dayOfWeek = state.dayOfWeek,
+                    startPeriod = state.startPeriod,
+                    endPeriod = state.endPeriod,
+                    selectedWeeks = state.selectedWeeks,
+                    totalWeeks = totalWeeks,
+                    location = state.location,
+                    teacher = state.teacher,
+                    teacherHistory = teacherHistory,
+                    showTeacherSuggestions = showTeacherSuggestions,
+                    onPeriodClick = { showPeriodPicker = true },
+                    onWeekClick = { showWeekPicker = true },
+                    onLocationChange = viewModel::setLocation,
+                    onTeacherChange = { 
+                        viewModel.setTeacher(it)
+                        showTeacherSuggestions = it.isNotEmpty()
+                    },
+                    onTeacherSuggestionClick = { teacher ->
+                        viewModel.setTeacher(teacher)
+                        showTeacherSuggestions = false
                     }
-                }
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(Spacing.xxl))
             }
         }
     }
@@ -365,127 +207,561 @@ fun CourseEditScreen(
     }
 
     if (showDeleteDialog) {
-        AlertDialog(
+        GlassAlert(
             onDismissRequest = { showDeleteDialog = false },
-            containerColor = getDialogBackgroundColor(),
-            shape = MaterialTheme.shapes.large,
-            title = { Text("删除课程") },
-            text = { Text("确定要删除这门课程吗？") },
+            title = "删除课程",
+            text = "确定要删除这门课程吗？此操作不可撤销。",
             confirmButton = {
-                TextButton(
+                LiquidGlassButton(
                     onClick = {
                         viewModel.deleteCourse()
                         showDeleteDialog = false
-                    }
-                ) {
-                    Text("删除", color = MaterialTheme.colorScheme.error)
-                }
+                    },
+                    text = "删除",
+                    style = LiquidGlassButtonStyle.Tinted
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("取消")
-                }
+                LiquidGlassButton(
+                    onClick = { showDeleteDialog = false },
+                    text = "取消",
+                    style = LiquidGlassButtonStyle.NonTinted
+                )
             }
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SettingItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    value: String,
-    onClick: () -> Unit,
-    isEditable: Boolean = false,
-    editableValue: String = "",
-    onValueChange: (String) -> Unit = {}
+private fun CourseEditTopBar(
+    isEditing: Boolean,
+    onNavigateBack: () -> Unit,
+    onDelete: () -> Unit,
+    onSave: () -> Unit
 ) {
-    if (isEditable) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+    val labelsPrimary = getLabelsVibrantPrimary()
+    
+    TopAppBar(
+        title = { 
+            Text(
+                text = if (isEditing) "编辑课程" else "添加课程",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = labelsPrimary
+            ) 
+        },
+        navigationIcon = {
+            GlassSymbolIconButton(
+                onClick = onNavigateBack,
+                style = GlassSymbolButtonStyle.NonTinted,
+                size = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
+                contentPadding = PaddingValues(start = Spacing.sm)
             ) {
                 Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f)
+                    Icons.Default.ArrowBack, 
+                    contentDescription = "返回",
+                    tint = labelsPrimary
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = editableValue,
-                onValueChange = onValueChange,
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                singleLine = true,
-                placeholder = { Text(value) }
+        },
+        actions = {
+            if (isEditing) {
+                GlassSymbolIconButton(
+                    onClick = onDelete,
+                    style = GlassSymbolButtonStyle.NonTinted,
+                    size = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize
+                ) {
+                    Icon(
+                        Icons.Default.Delete, 
+                        contentDescription = "删除",
+                        tint = SemanticColors.ErrorLight
+                    )
+                }
+                Spacer(modifier = Modifier.width(Spacing.xs))
+            }
+            GlassSymbolIconButton(
+                onClick = onSave,
+                style = GlassSymbolButtonStyle.Tinted,
+                size = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize
+            ) {
+                Icon(
+                    Icons.Default.Check, 
+                    contentDescription = "保存",
+                    tint = Color.White
+                )
+            }
+            Spacer(modifier = Modifier.width(Spacing.sm))
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background
+        )
+    )
+}
+
+@Composable
+private fun ErrorMessageCard(
+    message: String,
+    modifier: Modifier = Modifier,
+    backdrop: com.kyant.backdrop.Backdrop = LocalBackdrop.current ?: emptyBackdrop()
+) {
+    val darkTheme = LocalDarkTheme.current
+    val density = LocalDensity.current
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .drawBackdrop(
+                backdrop = backdrop,
+                shape = { ContinuousRoundedRectangle(BorderRadius.iOS26.container) },
+                effects = {
+                    vibrancy()
+                    blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
+                    lens(
+                        refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
+                        refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
+                        chromaticAberration = true
+                    )
+                },
+                onDrawSurface = {
+                    drawRect(SemanticColors.ErrorLight, blendMode = BlendMode.Hue)
+                    drawRect(SemanticColors.ErrorLight.copy(alpha = 0.1f))
+                }
             )
-        }
-    } else {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick),
-            verticalAlignment = Alignment.CenterVertically
+            .padding(Spacing.lg)
+    ) {
+        Text(
+            text = message,
+            color = SemanticColors.ErrorLight,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+@Composable
+private fun CourseNameSection(
+    name: String,
+    onNameChange: (String) -> Unit,
+    courseHistory: List<CourseHistoryItem>,
+    showSuggestions: Boolean,
+    onSuggestionClick: (CourseHistoryItem) -> Unit,
+    onDismissSuggestions: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val labelsSecondary = getLabelsVibrantSecondary()
+    
+    SettingsSection(
+        title = "课程名称",
+        modifier = modifier
+    ) {
+        GlassTextField(
+            value = name,
+            onValueChange = onNameChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = "请输入课程名称",
+            transparentBackground = true
+        )
+
+        AnimatedVisibility(
+            visible = showSuggestions && courseHistory.isNotEmpty(),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            val filteredHistory = courseHistory.filter {
+                it.name.contains(name, ignoreCase = true) && it.name != name
+            }.take(3)
+
+            if (filteredHistory.isNotEmpty()) {
+                Column(modifier = Modifier.padding(top = Spacing.md)) {
+                    Text(
+                        text = "历史课程",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = labelsSecondary
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+                    filteredHistory.forEach { history ->
+                        SuggestionItem(
+                            text = history.name,
+                            onClick = { onSuggestionClick(history) }
+                        )
+                        Spacer(modifier = Modifier.height(Spacing.xs))
+                    }
+                }
+            }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SelectableChip(
-    selected: Boolean,
-    onClick: () -> Unit,
-    label: String,
-    selectedColor: androidx.compose.ui.graphics.Color,
+private fun PersonTypeSection(
+    personType: PersonType,
+    onPersonTypeChange: (PersonType) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(label) },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = selectedColor.copy(alpha = 0.15f),
-            selectedLabelColor = selectedColor
-        ),
+    val labelsSecondary = getLabelsVibrantSecondary()
+    
+    SettingsSection(
+        title = "所属课表",
         modifier = modifier
+    ) {
+        val personTypeOptions = listOf(
+            SegmentOption(PersonType.PERSON_B, "我的课表"),
+            SegmentOption(PersonType.PERSON_A, "Ta 的课表")
+        )
+
+        SegmentedControl(
+            options = personTypeOptions,
+            selectedOption = personType,
+            onOptionSelected = onPersonTypeChange
+        )
+    }
+}
+
+@Composable
+private fun CourseDetailsSection(
+    dayOfWeek: Int,
+    startPeriod: Int,
+    endPeriod: Int,
+    selectedWeeks: Set<Int>,
+    totalWeeks: Int,
+    location: String,
+    teacher: String,
+    teacherHistory: List<String>,
+    showTeacherSuggestions: Boolean,
+    onPeriodClick: () -> Unit,
+    onWeekClick: () -> Unit,
+    onLocationChange: (String) -> Unit,
+    onTeacherChange: (String) -> Unit,
+    onTeacherSuggestionClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    SettingsSection(
+        title = "课程详情",
+        modifier = modifier
+    ) {
+        CourseEditNavigationRow(
+            icon = Icons.Default.Schedule,
+            title = "上课时间",
+            value = getPeriodDisplayText(dayOfWeek, startPeriod, endPeriod),
+            iconBackgroundColor = IOSColors.Blue,
+            onClick = onPeriodClick
+        )
+
+        Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
+
+        CourseEditNavigationRow(
+            icon = Icons.Default.CalendarMonth,
+            title = "上课周数",
+            value = getWeekDisplayText(selectedWeeks, totalWeeks),
+            iconBackgroundColor = IOSColors.Orange,
+            onClick = onWeekClick
+        )
+
+        Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
+
+        LocationInputRow(
+            location = location,
+            onLocationChange = onLocationChange
+        )
+
+        Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
+
+        TeacherInputRow(
+            teacher = teacher,
+            onTeacherChange = onTeacherChange,
+            teacherHistory = teacherHistory,
+            showSuggestions = showTeacherSuggestions,
+            onSuggestionClick = onTeacherSuggestionClick
+        )
+    }
+}
+
+@Composable
+private fun CourseEditNavigationRow(
+    icon: ImageVector,
+    title: String,
+    value: String,
+    iconBackgroundColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val labelsPrimary = getLabelsVibrantPrimary()
+    val labelsSecondary = getLabelsVibrantSecondary()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing),
+        label = "row_scale"
     )
+    
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .padding(vertical = SettingsDefaults.ItemVerticalPadding),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(SettingsDefaults.IconBackgroundSize)
+                .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.icon))
+                .background(iconBackgroundColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(SettingsDefaults.IconSize),
+                tint = Color.White
+            )
+        }
+        
+        Spacer(modifier = Modifier.width(Spacing.md))
+        
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.Medium
+            ),
+            color = labelsPrimary,
+            modifier = Modifier.weight(1f)
+        )
+        
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = labelsSecondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        
+        Spacer(modifier = Modifier.width(Spacing.xs))
+        
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = labelsSecondary,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+private fun LocationInputRow(
+    location: String,
+    onLocationChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val labelsPrimary = getLabelsVibrantPrimary()
+    val labelsSecondary = getLabelsVibrantSecondary()
+    
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = SettingsDefaults.ItemVerticalPadding),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(SettingsDefaults.IconBackgroundSize)
+                .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.icon))
+                .background(IOSColors.Green),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = null,
+                modifier = Modifier.size(SettingsDefaults.IconSize),
+                tint = Color.White
+            )
+        }
+        
+        Spacer(modifier = Modifier.width(Spacing.md))
+        
+        Text(
+            text = "教室地点",
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.Medium
+            ),
+            color = labelsPrimary,
+            modifier = Modifier.width(72.dp)
+        )
+        
+        GlassTextField(
+            value = location,
+            onValueChange = onLocationChange,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = Spacing.sm),
+            placeholder = "点击输入",
+            transparentBackground = true,
+            singleLine = true
+        )
+    }
+}
+
+@Composable
+private fun TeacherInputRow(
+    teacher: String,
+    onTeacherChange: (String) -> Unit,
+    teacherHistory: List<String>,
+    showSuggestions: Boolean,
+    onSuggestionClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val labelsPrimary = getLabelsVibrantPrimary()
+    val labelsSecondary = getLabelsVibrantSecondary()
+    
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = SettingsDefaults.ItemVerticalPadding)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(SettingsDefaults.IconBackgroundSize)
+                    .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.icon))
+                    .background(IOSColors.Purple),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(SettingsDefaults.IconSize),
+                    tint = Color.White
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(Spacing.md))
+            
+            Text(
+                text = "上课老师",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                color = labelsPrimary,
+                modifier = Modifier.width(72.dp)
+            )
+            
+            GlassTextField(
+                value = teacher,
+                onValueChange = onTeacherChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = Spacing.sm),
+                placeholder = "点击输入（可选）",
+                transparentBackground = true,
+                singleLine = true
+            )
+        }
+
+        AnimatedVisibility(
+            visible = showSuggestions && teacherHistory.isNotEmpty(),
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            val filteredTeachers = teacherHistory.filter {
+                it.contains(teacher, ignoreCase = true) && it != teacher
+            }.take(3)
+
+            if (filteredTeachers.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.padding(
+                        start = SettingsDefaults.IconBackgroundSize + Spacing.md + 72.dp + Spacing.md,
+                        top = Spacing.sm
+                    )
+                ) {
+                    filteredTeachers.forEach { teacherName ->
+                        SuggestionChip(
+                            text = teacherName,
+                            onClick = { onSuggestionClick(teacherName) }
+                        )
+                        Spacer(modifier = Modifier.width(Spacing.xs))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuggestionItem(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = getFillsVibrantTertiary()
+    val labelsPrimary = getLabelsVibrantPrimary()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing),
+        label = "suggestion_scale"
+    )
+    
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .scale(scale),
+        shape = ContinuousRoundedRectangle(BorderRadius.iOS26.container),
+        color = backgroundColor,
+        onClick = onClick,
+        interactionSource = interactionSource
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(Spacing.md),
+            color = labelsPrimary
+        )
+    }
+}
+
+@Composable
+private fun SuggestionChip(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = getFillsVibrantTertiary()
+    val labelsPrimary = getLabelsVibrantPrimary()
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing),
+        label = "chip_scale"
+    )
+    
+    Surface(
+        modifier = modifier.scale(scale),
+        shape = ContinuousRoundedRectangle(BorderRadius.iOS26.container),
+        color = backgroundColor,
+        onClick = onClick,
+        interactionSource = interactionSource
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            color = labelsPrimary
+        )
+    }
 }
 
 private fun getPeriodDisplayText(dayOfWeek: Int, startPeriod: Int, endPeriod: Int): String {

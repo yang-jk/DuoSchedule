@@ -12,12 +12,15 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.ThemeMode
 import com.duoschedule.data.model.TodayCourseDisplayMode
+import com.duoschedule.notification.SilentModeType
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -50,20 +53,32 @@ class SettingsDataStore @Inject constructor(
         private val SHOW_SATURDAY = booleanPreferencesKey("show_saturday")
         private val SHOW_SUNDAY = booleanPreferencesKey("show_sunday")
         private val COURSE_CELL_HEIGHT = intPreferencesKey("course_cell_height")
+        private val SHOW_DASHED_BORDER = booleanPreferencesKey("show_dashed_border")
         
         private val NOTIFICATION_ENABLED = booleanPreferencesKey("notification_enabled")
         private val NOTIFICATION_ADVANCE_TIME = intPreferencesKey("notification_advance_time")
-        private val ISLAND_DISPLAY_MODE = stringPreferencesKey("island_display_mode")
         private val LIVE_NOTIFICATION_ENABLED = booleanPreferencesKey("live_notification_enabled")
         private val TODAY_COURSE_DISPLAY_MODE = stringPreferencesKey("today_course_display_mode")
         private val THEME_MODE = stringPreferencesKey("theme_mode")
+        
+        private val AUTO_SILENT_ENABLED = booleanPreferencesKey("auto_silent_enabled")
+        private val AUTO_SILENT_MODE_TYPE = stringPreferencesKey("auto_silent_mode_type")
+        private val AUTO_SILENT_ADVANCE_TIME = intPreferencesKey("auto_silent_advance_time")
+        
+        private val COURSE_NAME_FONT_SIZE = intPreferencesKey("course_name_font_size")
+        private val COURSE_LOCATION_FONT_SIZE = intPreferencesKey("course_location_font_size")
 
         private val DEFAULT_PERIOD_TIMES = listOf(
             "08:00-08:45",
             "08:55-09:40",
             "10:00-10:45",
             "10:55-11:40",
-            "14:00-14:45"
+            "14:00-14:45",
+            "14:55-15:40",
+            "16:00-16:45",
+            "16:55-17:40",
+            "19:00-19:45",
+            "19:55-20:40"
         )
     }
 
@@ -116,16 +131,16 @@ class SettingsDataStore @Inject constructor(
         preferences[COURSE_CELL_HEIGHT] ?: 60
     }
 
+    val showDashedBorder: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[SHOW_DASHED_BORDER] ?: true
+    }
+
     val notificationEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[NOTIFICATION_ENABLED] ?: true
     }
 
     val notificationAdvanceTime: Flow<Int> = context.dataStore.data.map { preferences ->
         preferences[NOTIFICATION_ADVANCE_TIME] ?: 10
-    }
-
-    val islandDisplayMode: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[ISLAND_DISPLAY_MODE] ?: "BOTH"
     }
 
     val liveNotificationEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -150,6 +165,26 @@ class SettingsDataStore @Inject constructor(
         }
     }
 
+    val autoSilentEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[AUTO_SILENT_ENABLED] ?: true
+    }
+
+    val autoSilentModeType: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[AUTO_SILENT_MODE_TYPE] ?: "VIBRATE"
+    }
+
+    val autoSilentAdvanceTime: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[AUTO_SILENT_ADVANCE_TIME] ?: 5
+    }
+
+    val courseNameFontSize: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[COURSE_NAME_FONT_SIZE] ?: 12
+    }
+
+    val courseLocationFontSize: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[COURSE_LOCATION_FONT_SIZE] ?: 11
+    }
+
     suspend fun getNotificationEnabled(): Boolean {
         return context.dataStore.data.map { preferences ->
             preferences[NOTIFICATION_ENABLED] ?: true
@@ -159,17 +194,6 @@ class SettingsDataStore @Inject constructor(
     suspend fun getNotificationAdvanceTime(): Int {
         return context.dataStore.data.map { preferences ->
             preferences[NOTIFICATION_ADVANCE_TIME] ?: 10
-        }.first()
-    }
-
-    suspend fun getIslandDisplayMode(): com.duoschedule.notification.IslandDisplayMode {
-        return context.dataStore.data.map { preferences ->
-            val mode = preferences[ISLAND_DISPLAY_MODE] ?: "BOTH"
-            try {
-                com.duoschedule.notification.IslandDisplayMode.valueOf(mode)
-            } catch (e: Exception) {
-                com.duoschedule.notification.IslandDisplayMode.BOTH
-            }
         }.first()
     }
 
@@ -245,6 +269,12 @@ class SettingsDataStore @Inject constructor(
         }
     }
 
+    suspend fun setShowDashedBorder(show: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[SHOW_DASHED_BORDER] = show
+        }
+    }
+
     suspend fun setNotificationEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[NOTIFICATION_ENABLED] = enabled
@@ -254,12 +284,6 @@ class SettingsDataStore @Inject constructor(
     suspend fun setNotificationAdvanceTime(minutes: Int) {
         context.dataStore.edit { preferences ->
             preferences[NOTIFICATION_ADVANCE_TIME] = minutes
-        }
-    }
-
-    suspend fun setIslandDisplayMode(mode: String) {
-        context.dataStore.edit { preferences ->
-            preferences[ISLAND_DISPLAY_MODE] = mode
         }
     }
 
@@ -281,13 +305,71 @@ class SettingsDataStore @Inject constructor(
         }
     }
 
+    suspend fun getAutoSilentEnabled(): Boolean {
+        return context.dataStore.data.map { preferences ->
+            preferences[AUTO_SILENT_ENABLED] ?: true
+        }.first()
+    }
+
+    suspend fun getAutoSilentModeType(): SilentModeType {
+        return context.dataStore.data.map { preferences ->
+            val mode = preferences[AUTO_SILENT_MODE_TYPE] ?: "VIBRATE"
+            try {
+                SilentModeType.valueOf(mode)
+            } catch (e: Exception) {
+                SilentModeType.VIBRATE
+            }
+        }.first()
+    }
+
+    suspend fun setAutoSilentEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[AUTO_SILENT_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setAutoSilentModeType(modeType: SilentModeType) {
+        context.dataStore.edit { preferences ->
+            preferences[AUTO_SILENT_MODE_TYPE] = modeType.name
+        }
+    }
+
+    suspend fun getAutoSilentAdvanceTime(): Int {
+        return context.dataStore.data.map { preferences ->
+            preferences[AUTO_SILENT_ADVANCE_TIME] ?: 5
+        }.first()
+    }
+
+    suspend fun setAutoSilentAdvanceTime(minutes: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[AUTO_SILENT_ADVANCE_TIME] = minutes
+        }
+    }
+
+    suspend fun setCourseNameFontSize(size: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[COURSE_NAME_FONT_SIZE] = size
+        }
+    }
+
+    suspend fun setCourseLocationFontSize(size: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[COURSE_LOCATION_FONT_SIZE] = size
+        }
+    }
+
     fun calculateCurrentWeek(startDate: LocalDate, totalWeeks: Int): Int {
-        val days = ChronoUnit.DAYS.between(startDate, LocalDate.now())
+        // 找到开学日期所在周的周一，作为第一周的起点
+        val firstWeekMonday = startDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        // 计算从第一个周一到今天经过了多少天
+        val days = ChronoUnit.DAYS.between(firstWeekMonday, LocalDate.now())
+        // 计算当前周次（至少为 1，最多为 totalWeeks）
         return ((days / 7) + 1).toInt().coerceIn(1, totalWeeks)
     }
 
     fun getWeekDates(semesterStartDate: LocalDate, currentWeek: Int): List<LocalDate> {
-        val weekStart = semesterStartDate.plusWeeks((currentWeek - 1).toLong())
-        return (0..6).map { weekStart.plusDays(it.toLong()) }
+        val firstWeekMonday = semesterStartDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val currentWeekMonday = firstWeekMonday.plusWeeks((currentWeek - 1).toLong())
+        return (0..6).map { currentWeekMonday.plusDays(it.toLong()) }
     }
 }

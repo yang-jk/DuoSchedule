@@ -2,8 +2,13 @@ package com.duoschedule;
 
 import androidx.hilt.work.HiltWrapper_WorkerFactoryModule;
 import com.duoschedule.di.DatabaseModule;
+import com.duoschedule.di.ProviderDependenciesModule;
 import com.duoschedule.di.WidgetDependenciesModule;
+import com.duoschedule.notification.AutoSilentWorker_HiltModule;
 import com.duoschedule.notification.LiveUpdateService_GeneratedInjector;
+import com.duoschedule.notification.ReminderWorker_HiltModule;
+import com.duoschedule.notification.RescheduleWorker_HiltModule;
+import com.duoschedule.notification.SilentModeReceiver_GeneratedInjector;
 import com.duoschedule.ui.edit.CourseEditViewModel_HiltModules;
 import com.duoschedule.ui.main.MainViewModel_HiltModules;
 import com.duoschedule.ui.schedule.ScheduleViewModel_HiltModules;
@@ -38,7 +43,7 @@ import dagger.hilt.android.internal.managers.FragmentComponentManager;
 import dagger.hilt.android.internal.managers.HiltWrapper_ActivityRetainedComponentManager_ActivityRetainedComponentBuilderEntryPoint;
 import dagger.hilt.android.internal.managers.HiltWrapper_ActivityRetainedComponentManager_ActivityRetainedLifecycleEntryPoint;
 import dagger.hilt.android.internal.managers.HiltWrapper_ActivityRetainedComponentManager_LifecycleModule;
-import dagger.hilt.android.internal.managers.HiltWrapper_SavedStateHandleModule;
+import dagger.hilt.android.internal.managers.HiltWrapper_ActivitySavedStateHandleModule;
 import dagger.hilt.android.internal.managers.ServiceComponentManager;
 import dagger.hilt.android.internal.managers.ViewComponentManager;
 import dagger.hilt.android.internal.modules.ApplicationContextModule;
@@ -133,16 +138,22 @@ public final class DuoScheduleApp_HiltComponents {
   @Component(
       modules = {
           ApplicationContextModule.class,
+          AutoSilentWorker_HiltModule.class,
           DatabaseModule.class,
           ActivityRetainedCBuilderModule.class,
           ServiceCBuilderModule.class,
           HiltWrapper_FragmentGetContextFix_FragmentGetContextFixModule.class,
           HiltWrapper_WorkerFactoryModule.class,
-          WidgetDependenciesModule.class
+          ReminderWorker_HiltModule.class,
+          RescheduleWorker_HiltModule.class
       }
   )
   @Singleton
+  @jakarta.inject.Singleton
   public abstract static class SingletonC implements DuoScheduleApp_GeneratedInjector,
+      ProviderDependenciesModule,
+      WidgetDependenciesModule,
+      SilentModeReceiver_GeneratedInjector,
       FragmentGetContextFix.FragmentGetContextFixEntryPoint,
       HiltWrapper_ActivityRetainedComponentManager_ActivityRetainedComponentBuilderEntryPoint,
       ServiceComponentManager.ServiceComponentBuilderEntryPoint,
@@ -166,7 +177,7 @@ public final class DuoScheduleApp_HiltComponents {
           ActivityCBuilderModule.class,
           ViewModelCBuilderModule.class,
           HiltWrapper_ActivityRetainedComponentManager_LifecycleModule.class,
-          HiltWrapper_SavedStateHandleModule.class,
+          HiltWrapper_ActivitySavedStateHandleModule.class,
           MainViewModel_HiltModules.KeyModule.class,
           ScheduleViewModel_HiltModules.KeyModule.class,
           SettingsViewModel_HiltModules.KeyModule.class

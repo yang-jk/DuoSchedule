@@ -14,9 +14,12 @@
     <uses-permission android:name="android.permission.POST_LIVE_UPDATES" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <permission
         android:name="com.duoschedule.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
@@ -30,7 +33,6 @@
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:debuggable="true"
-        android:enableOnBackInvokedCallback="true"
         android:extractNativeLibs="false"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -39,10 +41,13 @@
         android:supportsRtl="true"
         android:testOnly="true"
         android:theme="@style/Theme.DuoSchedule" >
+        <meta-data
+            android:name="miuiWidgetVersion"
+            android:value="1" />
+
         <activity
             android:name="com.duoschedule.MainActivity"
-            android:exported="true"
-            android:theme="@style/Theme.DuoSchedule.Splash" >
+            android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -92,17 +97,136 @@
         </activity>
 
         <receiver
-            android:name="com.duoschedule.widget.ScheduleWidgetReceiver"
+            android:name="com.duoschedule.widget.ScheduleWidgetReceiverMIUI"
             android:exported="true"
-            android:label="@string/widget_name" >
+            android:label="@string/widget_name"
+            android:process=":widgetProvider" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="miui.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="miui.appwidget.action.EXPOSURE" />
             </intent-filter>
 
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/schedule_widget_info" />
+                android:resource="@xml/schedule_widget_info_miui" />
+            <meta-data
+                android:name="miuiWidget"
+                android:value="true" />
+            <meta-data
+                android:name="miuiWidgetRefresh"
+                android:value="exposure" />
+            <meta-data
+                android:name="miuiWidgetRefreshMinInterval"
+                android:value="60000" />
+            <meta-data
+                android:name="vivo_widget"
+                android:value="true" />
+            <meta-data
+                android:name="vivoWidgetVersion"
+                android:value="1" />
+            <meta-data
+                android:name="com.hihonor.widget.type"
+                android:value="honorcard" />
         </receiver>
+        <receiver
+            android:name="com.duoschedule.widget.FreeTimeWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_free_time_name"
+            android:process=":widgetProvider" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="miui.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="miui.appwidget.action.EXPOSURE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_free_time_info" />
+            <meta-data
+                android:name="miuiWidget"
+                android:value="true" />
+            <meta-data
+                android:name="miuiWidgetRefresh"
+                android:value="exposure" />
+            <meta-data
+                android:name="miuiWidgetRefreshMinInterval"
+                android:value="60000" />
+        </receiver>
+        <receiver
+            android:name="com.duoschedule.widget.MyCoursesWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_my_courses_name"
+            android:process=":widgetProvider" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="miui.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="miui.appwidget.action.EXPOSURE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_my_courses_info" />
+            <meta-data
+                android:name="miuiWidget"
+                android:value="true" />
+            <meta-data
+                android:name="miuiWidgetRefresh"
+                android:value="exposure" />
+            <meta-data
+                android:name="miuiWidgetRefreshMinInterval"
+                android:value="60000" />
+        </receiver>
+        <receiver
+            android:name="com.duoschedule.widget.TaCoursesWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_ta_courses_name"
+            android:process=":widgetProvider" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="miui.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="miui.appwidget.action.EXPOSURE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_ta_courses_info" />
+            <meta-data
+                android:name="miuiWidget"
+                android:value="true" />
+            <meta-data
+                android:name="miuiWidgetRefresh"
+                android:value="exposure" />
+            <meta-data
+                android:name="miuiWidgetRefreshMinInterval"
+                android:value="60000" />
+        </receiver>
+        <receiver
+            android:name="com.duoschedule.notification.BootReceiver"
+            android:enabled="true"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name="com.duoschedule.notification.ReminderAlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
+        <receiver
+            android:name="com.duoschedule.notification.DailyRescheduleReceiver"
+            android:enabled="true"
+            android:exported="false" />
+        <receiver
+            android:name="com.duoschedule.notification.OngoingCourseReceiver"
+            android:enabled="true"
+            android:exported="false" />
+        <receiver
+            android:name="com.duoschedule.notification.SilentModeReceiver"
+            android:enabled="true"
+            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -113,6 +237,11 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+        <provider
+            android:name="com.duoschedule.provider.ScheduleContentProvider"
+            android:authorities="com.duoschedule.provider"
+            android:enabled="true"
+            android:exported="true" />
 
         <service
             android:name="com.duoschedule.notification.LiveUpdateService"
@@ -269,9 +398,18 @@
         <activity
             android:name="androidx.compose.ui.tooling.PreviewActivity"
             android:exported="true" />
+
+        <uses-library
+            android:name="androidx.window.extensions"
+            android:required="false" />
+        <uses-library
+            android:name="androidx.window.sidecar"
+            android:required="false" />
+
         <activity
             android:name="androidx.activity.ComponentActivity"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
 
         <service
             android:name="androidx.room.MultiInstanceInvalidationService"

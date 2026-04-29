@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Widget.AppWidget.AppWidget.Container" parent="@android:style/Widget">
+        <item name="android:background">@drawable/widget_system_background</item>
+    </style>
+</resources>

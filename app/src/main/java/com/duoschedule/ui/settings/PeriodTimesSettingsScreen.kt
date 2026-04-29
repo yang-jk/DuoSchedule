@@ -4,15 +4,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.PersonType
-import com.duoschedule.ui.settings.components.TimeRangeInputDialog
+import com.duoschedule.ui.settings.components.*
+import com.duoschedule.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,38 +28,59 @@ fun PeriodTimesSettingsScreen(
     val totalPeriods by viewModel.getTotalPeriods(personType).collectAsState()
     val periodTimes by viewModel.getPeriodTimes(personType).collectAsState()
     
-    var editedTimes by remember(periodTimes, totalPeriods) { 
-        mutableStateOf(
-            if (periodTimes.isEmpty()) {
-                (1..totalPeriods).map { "08:00-08:45" }
-            } else {
-                periodTimes.take(totalPeriods)
-            }
-        )
-    }
-    
+    var editedTimes by remember { mutableStateOf<List<String>>(emptyList()) }
     var hasChanges by remember { mutableStateOf(false) }
     var editingIndex by remember { mutableStateOf<Int?>(null) }
+    var lastTotalPeriods by remember { mutableStateOf<Int?>(null) }
     
-    val defaultTimes = remember(totalPeriods) {
-        generateDefaultTimes(totalPeriods)
-    }
+    val labelsPrimary = getLabelsVibrantPrimary()
+    
+    val timePickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
     LaunchedEffect(periodTimes, totalPeriods) {
-        editedTimes = if (periodTimes.isEmpty()) {
-            defaultTimes
-        } else {
-            periodTimes.take(totalPeriods)
+        val shouldReinitialize = lastTotalPeriods != null && lastTotalPeriods != totalPeriods
+        
+        if (editedTimes.isEmpty() || shouldReinitialize || !hasChanges) {
+            val defaultTimes = generateDefaultTimes(totalPeriods)
+            editedTimes = if (periodTimes.isEmpty()) {
+                defaultTimes
+            } else {
+                val existingTimes = periodTimes.take(totalPeriods)
+                val missingCount = totalPeriods - existingTimes.size
+                if (missingCount > 0) {
+                    existingTimes + defaultTimes.drop(existingTimes.size).take(missingCount)
+                } else {
+                    existingTimes
+                }
+            }
         }
+        lastTotalPeriods = totalPeriods
     }
     
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("${personName}的时间设置") },
+                title = { 
+                    Text(
+                        text = "${personName}的时间设置",
+                        color = labelsPrimary,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    ) 
+                },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                    GlassSymbolIconButton(
+                        onClick = onNavigateBack,
+                        style = GlassSymbolButtonStyle.NonTinted,
+                        size = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
+                        contentPadding = PaddingValues(start = Spacing.sm)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "返回",
+                            tint = labelsPrimary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -66,20 +90,20 @@ fun PeriodTimesSettingsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            BottomAppBar(
-                containerColor = MaterialTheme.colorScheme.background,
-            ) {
-                Spacer(modifier = Modifier.weight(1f))
-                Button(
-                    onClick = {
-                        viewModel.setPeriodTimes(personType, editedTimes)
-                        onNavigateBack()
-                    },
-                    enabled = hasChanges,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    shape = MaterialTheme.shapes.medium
+            if (hasChanges) {
+                BottomAppBar(
+                    containerColor = MaterialTheme.colorScheme.background,
                 ) {
-                    Text("保存")
+                    Spacer(modifier = Modifier.weight(1f))
+                    LiquidGlassButton(
+                        text = "保存",
+                        onClick = {
+                            viewModel.setPeriodTimes(personType, editedTimes)
+                            onNavigateBack()
+                        },
+                        modifier = Modifier.padding(horizontal = Spacing.lg),
+                        style = LiquidGlassButtonStyle.Tinted
+                    )
                 }
             }
         }
@@ -87,58 +111,42 @@ fun PeriodTimesSettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
+                .padding(paddingValues),
+            verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
         ) {
-            // 小米风格说明卡片
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
+            Spacer(modifier = Modifier.height(Spacing.sm))
+
+            SettingsFooter(
+                text = "点击时间可编辑每节课的开始和结束时间。"
+            )
+
+            SettingsCard {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
-                    Text(
-                        text = "每节课时间设置",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = "点击时间可编辑，格式: HH:mm-HH:mm",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-            }
-            
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                itemsIndexed(editedTimes) { index, time ->
-                    PeriodTimeItem(
-                        periodIndex = index,
-                        time = time,
-                        onClick = {
-                            editingIndex = index
+                    itemsIndexed(editedTimes) { index, time ->
+                        PeriodTimeItem(
+                            periodIndex = index,
+                            time = time,
+                            onClick = {
+                                editingIndex = index
+                            }
+                        )
+                        
+                        if (index < editedTimes.size - 1) {
+                            Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
                         }
-                    )
+                    }
                 }
             }
-            
+
             Spacer(modifier = Modifier.weight(1f))
         }
     }
     
     editingIndex?.let { index ->
-        TimeRangeInputDialog(
-            title = "编辑时间",
+        TimeRangeBottomSheet(
             periodIndex = index,
             initialValue = editedTimes.getOrElse(index) { "08:00-08:45" },
             onDismiss = { editingIndex = null },
@@ -155,50 +163,28 @@ fun PeriodTimesSettingsScreen(
                 editedTimes = newTimes
                 hasChanges = true
                 editingIndex = null
-            }
+            },
+            sheetState = timePickerSheetState
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PeriodTimeItem(
     periodIndex: Int,
     time: String,
     onClick: () -> Unit
 ) {
-    // 小米风格列表项
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    val labelsPrimary = getLabelsVibrantPrimary()
+    val labelsSecondary = getLabelsVibrantSecondary()
+    
+    SettingsNavigationRow(
+        title = "第${periodIndex + 1}节",
+        icon = Icons.Outlined.Schedule,
+        iconBackgroundColor = IOSColors.Blue,
+        value = time.ifEmpty { "未设置" },
         onClick = onClick
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "第${periodIndex + 1}节",
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Text(
-                text = time.ifEmpty { "未设置" },
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (time.isEmpty()) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.primary
-                }
-            )
-        }
-    }
+    )
 }
 
 private fun generateDefaultTimes(totalPeriods: Int): List<String> {

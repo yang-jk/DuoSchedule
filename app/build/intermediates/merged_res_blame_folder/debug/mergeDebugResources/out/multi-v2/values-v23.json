@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.duoschedule.app-mergeDebugResources-75:/values-v23/values-v23.xml",
+            "outputFile": "com.duoschedule.app-mergeDebugResources-65:/values-v23/values-v23.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\Administrator\\.gradle\\caches\\8.13\\transforms\\89e304de7803a9c9a95dc58115a41e88\\transformed\\glance-appwidget-1.1.1\\res\\values-v23\\values-v23.xml",
+                    "source": "C:\\Users\\Administrator\\.gradle\\caches\\9.3.1\\transforms\\6bc880a43c2349e0660664ff31ecb351\\workspace\\transformed\\glance-appwidget-1.1.1\\res\\values-v23\\values-v23.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -21,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\Administrator\\.gradle\\caches\\8.13\\transforms\\693a9dbeb9ebc3e7bb7a0b73575aa49c\\transformed\\work-runtime-2.10.0\\res\\values-v23\\values-v23.xml",
+                    "source": "C:\\Users\\Administrator\\.gradle\\caches\\9.3.1\\transforms\\75bd02937cbd4d12dd5c944af91e06d3\\workspace\\transformed\\work-runtime-2.10.0\\res\\values-v23\\values-v23.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",

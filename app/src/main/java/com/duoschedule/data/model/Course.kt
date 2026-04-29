@@ -1,8 +1,10 @@
 package com.duoschedule.data.model
 
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.util.Locale
 
 @Entity(
     tableName = "courses",
@@ -28,17 +30,19 @@ data class Course(
     val startWeek: Int = 1,
     val endWeek: Int = 16,
     val customWeeks: String = "",
-    val personType: PersonType
+    val personType: PersonType,
+    val startPeriod: Int = 1,
+    val endPeriod: Int = 1
 ) {
-    @Transient
+    @Ignore
     private var cachedCustomWeeks: Set<Int>? = null
 
     fun getStartTimeString(): String {
-        return String.format("%02d:%02d", startHour, startMinute)
+        return String.format(Locale.ROOT, "%02d:%02d", startHour, startMinute)
     }
 
     fun getEndTimeString(): String {
-        return String.format("%02d:%02d", endHour, endMinute)
+        return String.format(Locale.ROOT, "%02d:%02d", endHour, endMinute)
     }
 
     fun getTimeString(): String {
@@ -68,6 +72,22 @@ data class Course(
                     }
                 }
                 currentWeek in weeks
+            }
+        }
+    }
+
+    fun getActiveWeeks(): Set<Int> {
+        val weekRange = startWeek..endWeek
+        return when (weekType) {
+            WeekType.ALL -> weekRange.toSet()
+            WeekType.ODD -> weekRange.filter { it % 2 == 1 }.toSet()
+            WeekType.EVEN -> weekRange.filter { it % 2 == 0 }.toSet()
+            WeekType.CUSTOM -> {
+                if (customWeeks.isNotEmpty()) {
+                    customWeeks.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet()
+                } else {
+                    emptySet()
+                }
             }
         }
     }

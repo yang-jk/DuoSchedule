@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:theme="@style/Theme.AppWidget.AppWidgetContainerParent"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="12dp"
+    style="@style/Widget.AppWidget.AppWidget.Container">
+
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="共同空闲"
+        android:textSize="10dp"
+        android:textColor="?android:attr/textColorSecondary" />
+
+    <TextView
+        android:id="@+id/free_time_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/widget_title"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8dp"
+        android:text="12:00-14:00"
+        android:textSize="16dp"
+        android:textStyle="bold"
+        android:textColor="@color/free_time_color" />
+
+    <TextView
+        android:id="@+id/free_time_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/free_time_text"
+        android:layout_centerHorizontal="true"
+        android:text="空闲"
+        android:textSize="10dp"
+        android:textColor="?android:attr/textColorPrimary" />
+
+</RelativeLayout>

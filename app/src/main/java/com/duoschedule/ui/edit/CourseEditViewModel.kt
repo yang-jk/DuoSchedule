@@ -1,11 +1,13 @@
 package com.duoschedule.ui.edit
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.WeekType
 import com.duoschedule.data.repository.CourseRepository
+import com.duoschedule.notification.CourseNotificationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,7 +45,8 @@ data class CourseEditState(
 
 @HiltViewModel
 class CourseEditViewModel @Inject constructor(
-    private val repository: CourseRepository
+    private val repository: CourseRepository,
+    private val notificationManager: CourseNotificationManager
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CourseEditState())
@@ -127,8 +130,8 @@ class CourseEditViewModel @Inject constructor(
                 }
 
                 val times = periodTimes.value
-                val startPeriod = getPeriodFromTime(course.startHour, course.startMinute, times)
-                val endPeriod = getPeriodFromTime(course.endHour, course.endMinute, times)
+                val startPeriod = if (course.startPeriod > 0) course.startPeriod else getPeriodFromTime(course.startHour, course.startMinute, times)
+                val endPeriod = if (course.endPeriod > 0) course.endPeriod else getPeriodFromTime(course.endHour, course.endMinute, times)
                 val selectedPeriods = (startPeriod..endPeriod).toSet()
 
                 _state.value = CourseEditState(
@@ -179,18 +182,18 @@ class CourseEditViewModel @Inject constructor(
     }
 
     fun setSelectedWeeks(weeks: Set<Int>) {
-        val totalWeeks = totalWeeks.value
-        val newWeekType = when {
-            weeks.isEmpty() -> WeekType.ALL
-            weeks.size == totalWeeks -> WeekType.ALL
-            else -> WeekType.CUSTOM
+        if (weeks.isEmpty()) {
+            return
         }
+        
+        val totalWeeks = totalWeeks.value
+        val newWeekType = if (weeks.size == totalWeeks) WeekType.ALL else WeekType.CUSTOM
         
         _state.value = _state.value.copy(
             selectedWeeks = weeks,
             weekType = newWeekType,
-            startWeek = if (weeks.isNotEmpty()) weeks.min() else 1,
-            endWeek = if (weeks.isNotEmpty()) weeks.max() else totalWeeks,
+            startWeek = weeks.min(),
+            endWeek = weeks.max(),
             customWeeks = if (newWeekType == WeekType.CUSTOM) {
                 weeks.sorted().joinToString(",")
             } else {
@@ -309,7 +312,9 @@ class CourseEditViewModel @Inject constructor(
                 startWeek = startWeek,
                 endWeek = endWeek,
                 customWeeks = customWeeks,
-                personType = currentState.personType
+                personType = currentState.personType,
+                startPeriod = startPeriod,
+                endPeriod = endPeriod
             )
 
             val hasConflict = repository.checkTimeConflict(course, currentState.id)
@@ -324,6 +329,9 @@ class CourseEditViewModel @Inject constructor(
                 repository.insertCourse(course)
             }
 
+            Log.d("CourseEditViewModel", "课程已保存: ${course.name}, 重新调度通知")
+            notificationManager.scheduleReminderNotifications()
+
             _state.value = currentState.copy(saved = true)
         }
     }
@@ -334,6 +342,10 @@ class CourseEditViewModel @Inject constructor(
 
         viewModelScope.launch {
             repository.deleteCourseById(currentState.id)
+            
+            Log.d("CourseEditViewModel", "课程已删除, 重新调度通知")
+            notificationManager.scheduleReminderNotifications()
+            
             _state.value = currentState.copy(deleted = true)
         }
     }

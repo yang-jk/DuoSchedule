@@ -1,48 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="background">#F7F7F7</color>
+    <color name="background">#F2F2F7</color>
     <color name="course_ended">#9E9E9E</color>
     <color name="free_time_color">#81C784</color>
     <color name="on_surface">#000000</color>
-    <color name="person_a_color">#5C9CFF</color>
-    <color name="person_b_color">#FF8A65</color>
-    <color name="primary">#2196F3</color>
-    <color name="primary_variant">#1565C0</color>
-    <color name="secondary">#757575</color>
+    <color name="person_a_color">#FFB74D</color>
+    <color name="person_b_color">#4789FE</color>
+    <color name="primary">#007AFF</color>
+    <color name="primary_variant">#1A5CB0</color>
+    <color name="secondary">#8E8E93</color>
     <color name="surface">#FFFFFF</color>
-    <string name="add_course">添加课程</string>
-    <string name="all_weeks">全周</string>
     <string name="app_name">双人课程表</string>
-    <string name="cancel">取消</string>
-    <string name="course_deleted">课程已删除</string>
-    <string name="course_location">上课地点</string>
-    <string name="course_name">课程名称</string>
-    <string name="course_saved">课程已保存</string>
-    <string name="course_time">上课时间</string>
-    <string name="current_week">当前周次</string>
-    <string name="delete">删除</string>
-    <string name="edit_course">编辑课程</string>
-    <string name="even_week">双周</string>
-    <string name="export_schedule">导出课表</string>
-    <string name="free_time">共同空闲</string>
-    <string name="import_schedule">导入课表</string>
-    <string name="loading">加载中...</string>
     <string name="no_class">无课</string>
-    <string name="no_free_time">今天没有共同空闲时间</string>
-    <string name="odd_week">单周</string>
+    <string name="no_courses">暂无课程</string>
+    <string name="no_free_time">今日无共同空闲</string>
     <string name="person_a">Ta的课表</string>
     <string name="person_b">我的课表</string>
-    <string name="please_add_course">请添加课程</string>
-    <string name="remaining_time">剩余 %d 分钟</string>
-    <string name="save">保存</string>
-    <string name="semester_start">学期开始日期</string>
-    <string name="settings">设置</string>
-    <string name="time_conflict">时间冲突，请重新选择</string>
-    <string name="today_schedule">今日课程</string>
-    <string name="week_format">第%d周</string>
-    <string name="week_setting">周次设置</string>
-    <string name="widget_description">显示双人今日课程信息</string>
+    <string name="preview_course_name">高等数学</string>
+    <string name="preview_remaining_time">剩余 25 分钟</string>
+    <string name="widget_description">显示今日课程安排</string>
+    <string name="widget_free_time_description">显示两人共同的空闲时间段</string>
+    <string name="widget_free_time_name">共同空闲时间</string>
+    <string name="widget_my_courses_description">显示我的今日课程列表</string>
+    <string name="widget_my_courses_name">我的今日课程</string>
     <string name="widget_name">今日课程</string>
+    <string name="widget_ta_courses_description">显示Ta的今日课程列表</string>
+    <string name="widget_ta_courses_name">Ta的今日课程</string>
     <style name="CalendarViewStyle" parent="android:Widget.Material.Light.CalendarView">
         <item name="android:selectedWeekBackgroundColor">@color/primary</item>
         <item name="android:focusedMonthDateColor">@color/on_surface</item>
@@ -52,12 +35,15 @@
         <item name="android:headerBackground">@color/primary</item>
         <item name="android:calendarViewStyle">@style/CalendarViewStyle</item>
     </style>
+    <style name="Theme.AppWidget.AppWidgetContainerParent" parent="@android:style/Theme.DeviceDefault">
+        <item name="android:colorAccent">@color/primary</item>
+    </style>
     <style name="Theme.DuoSchedule" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:colorPrimary">@color/primary</item>
         <item name="android:colorPrimaryDark">@color/primary_variant</item>
         <item name="android:colorAccent">@color/primary</item>
-        <item name="android:statusBarColor">@color/background</item>
-        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowBackground">@color/background</item>
         
@@ -72,5 +58,9 @@
     </style>
     <style name="TimePickerStyle" parent="android:Widget.Material.Light.TimePicker">
         <item name="android:headerBackground">@color/primary</item>
+    </style>
+    <style name="Widget.AppWidget.AppWidget.Container" parent="@android:style/Widget">
+        <item name="android:background">@drawable/widget_system_background</item>
+        <item name="android:colorAccent">@color/primary</item>
     </style>
 </resources>

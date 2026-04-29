@@ -1,12 +1,13 @@
 package com.duoschedule.ui.edit;
 
 import com.duoschedule.data.repository.CourseRepository;
+import com.duoschedule.notification.CourseNotificationManager;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
+import dagger.internal.Provider;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
-import javax.inject.Provider;
 
 @ScopeMetadata
 @QualifierMetadata
@@ -21,25 +22,32 @@ import javax.inject.Provider;
     "KotlinInternal",
     "KotlinInternalInJava",
     "cast",
-    "deprecation"
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class CourseEditViewModel_Factory implements Factory<CourseEditViewModel> {
   private final Provider<CourseRepository> repositoryProvider;
 
-  public CourseEditViewModel_Factory(Provider<CourseRepository> repositoryProvider) {
+  private final Provider<CourseNotificationManager> notificationManagerProvider;
+
+  private CourseEditViewModel_Factory(Provider<CourseRepository> repositoryProvider,
+      Provider<CourseNotificationManager> notificationManagerProvider) {
     this.repositoryProvider = repositoryProvider;
+    this.notificationManagerProvider = notificationManagerProvider;
   }
 
   @Override
   public CourseEditViewModel get() {
-    return newInstance(repositoryProvider.get());
+    return newInstance(repositoryProvider.get(), notificationManagerProvider.get());
   }
 
-  public static CourseEditViewModel_Factory create(Provider<CourseRepository> repositoryProvider) {
-    return new CourseEditViewModel_Factory(repositoryProvider);
+  public static CourseEditViewModel_Factory create(Provider<CourseRepository> repositoryProvider,
+      Provider<CourseNotificationManager> notificationManagerProvider) {
+    return new CourseEditViewModel_Factory(repositoryProvider, notificationManagerProvider);
   }
 
-  public static CourseEditViewModel newInstance(CourseRepository repository) {
-    return new CourseEditViewModel(repository);
+  public static CourseEditViewModel newInstance(CourseRepository repository,
+      CourseNotificationManager notificationManager) {
+    return new CourseEditViewModel(repository, notificationManager);
   }
 }

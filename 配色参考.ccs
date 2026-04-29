@@ -1,0 +1,5100 @@
+/* Default */
+
+box-sizing: border-box;
+
+position: relative;
+width: 2560px;
+height: 1500px;
+
+background: #F5F5F5;
+border: 1px solid rgba(0, 0, 0, 0.4);
+border-radius: 22px;
+
+
+/* Swatch Grid */
+
+position: relative;
+width: 659px;
+height: 370px;
+left: 100px;
+top: 1030px;
+
+
+
+/* Dark - Base */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 270px;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #000000;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #1C1C1E;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #2C2C2E;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Dark - Elevated */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 150px;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #1C1C1E;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #2C2C2E;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #3A3A3C;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Light */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 30px;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #F2F2F7;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #FFFFFF;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #F2F2F7;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Dark - Elevated */
+
+position: absolute;
+left: 0%;
+right: 85.74%;
+top: 48.65%;
+bottom: 46.49%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Dark - Base */
+
+position: absolute;
+left: 0%;
+right: 89.07%;
+top: 78.38%;
+bottom: 16.76%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Light */
+
+position: absolute;
+left: 0%;
+right: 95.3%;
+top: 18.92%;
+bottom: 76.22%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Quaternary */
+
+position: absolute;
+visibility: hidden;
+left: 84.98%;
+right: 4.55%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Tertiary */
+
+position: absolute;
+left: 66.77%;
+right: 26.1%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Secondary */
+
+position: absolute;
+left: 48.56%;
+right: 41.58%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Primary */
+
+position: absolute;
+left: 30.35%;
+right: 62.52%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Backgrounds */
+
+position: absolute;
+left: 0%;
+right: 78.6%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Emphasized */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 590;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatches */
+
+position: relative;
+width: 659px;
+height: 370px;
+left: 900px;
+top: 1030px;
+
+
+
+/* Dark - Base */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+visibility: hidden;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 270px;
+
+
+
+/* Dark - Elevated */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 150px;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+background: #FFFFFF;
+
+
+/* Path */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+
+
+/* Path */
+
+position: absolute;
+width: 14.73px;
+height: 23.09px;
+left: 41.95px;
+top: 32.78px;
+
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+background: rgba(235, 235, 245, 0.7);
+
+
+/* Path */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+
+
+/* Path */
+
+position: absolute;
+width: 14.73px;
+height: 23.09px;
+left: 41.95px;
+top: 32.78px;
+
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+background: rgba(235, 235, 245, 0.3);
+
+
+/* Path */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+
+
+/* Path */
+
+position: absolute;
+width: 14.73px;
+height: 23.09px;
+left: 41.95px;
+top: 32.78px;
+
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+background: rgba(235, 235, 245, 0.16);
+
+
+/* Path */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+
+
+/* Path */
+
+position: absolute;
+width: 14.73px;
+height: 23.09px;
+left: 41.95px;
+top: 32.78px;
+
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Light */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 30px;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+background: #000000;
+
+
+/* Path */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+
+
+/* Path */
+
+position: absolute;
+width: 14.73px;
+height: 23.09px;
+left: 41.95px;
+top: 32.78px;
+
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+background: rgba(60, 60, 67, 0.6);
+
+
+/* Path */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+
+
+/* Path */
+
+position: absolute;
+width: 14.73px;
+height: 23.09px;
+left: 41.95px;
+top: 32.78px;
+
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+background: rgba(60, 60, 67, 0.3);
+
+
+/* Path */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+
+
+/* Path */
+
+position: absolute;
+width: 14.73px;
+height: 23.09px;
+left: 41.95px;
+top: 32.78px;
+
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+background: rgba(60, 60, 67, 0.18);
+
+
+/* Path */
+
+position: absolute;
+width: 53.05px;
+height: 56.37px;
+left: 23px;
+top: 22px;
+
+
+
+/* Path */
+
+position: absolute;
+width: 14.73px;
+height: 23.09px;
+left: 41.95px;
+top: 32.78px;
+
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Dark - Elevated */
+
+position: absolute;
+left: 0%;
+right: 95.6%;
+top: 48.65%;
+bottom: 46.49%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Dark - Base */
+
+position: absolute;
+visibility: hidden;
+left: 0%;
+right: 89.07%;
+top: 78.38%;
+bottom: 16.76%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Light */
+
+position: absolute;
+left: 0%;
+right: 95.3%;
+top: 18.92%;
+bottom: 76.22%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Quaternary */
+
+position: absolute;
+left: 84.98%;
+right: 4.55%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Tertiary */
+
+position: absolute;
+left: 66.77%;
+right: 26.1%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Secondary */
+
+position: absolute;
+left: 48.56%;
+right: 41.58%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Primary */
+
+position: absolute;
+left: 30.35%;
+right: 62.52%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Backgrounds */
+
+position: absolute;
+left: 0%;
+right: 96.05%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Emphasized */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 590;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch Grid */
+
+position: relative;
+width: 659px;
+height: 370px;
+left: 900px;
+top: 600px;
+
+
+
+/* Dark - Base */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 270px;
+
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Dark - Elevated */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 150px;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #FFFFFF;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: rgba(235, 235, 245, 0.7);
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: rgba(235, 235, 245, 0.3);
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: rgba(235, 235, 245, 0.16);
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Light */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 30px;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #000000;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: rgba(60, 60, 67, 0.6);
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: rgba(60, 60, 67, 0.3);
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: rgba(60, 60, 67, 0.18);
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Dark - Elevated */
+
+position: absolute;
+left: 0%;
+right: 95.6%;
+top: 48.65%;
+bottom: 46.49%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Dark - Base */
+
+position: absolute;
+left: 0%;
+right: 100%;
+top: 78.38%;
+bottom: 16.76%;
+
+
+
+
+/* Light */
+
+position: absolute;
+left: 0%;
+right: 95.3%;
+top: 18.92%;
+bottom: 76.22%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Quaternary */
+
+position: absolute;
+left: 84.98%;
+right: 4.55%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Tertiary */
+
+position: absolute;
+left: 66.77%;
+right: 26.1%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Secondary */
+
+position: absolute;
+left: 48.56%;
+right: 41.58%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Primary */
+
+position: absolute;
+left: 30.35%;
+right: 62.52%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Backgrounds */
+
+position: absolute;
+left: 0%;
+right: 93.63%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Emphasized */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 590;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch Grid */
+
+position: relative;
+width: 659px;
+height: 370px;
+left: 100px;
+top: 600px;
+
+
+
+/* Dark - Base */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 270px;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #000000;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #1C1C1E;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #2C2C2E;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Dark - Elevated */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 150px;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #1C1C1E;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #2C2C2E;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #3A3A3C;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Light */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 30px;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #FFFFFF;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #F2F2F7;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #FFFFFF;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Dark - Elevated */
+
+position: absolute;
+left: 0%;
+right: 85.74%;
+top: 48.65%;
+bottom: 46.49%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Dark - Base */
+
+position: absolute;
+left: 0%;
+right: 89.07%;
+top: 78.38%;
+bottom: 16.76%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Light */
+
+position: absolute;
+left: 0%;
+right: 95.3%;
+top: 18.92%;
+bottom: 76.22%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Quaternary */
+
+position: absolute;
+visibility: hidden;
+left: 84.98%;
+right: 4.55%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Tertiary */
+
+position: absolute;
+left: 66.77%;
+right: 26.1%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Secondary */
+
+position: absolute;
+left: 48.56%;
+right: 41.58%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Primary */
+
+position: absolute;
+left: 30.35%;
+right: 62.52%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Backgrounds */
+
+position: absolute;
+left: 0%;
+right: 87.41%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Emphasized */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 590;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatches */
+
+position: relative;
+width: 659px;
+height: 370px;
+left: 1900px;
+top: 600px;
+
+
+
+/* Dark - Base */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 270px;
+
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Dark - Elevated */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 150px;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #38383A;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: rgba(255, 255, 255, 0.17);
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Light */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 20px;
+
+position: absolute;
+width: 459px;
+height: 100px;
+left: 200px;
+top: 30px;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: #C6C6C8;
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Swatch */
+
+position: absolute;
+width: 80px;
+height: 80px;
+left: 10px;
+top: 10px;
+
+background: rgba(0, 0, 0, 0.12);
+border-radius: 40px;
+
+
+/* Color */
+
+position: absolute;
+visibility: hidden;
+width: 33px;
+left: 0px;
+top: -30%;
+bottom: 112%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Swatch */
+
+display: none;
+width: 100px;
+height: 100px;
+
+background: url(Checkers - Light.png);
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Dark - Elevated */
+
+position: absolute;
+left: 0%;
+right: 95.6%;
+top: 48.65%;
+bottom: 46.49%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Dark - Base */
+
+position: absolute;
+visibility: hidden;
+left: 0%;
+right: 89.07%;
+top: 78.38%;
+bottom: 16.76%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Light */
+
+position: absolute;
+left: 0%;
+right: 95.3%;
+top: 18.92%;
+bottom: 76.22%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Quaternary */
+
+position: absolute;
+visibility: hidden;
+left: 84.98%;
+right: 4.55%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Tertiary */
+
+position: absolute;
+visibility: hidden;
+left: 66.77%;
+right: 26.1%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Secondary */
+
+position: absolute;
+left: 48.56%;
+right: 39.76%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Primary */
+
+position: absolute;
+left: 30.35%;
+right: 62.37%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Backgrounds */
+
+position: absolute;
+left: 0%;
+right: 89.07%;
+top: 0%;
+bottom: 95.14%;
+
+/* Footnote/Emphasized */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 700;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #FFFFFF;
+
+
+
+/* Colors */
+
+position: absolute;
+width: 2360px;
+height: 420px;
+left: 100px;
+top: 100px;
+
+
+
+/* Grays */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 40px;
+
+position: absolute;
+width: 1560px;
+height: 160px;
+left: 100px;
+top: 360px;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #000000;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #000000;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 34px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #8E8E93;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #8E8E93;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 29px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #636366;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+/* Grays/Gray 2 */
+background: #AEAEB2;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 40px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #48484A;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #C7C7CC;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 41px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #3A3A3C;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #D1D1D6;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 41px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 5;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #2C2C2E;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #E5E5EA;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 40px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 6;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #1C1C1E;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #F2F2F7;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 41px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 7;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #FFFFFF;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #FFFFFF;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 36px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Colors */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 40px;
+
+position: absolute;
+width: 2360px;
+height: 160px;
+left: 100px;
+top: 100px;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #FF4245;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #FF383C;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 24px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #FF9230;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #FF8D28;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 45px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #FFD600;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #FFCC00;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 39px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #30D158;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #34C759;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 37px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #00DAC3;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #00C8B3;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 27px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 5;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #00D2E0;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #00C3D0;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 25px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 6;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #3CD3FE;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #00C0E8;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 31px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 7;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #0091FF;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #0088FF;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 27px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 8;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #6D7CFF;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #6155F5;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 38px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 9;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #DB34F2;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #CB30E0;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 40px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 10;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #FF375F;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #FF2D55;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 26px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+
+
+
+/* Swatch */
+
+width: 160px;
+height: 160px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 11;
+flex-grow: 0;
+
+
+/* Dark */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 80px;
+
+background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url(Checkers - Light.png);
+background-blend-mode: plus-darker, normal;
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 0px;
+
+background: #B78A66;
+border-radius: 0px 0px 100px 100px;
+
+
+/* Light */
+
+position: absolute;
+width: 160px;
+height: 80px;
+left: 0px;
+top: 0px;
+
+background: url(Checkers - Light.png);
+border-radius: 0px;
+
+
+/* Swatch */
+
+position: absolute;
+width: 120px;
+height: 60px;
+left: 20px;
+top: 20px;
+
+background: #AC7F5E;
+border-radius: 100px 100px 0px 0px;
+
+
+/* Label */
+
+position: absolute;
+width: 39px;
+left: 0px;
+top: -18.75%;
+bottom: 107.5%;
+
+/* Footnote/Regular */
+font-family: 'SF Pro';
+font-style: normal;
+font-weight: 400;
+font-size: 13px;
+line-height: 18px;
+/* identical to box height, or 138% */
+letter-spacing: -0.08px;
+
+color: #000000;
+

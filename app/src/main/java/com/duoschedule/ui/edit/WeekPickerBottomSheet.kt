@@ -1,22 +1,39 @@
 package com.duoschedule.ui.edit
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.duoschedule.ui.theme.getDialogBackgroundColor
+import androidx.compose.ui.unit.sp
+import com.duoschedule.ui.theme.*
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,42 +42,29 @@ fun WeekPickerBottomSheet(
     selectedWeeks: Set<Int>,
     onWeeksChange: (Set<Int>) -> Unit,
     onDismiss: () -> Unit,
-    sheetState: SheetState
+    sheetState: SheetState,
+    backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
     var currentSelectedWeeks by remember(selectedWeeks) { mutableStateOf(selectedWeeks) }
+    val darkTheme = LocalDarkTheme.current
+    val density = LocalDensity.current
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
+    GlassBottomSheet(
+        onDismiss = onDismiss,
         sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-        containerColor = getDialogBackgroundColor(),
-        scrimColor = MaterialTheme.colorScheme.background.copy(alpha = 0.5f),
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .padding(top = 12.dp)
-                    .width(40.dp)
-                    .height(4.dp)
-                    .then(
-                        Modifier
-                            .background(
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                RoundedCornerShape(2.dp)
-                            )
-                    )
-            )
-        }
-    ) {
+        backdrop = backdrop,
+        darkTheme = darkTheme
+    ) { bottomSheetBackdrop ->
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp)
+                .padding(horizontal = GlassBottomSheetDefaults.ContentHorizontalPadding)
+                .padding(top = GlassBottomSheetDefaults.ContentTopPadding, bottom = GlassBottomSheetDefaults.ContentBottomPadding)
         ) {
             Text(
                 text = "选择周数",
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                color = getLabelsVibrantPrimary()
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -74,21 +78,27 @@ fun WeekPickerBottomSheet(
                     onClick = {
                         currentSelectedWeeks = (1..totalWeeks).filter { it % 2 == 1 }.toSet()
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    backdrop = bottomSheetBackdrop,
+                    darkTheme = darkTheme
                 )
                 QuickSelectButton(
                     label = "双周",
                     onClick = {
                         currentSelectedWeeks = (1..totalWeeks).filter { it % 2 == 0 }.toSet()
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    backdrop = bottomSheetBackdrop,
+                    darkTheme = darkTheme
                 )
                 QuickSelectButton(
                     label = "全部",
                     onClick = {
                         currentSelectedWeeks = (1..totalWeeks).toSet()
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    backdrop = bottomSheetBackdrop,
+                    darkTheme = darkTheme
                 )
                 QuickSelectButton(
                     label = "清空",
@@ -96,7 +106,9 @@ fun WeekPickerBottomSheet(
                         currentSelectedWeeks = emptySet()
                     },
                     modifier = Modifier.weight(1f),
-                    isDestructive = true
+                    backdrop = bottomSheetBackdrop,
+                    isDestructive = true,
+                    darkTheme = darkTheme
                 )
             }
 
@@ -114,16 +126,18 @@ fun WeekPickerBottomSheet(
             ) {
                 items(weeks) { week ->
                     WeekGridItem(
-                        week = week,
-                        isSelected = currentSelectedWeeks.contains(week),
-                        onClick = {
-                            currentSelectedWeeks = if (currentSelectedWeeks.contains(week)) {
-                                currentSelectedWeeks - week
-                            } else {
-                                currentSelectedWeeks + week
-                            }
+                    week = week,
+                    isSelected = currentSelectedWeeks.contains(week),
+                    onClick = {
+                        currentSelectedWeeks = if (currentSelectedWeeks.contains(week)) {
+                            currentSelectedWeeks - week
+                        } else {
+                            currentSelectedWeeks + week
                         }
-                    )
+                    },
+                    backdrop = bottomSheetBackdrop,
+                    darkTheme = darkTheme
+                )
                 }
             }
 
@@ -133,24 +147,24 @@ fun WeekPickerBottomSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                OutlinedButton(
+                LiquidGlassButton(
+                    text = "取消",
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Text("取消")
-                }
+                    backdrop = bottomSheetBackdrop,
+                    style = LiquidGlassButtonStyle.NonTinted
+                )
 
-                Button(
+                LiquidGlassButton(
+                    text = "确定",
                     onClick = {
                         onWeeksChange(currentSelectedWeeks)
                         onDismiss()
                     },
                     modifier = Modifier.weight(1f),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Text("确定")
-                }
+                    backdrop = bottomSheetBackdrop,
+                    style = LiquidGlassButtonStyle.Tinted
+                )
             }
         }
     }
@@ -161,21 +175,90 @@ private fun QuickSelectButton(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    isDestructive: Boolean = false
+    isDestructive: Boolean = false,
+    backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop(),
+    darkTheme: Boolean
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = if (isDestructive) {
-            ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.error
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val density = LocalDensity.current
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing),
+        label = "button_scale"
+    )
+    
+    val tintColor = if (isDestructive) {
+        SemanticColors.ErrorLight
+    } else if (darkTheme) {
+        LiquidGlassColors.Button.TintColorDark
+    } else {
+        LiquidGlassColors.Button.TintColorLight
+    }
+    
+    val backgroundColor = if (darkTheme)
+        LiquidGlassColors.Button.BackgroundDark
+    else
+        LiquidGlassColors.Button.BackgroundLight
+    
+    val textColor = if (isDestructive) {
+        SemanticColors.ErrorLight
+    } else if (darkTheme) {
+        LiquidGlassColors.Button.TextColorDark
+    } else {
+        LabelsLight.Primary
+    }
+    
+    val shadowColor = LiquidGlassColors.Button.ShadowColor
+    val shape = ContinuousRoundedRectangle(BorderRadius.pill)
+
+    Box(
+        modifier = modifier
+            .height(ComponentSize.LiquidGlassButton.TextButtonHeight)
+            .scale(scale)
+            .graphicsLayer {
+                shadowElevation = 40.dp.toPx()
+                this.shape = shape
+                clip = false
+                ambientShadowColor = Color.Transparent
+                spotShadowColor = shadowColor
+            }
+            .drawBackdrop(
+                backdrop = backdrop,
+                shape = { shape },
+                effects = {
+                    vibrancy()
+                    blur(4.dp.toPx())
+                    lens(16.dp.toPx(), 32.dp.toPx())
+                },
+                onDrawSurface = {
+                    if (!isDestructive) {
+                        drawRect(backgroundColor)
+                    }
+                    drawRect(Color.White.copy(alpha = 0.65f))
+                }
             )
-        } else {
-            ButtonDefaults.outlinedButtonColors()
-        }
+            .border(
+                width = 1.dp,
+                color = tintColor.copy(alpha = 0.5f),
+                shape = shape
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        Text(label, style = MaterialTheme.typography.labelMedium)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium
+            ),
+            color = textColor
+        )
     }
 }
 
@@ -183,12 +266,16 @@ private fun QuickSelectButton(
 private fun WeekGridItem(
     week: Int,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop(),
+    darkTheme: Boolean
 ) {
+    val density = LocalDensity.current
+    
     val backgroundColor = if (isSelected) {
         MaterialTheme.colorScheme.primary
     } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        getFillsVibrantTertiary()
     }
 
     val textColor = if (isSelected) {
@@ -203,20 +290,51 @@ private fun WeekGridItem(
         MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
     }
 
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(backgroundColor)
-            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "$week",
-            style = MaterialTheme.typography.labelMedium,
-            color = textColor,
-            textAlign = TextAlign.Center
-        )
+    val shape = ContinuousRoundedRectangle(BorderRadius.md)
+
+    if (!isSelected) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .drawBackdrop(
+                    backdrop = backdrop,
+                    shape = { shape },
+                    effects = {
+                        vibrancy()
+                        blur(4.dp.toPx())
+                        lens(8.dp.toPx(), 16.dp.toPx())
+                    },
+                    onDrawSurface = {
+                        drawRect(backgroundColor.copy(alpha = 0.8f))
+                    }
+                )
+                .border(1.dp, borderColor, shape)
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "$week",
+                style = MaterialTheme.typography.labelMedium,
+                color = textColor,
+                textAlign = TextAlign.Center
+            )
+        }
+    } else {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(shape)
+                .background(backgroundColor)
+                .border(1.dp, borderColor, shape)
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "$week",
+                style = MaterialTheme.typography.labelMedium,
+                color = textColor,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }

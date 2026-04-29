@@ -13,8 +13,10 @@ import javax.annotation.processing.Generated;
     originatingRoot = "com.duoschedule.DuoScheduleApp",
     originatingRootPackage = "com.duoschedule",
     rootAnnotation = HiltAndroidApp.class,
+    rootComponentPackage = "dagger.hilt.components",
     rootSimpleNames = "DuoScheduleApp",
-    originatingRootSimpleNames = "DuoScheduleApp"
+    originatingRootSimpleNames = "DuoScheduleApp",
+    rootComponentSimpleNames = "SingletonComponent"
 )
 @Generated("dagger.hilt.processor.internal.root.AggregatedRootGenerator")
 public class _com_duoschedule_DuoScheduleApp {

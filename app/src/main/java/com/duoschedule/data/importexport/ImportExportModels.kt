@@ -7,6 +7,7 @@ import com.duoschedule.data.model.WeekType
 data class CourseImportData(
     val name: String,
     val location: String = "",
+    val teacher: String = "",
     val dayOfWeek: Int,
     val startHour: Int,
     val startMinute: Int,
@@ -16,12 +17,15 @@ data class CourseImportData(
     val startWeek: Int = 1,
     val endWeek: Int = 16,
     val customWeeks: String = "",
-    val personType: PersonType
+    val personType: PersonType,
+    val startPeriod: Int = 1,
+    val endPeriod: Int = 1
 ) {
     fun toCourse(): Course {
         return Course(
             name = name,
             location = location,
+            teacher = teacher,
             dayOfWeek = dayOfWeek,
             startHour = startHour,
             startMinute = startMinute,
@@ -31,7 +35,9 @@ data class CourseImportData(
             startWeek = startWeek,
             endWeek = endWeek,
             customWeeks = customWeeks,
-            personType = personType
+            personType = personType,
+            startPeriod = startPeriod,
+            endPeriod = endPeriod
         )
     }
 
@@ -43,7 +49,33 @@ data class CourseImportData(
         val existingStart = existing.startHour * 60 + existing.startMinute
         val existingEnd = existing.endHour * 60 + existing.endMinute
         
-        return startMinutes < existingEnd && endMinutes > existingStart
+        if (startMinutes >= existingEnd || existingStart >= endMinutes) {
+            return false
+        }
+        
+        return hasWeekOverlap(existing)
+    }
+
+    private fun hasWeekOverlap(existing: Course): Boolean {
+        val weeks1 = getActiveWeeks()
+        val weeks2 = existing.getActiveWeeks()
+        return weeks1.intersect(weeks2).isNotEmpty()
+    }
+
+    private fun getActiveWeeks(): Set<Int> {
+        val weekRange = startWeek..endWeek
+        return when (weekType) {
+            WeekType.ALL -> weekRange.toSet()
+            WeekType.ODD -> weekRange.filter { it % 2 == 1 }.toSet()
+            WeekType.EVEN -> weekRange.filter { it % 2 == 0 }.toSet()
+            WeekType.CUSTOM -> {
+                if (customWeeks.isNotEmpty()) {
+                    customWeeks.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet()
+                } else {
+                    emptySet()
+                }
+            }
+        }
     }
 }
 
@@ -70,7 +102,33 @@ data class ImportResult(
     val failedCount: Int = 0,
     val conflictCount: Int = 0,
     val errors: List<String> = emptyList(),
-    val courses: List<CourseImportData> = emptyList()
+    val courses: List<CourseImportData> = emptyList(),
+    val fileType: CsvFileType = CsvFileType.TEMPLATE,
+    val settingsA: ScheduleSettingsExport? = null,
+    val settingsB: ScheduleSettingsExport? = null,
+    val personAName: String? = null,
+    val personBName: String? = null
+)
+
+enum class CsvFileType {
+    APP_EXPORT,
+    TEMPLATE
+}
+
+data class ImportPreviewData(
+    val courses: List<CourseImportData>,
+    val fileType: CsvFileType = CsvFileType.TEMPLATE,
+    val settingsA: ScheduleSettingsExport? = null,
+    val settingsB: ScheduleSettingsExport? = null,
+    val personAName: String? = null,
+    val personBName: String? = null
+)
+
+data class ImportedSettings(
+    val personAName: String? = null,
+    val personBName: String? = null,
+    val settingsA: ScheduleSettingsExport? = null,
+    val settingsB: ScheduleSettingsExport? = null
 )
 
 enum class ImportSource {

@@ -3,10 +3,10 @@ package com.duoschedule.ui.main;
 import com.duoschedule.data.repository.CourseRepository;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
+import dagger.internal.Provider;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
-import javax.inject.Provider;
 
 @ScopeMetadata
 @QualifierMetadata
@@ -21,12 +21,13 @@ import javax.inject.Provider;
     "KotlinInternal",
     "KotlinInternalInJava",
     "cast",
-    "deprecation"
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class MainViewModel_Factory implements Factory<MainViewModel> {
   private final Provider<CourseRepository> repositoryProvider;
 
-  public MainViewModel_Factory(Provider<CourseRepository> repositoryProvider) {
+  private MainViewModel_Factory(Provider<CourseRepository> repositoryProvider) {
     this.repositoryProvider = repositoryProvider;
   }
 

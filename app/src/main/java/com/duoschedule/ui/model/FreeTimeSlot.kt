@@ -1,14 +1,16 @@
 package com.duoschedule.ui.model
 
+import java.util.Locale
+
 data class FreeTimeSlot(
     val startHour: Int,
     val startMinute: Int,
     val endHour: Int,
     val endMinute: Int
 ) {
-    fun getStartTimeString(): String = String.format("%02d:%02d", startHour, startMinute)
+    fun getStartTimeString(): String = String.format(Locale.ROOT, "%02d:%02d", startHour, startMinute)
     
-    fun getEndTimeString(): String = String.format("%02d:%02d", endHour, endMinute)
+    fun getEndTimeString(): String = String.format(Locale.ROOT, "%02d:%02d", endHour, endMinute)
     
     fun getTimeString(): String = "${getStartTimeString()}-${getEndTimeString()}"
     

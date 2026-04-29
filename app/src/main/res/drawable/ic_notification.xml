@@ -1,0 +1,70 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    
+    <!-- 时钟外环 -->
+    <path
+        android:strokeColor="#007AFF"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:pathData="M12,2
+                         A10,10 0 0,1 12,22
+                         A10,10 0 0,1 2,12
+                         A10,10 0 0,1 12,2Z"/>
+    
+    <!-- 双人元素 - 人形 A (左侧，橙色) -->
+    <!-- 头部 -->
+    <path
+        android:fillColor="#FFB74D"
+        android:pathData="M9,7
+                         A2,2 0 0,1 9,11
+                         A2,2 0 0,1 7,9
+                         A2,2 0 0,1 9,7Z"/>
+    <!-- 身体 -->
+    <path
+        android:fillColor="#FFB74D"
+        android:pathData="M9,12
+                         C9,12 7,14 7,15
+                         C7,16 7.5,16.5 9,16.5
+                         C10.5,16.5 11,16 11,15
+                         C11,14 9,12 9,12Z"/>
+    
+    <!-- 双人元素 - 人形 B (右侧，蓝色) -->
+    <!-- 头部 -->
+    <path
+        android:fillColor="#4789FE"
+        android:pathData="M15,7
+                         A2,2 0 0,1 15,11
+                         A2,2 0 0,1 13,9
+                         A2,2 0 0,1 15,7Z"/>
+    <!-- 身体 -->
+    <path
+        android:fillColor="#4789FE"
+        android:pathData="M15,12
+                         C15,12 13,14 13,15
+                         C13,16 13.5,16.5 15,16.5
+                         C16.5,16.5 17,16 17,15
+                         C17,14 15,12 15,12Z"/>
+    
+    <!-- 时间指针 -->
+    <path
+        android:strokeColor="#007AFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M12,12 L12,7"/>
+    <path
+        android:strokeColor="#007AFF"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M12,12 L16,12"/>
+    <path
+        android:fillColor="#007AFF"
+        android:pathData="M12,11
+                         A1,1 0 0,1 12,13
+                         A1,1 0 0,1 11,12
+                         A1,1 0 0,1 12,11Z"/>
+</vector>

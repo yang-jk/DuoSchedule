@@ -1,46 +1,106 @@
 [
     {
-        "merged": "com.duoschedule.app-debug-77:/layout_schedule_widget.xml.flat",
-        "source": "com.duoschedule.app-main-79:/layout/schedule_widget.xml"
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\xml_file_paths.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\xml\\file_paths.xml"
     },
     {
-        "merged": "com.duoschedule.app-debug-77:/xml_data_extraction_rules.xml.flat",
-        "source": "com.duoschedule.app-main-79:/xml/data_extraction_rules.xml"
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\layout_widget_today_courses.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\layout\\widget_today_courses.xml"
     },
     {
-        "merged": "com.duoschedule.app-debug-77:/drawable_ic_launcher_foreground.xml.flat",
-        "source": "com.duoschedule.app-main-79:/drawable/ic_launcher_foreground.xml"
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\layout_schedule_widget.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\layout\\schedule_widget.xml"
     },
     {
-        "merged": "com.duoschedule.app-debug-77:/xml_schedule_widget_info.xml.flat",
-        "source": "com.duoschedule.app-main-79:/xml/schedule_widget_info.xml"
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\xml_backup_rules.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\xml\\backup_rules.xml"
     },
     {
-        "merged": "com.duoschedule.app-debug-77:/layout_schedule_widget_preview.xml.flat",
-        "source": "com.duoschedule.app-main-79:/layout/schedule_widget_preview.xml"
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\drawable-night_widget_system_background.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\drawable-night\\widget_system_background.xml"
     },
     {
-        "merged": "com.duoschedule.app-debug-77:/drawable_widget_background.xml.flat",
-        "source": "com.duoschedule.app-main-79:/drawable/widget_background.xml"
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\xml_widget_ta_courses_info.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\xml\\widget_ta_courses_info.xml"
     },
     {
-        "merged": "com.duoschedule.app-debug-77:/mipmap-anydpi-v26_ic_launcher.xml.flat",
-        "source": "com.duoschedule.app-main-79:/mipmap-anydpi-v26/ic_launcher.xml"
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\layout_widget_free_time.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\layout\\widget_free_time.xml"
     },
     {
-        "merged": "com.duoschedule.app-debug-77:/xml_file_paths.xml.flat",
-        "source": "com.duoschedule.app-main-79:/xml/file_paths.xml"
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\layout_widget_course_item.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\layout\\widget_course_item.xml"
     },
     {
-        "merged": "com.duoschedule.app-debug-77:/xml_backup_rules.xml.flat",
-        "source": "com.duoschedule.app-main-79:/xml/backup_rules.xml"
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\layout-night_widget_today_courses.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\layout-night\\widget_today_courses.xml"
     },
     {
-        "merged": "com.duoschedule.app-debug-77:/drawable_widget_preview_background.xml.flat",
-        "source": "com.duoschedule.app-main-79:/drawable/widget_preview_background.xml"
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\drawable_widget_preview_background.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\drawable\\widget_preview_background.xml"
     },
     {
-        "merged": "com.duoschedule.app-debug-77:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
-        "source": "com.duoschedule.app-main-79:/mipmap-anydpi-v26/ic_launcher_round.xml"
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\xml_schedule_widget_info_miui.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\xml\\schedule_widget_info_miui.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\mipmap-anydpi-v26\\ic_launcher_round.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\layout-night_widget_course_item.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\layout-night\\widget_course_item.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\layout_schedule_widget_preview.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\layout\\schedule_widget_preview.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\xml_schedule_widget_info.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\xml\\schedule_widget_info.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\xml_test_widget_info.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\xml\\test_widget_info.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\drawable_widget_background.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\drawable\\widget_background.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\xml_data_extraction_rules.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\xml\\data_extraction_rules.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\drawable_ic_launcher_foreground.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\drawable\\ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\mipmap-anydpi-v26\\ic_launcher.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\layout-night_widget_free_time.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\layout-night\\widget_free_time.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\layout-night_schedule_widget.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\layout-night\\schedule_widget.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\xml_widget_free_time_info.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\xml\\widget_free_time_info.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\drawable_widget_system_background.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\drawable\\widget_system_background.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\xml_widget_my_courses_info.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\xml\\widget_my_courses_info.xml"
+    },
+    {
+        "merged": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-debug-67:\\layout_test_widget.xml.flat",
+        "source": "C:\\Users\\Administrator\\.gradle\\daemon\\9.3.1\\com.duoschedule.app-main-69:\\layout\\test_widget.xml"
     }
 ]

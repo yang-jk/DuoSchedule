@@ -1,17 +1,20 @@
 package com.duoschedule.ui.settings
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.PersonType
-import com.duoschedule.ui.settings.components.TextInputDialog
+import com.duoschedule.ui.settings.components.*
+import com.duoschedule.ui.theme.*
+import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,13 +28,32 @@ fun UserSettingsScreen(
     var showPersonADialog by remember { mutableStateOf(false) }
     var showPersonBDialog by remember { mutableStateOf(false) }
 
+    val labelsPrimary = getLabelsVibrantPrimary()
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("用户设置") },
+                title = { 
+                    Text(
+                        text = "用户设置",
+                        color = labelsPrimary,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    ) 
+                },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                    GlassSymbolIconButton(
+                        onClick = onNavigateBack,
+                        style = GlassSymbolButtonStyle.NonTinted,
+                        size = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
+                        contentPadding = PaddingValues(start = Spacing.sm)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "返回",
+                            tint = labelsPrimary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -44,94 +66,45 @@ fun UserSettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(paddingValues),
+            verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
         ) {
-            // 小米风格卡片
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = "人员名称设置",
-                        style = MaterialTheme.typography.titleMedium
-                    )
+            Spacer(modifier = Modifier.height(Spacing.sm))
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // 我的名称
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showPersonBDialog = true }
-                            .padding(vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "我的名称",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = "设置自己的显示名称",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Text(
-                            text = personBName,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    Divider(modifier = Modifier.padding(vertical = 4.dp))
-
-                    // Ta的名称
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showPersonADialog = true }
-                            .padding(vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "Ta的名称",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = "设置对方的显示名称",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Text(
-                            text = personAName,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+            SettingsSection(title = "人员名称") {
+                SettingsNavigationRow(
+                    title = "我的名称",
+                    subtitle = "设置自己的显示名称",
+                    icon = Icons.Outlined.Person,
+                    iconBackgroundColor = BrandColors.PersonB,
+                    value = personBName,
+                    onClick = { showPersonBDialog = true }
+                )
+                
+                Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
+                
+                SettingsNavigationRow(
+                    title = "Ta的名称",
+                    subtitle = "设置对方的显示名称",
+                    icon = Icons.Outlined.Person,
+                    iconBackgroundColor = BrandColors.PersonA,
+                    value = personAName,
+                    onClick = { showPersonADialog = true }
+                )
             }
+
+            SettingsFooter(
+                text = "这些名称将显示在课表和主页中，用于区分两个人的课程。"
+            )
 
             Spacer(modifier = Modifier.weight(1f))
         }
     }
 
     if (showPersonADialog) {
-        TextInputDialog(
+        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        TextInputAlert(
+            backdrop = backdrop,
             title = "Ta的名称",
             label = "请输入Ta的名称",
             initialValue = personAName,
@@ -145,7 +118,9 @@ fun UserSettingsScreen(
     }
 
     if (showPersonBDialog) {
-        TextInputDialog(
+        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        TextInputAlert(
+            backdrop = backdrop,
             title = "我的名称",
             label = "请输入我的名称",
             initialValue = personBName,

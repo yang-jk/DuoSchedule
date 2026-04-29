@@ -3,6 +3,7 @@ package com.duoschedule.ui.navigation
 import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,24 +18,55 @@ import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.duoschedule.data.importexport.CourseImportData
 import com.duoschedule.data.importexport.ImportResult
+import com.duoschedule.data.importexport.ImportPreviewData
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.edit.CourseEditScreen
 import com.duoschedule.ui.main.MainScreen
 import com.duoschedule.ui.schedule.ScheduleScreen
 import com.duoschedule.ui.settings.*
+import com.duoschedule.ui.theme.BackgroundsLight
+import com.duoschedule.ui.theme.BackgroundsDark
+import com.duoschedule.ui.theme.LocalDarkTheme
 import kotlinx.coroutines.launch
 
-private val fadeSpec = tween<Float>(durationMillis = 200, easing = FastOutSlowInEasing)
-private val slideSpec = tween<IntOffset>(durationMillis = 200, easing = FastOutSlowInEasing)
+private val iosTransitionSpec = tween<IntOffset>(durationMillis = 300, easing = FastOutSlowInEasing)
+private val iosFadeSpec = tween<Float>(durationMillis = 300, easing = FastOutSlowInEasing)
+private val bottomNavTransitionSpec = tween<IntOffset>(durationMillis = 250, easing = FastOutSlowInEasing)
+
+private val bottomNavRoutes = listOf(
+    BottomNavItem.Home.route,
+    BottomNavItem.ScheduleB.route,
+    BottomNavItem.ScheduleA.route,
+    BottomNavItem.Settings.route
+)
+
+private fun isBottomNavRoute(route: String?): Boolean {
+    return route in bottomNavRoutes
+}
+
+private fun getSlideDirection(fromRoute: String?, toRoute: String?): Int {
+    if (!isBottomNavRoute(fromRoute) || !isBottomNavRoute(toRoute)) {
+        return 1
+    }
+    val fromIndex = bottomNavRoutes.indexOf(fromRoute)
+    val toIndex = bottomNavRoutes.indexOf(toRoute)
+    return if (toIndex > fromIndex) 1 else -1
+}
+
+
 
 @Composable
 fun DuoScheduleNavGraph(
     navController: NavHostController,
     startDestination: String = BottomNavItem.Home.route,
     pendingImportUri: Uri? = null,
-    onImportHandled: () -> Unit = {}
+    onImportHandled: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
-    var pendingImportCourses by remember { mutableStateOf<List<CourseImportData>>(emptyList()) }
+    val darkTheme = LocalDarkTheme.current
+    val backgroundColor = if (darkTheme) BackgroundsDark.Primary else BackgroundsLight.Primary
+    
+    var pendingImportData by remember { mutableStateOf<ImportPreviewData?>(null) }
     var externalImportUri by remember { mutableStateOf<Uri?>(null) }
     var showExternalImportDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -49,22 +81,107 @@ fun DuoScheduleNavGraph(
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        enterTransition = { fadeIn(animationSpec = fadeSpec) + slideInHorizontally(
-            animationSpec = slideSpec,
-            initialOffsetX = { it / 4 }
-        ) },
-        exitTransition = { fadeOut(animationSpec = fadeSpec) + slideOutHorizontally(
-            animationSpec = slideSpec,
-            targetOffsetX = { -it / 4 }
-        ) },
-        popEnterTransition = { fadeIn(animationSpec = fadeSpec) + slideInHorizontally(
-            animationSpec = slideSpec,
-            initialOffsetX = { -it / 4 }
-        ) },
-        popExitTransition = { fadeOut(animationSpec = fadeSpec) + slideOutHorizontally(
-            animationSpec = slideSpec,
-            targetOffsetX = { it / 4 }
-        ) }
+        modifier = modifier.background(backgroundColor),
+        enterTransition = {
+            val fromRoute = this.initialState?.destination?.route
+            val toRoute = this.targetState.destination.route
+            val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
+            
+            if (isBottomNavTransition) {
+                val direction = getSlideDirection(fromRoute, toRoute)
+                slideInHorizontally(
+                    animationSpec = spring(
+                        stiffness = Spring.StiffnessMediumLow,
+                        dampingRatio = Spring.DampingRatioNoBouncy
+                    ),
+                    initialOffsetX = { fullWidth -> 
+                        if (direction > 0) (fullWidth * 0.08f).toInt() else -(fullWidth * 0.08f).toInt()
+                    }
+                ) + fadeIn(
+                    animationSpec = tween(durationMillis = 200, easing = LinearOutSlowInEasing)
+                )
+            } else {
+                slideInHorizontally(
+                    animationSpec = iosTransitionSpec,
+                    initialOffsetX = { fullWidth -> fullWidth }
+                ) + fadeIn(animationSpec = iosFadeSpec)
+            }
+        },
+        exitTransition = {
+            val fromRoute = this.initialState?.destination?.route
+            val toRoute = this.targetState.destination.route
+            val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
+            
+            if (isBottomNavTransition) {
+                val direction = getSlideDirection(fromRoute, toRoute)
+                slideOutHorizontally(
+                    animationSpec = spring(
+                        stiffness = Spring.StiffnessMediumLow,
+                        dampingRatio = Spring.DampingRatioNoBouncy
+                    ),
+                    targetOffsetX = { fullWidth -> 
+                        if (direction > 0) -(fullWidth * 0.08f).toInt() else (fullWidth * 0.08f).toInt()
+                    }
+                ) + fadeOut(
+                    animationSpec = tween(durationMillis = 150, easing = FastOutLinearInEasing)
+                )
+            } else {
+                slideOutHorizontally(
+                    animationSpec = iosTransitionSpec,
+                    targetOffsetX = { fullWidth -> -fullWidth / 3 }
+                ) + fadeOut(animationSpec = iosFadeSpec)
+            }
+        },
+        popEnterTransition = {
+            val fromRoute = this.initialState?.destination?.route
+            val toRoute = this.targetState.destination.route
+            val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
+            
+            if (isBottomNavTransition) {
+                val direction = getSlideDirection(fromRoute, toRoute)
+                slideInHorizontally(
+                    animationSpec = spring(
+                        stiffness = Spring.StiffnessMediumLow,
+                        dampingRatio = Spring.DampingRatioNoBouncy
+                    ),
+                    initialOffsetX = { fullWidth -> 
+                        if (direction > 0) (fullWidth * 0.08f).toInt() else -(fullWidth * 0.08f).toInt()
+                    }
+                ) + fadeIn(
+                    animationSpec = tween(durationMillis = 200, easing = LinearOutSlowInEasing)
+                )
+            } else {
+                slideInHorizontally(
+                    animationSpec = iosTransitionSpec,
+                    initialOffsetX = { fullWidth -> -fullWidth / 3 }
+                ) + fadeIn(animationSpec = iosFadeSpec)
+            }
+        },
+        popExitTransition = {
+            val fromRoute = this.initialState?.destination?.route
+            val toRoute = this.targetState.destination.route
+            val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
+            
+            if (isBottomNavTransition) {
+                val direction = getSlideDirection(fromRoute, toRoute)
+                slideOutHorizontally(
+                    animationSpec = spring(
+                        stiffness = Spring.StiffnessMediumLow,
+                        dampingRatio = Spring.DampingRatioNoBouncy
+                    ),
+                    targetOffsetX = { fullWidth -> 
+                        if (direction > 0) -(fullWidth * 0.08f).toInt() else (fullWidth * 0.08f).toInt()
+                    }
+                ) + fadeOut(
+                    animationSpec = tween(durationMillis = 150, easing = FastOutLinearInEasing)
+                )
+            } else {
+                slideOutHorizontally(
+                    animationSpec = iosTransitionSpec,
+                    targetOffsetX = { fullWidth -> fullWidth }
+                ) + fadeOut(animationSpec = iosFadeSpec)
+            }
+        }
     ) {
         composable(BottomNavItem.Home.route) {
             MainScreen(
@@ -115,25 +232,21 @@ fun DuoScheduleNavGraph(
         composable("settings/schedule") {
             ScheduleSettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToPeriodTimes = { personType, personName ->
-                    navController.navigate("settings/schedule/period-times/${personType.name}/$personName")
+                onNavigateToPeriodTimes = { personType ->
+                    navController.navigate("settings/schedule/period-times/${personType.name}")
                 }
             )
         }
 
         composable(
-            route = "settings/schedule/period-times/{personType}/{personName}",
+            route = "settings/schedule/period-times/{personType}",
             arguments = listOf(
                 navArgument("personType") {
-                    type = NavType.StringType
-                },
-                navArgument("personName") {
                     type = NavType.StringType
                 }
             )
         ) { backStackEntry ->
             val personTypeStr = backStackEntry.arguments?.getString("personType") ?: "PERSON_A"
-            val personName = backStackEntry.arguments?.getString("personName") ?: "Ta"
             val personType = try { 
                 PersonType.valueOf(personTypeStr) 
             } catch (e: Exception) { 
@@ -142,7 +255,7 @@ fun DuoScheduleNavGraph(
             
             PeriodTimesSettingsScreen(
                 personType = personType,
-                personName = personName,
+                personName = if (personType == PersonType.PERSON_A) "Ta" else "我",
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -162,24 +275,29 @@ fun DuoScheduleNavGraph(
         composable("settings/data") {
             DataManagementScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToImportPreview = { courses ->
-                    pendingImportCourses = courses
+                onNavigateToImportPreview = { importData ->
+                    pendingImportData = importData
                     navController.navigate("settings/import-preview")
                 }
             )
         }
         
         composable("settings/import-preview") {
-            if (pendingImportCourses.isNotEmpty()) {
+            pendingImportData?.let { data ->
                 ImportPreviewScreen(
-                    courses = pendingImportCourses,
+                    courses = data.courses,
                     onConfirm = { selectedCourses, targetPerson, mergeMode ->
-                        navController.popBackStack()
-                        pendingImportCourses = emptyList()
+                        navController.navigate(BottomNavItem.Home.route) {
+                            popUpTo(BottomNavItem.Home.route) {
+                                inclusive = false
+                            }
+                            launchSingleTop = true
+                        }
+                        pendingImportData = null
                     },
                     onDismiss = {
-                        navController.popBackStack()
-                        pendingImportCourses = emptyList()
+                        navController.popBackStack(BottomNavItem.Home.route, inclusive = false)
+                        pendingImportData = null
                     },
                     onImportSuccess = { targetPerson ->
                         val route = if (targetPerson == PersonType.PERSON_A) {
@@ -190,12 +308,20 @@ fun DuoScheduleNavGraph(
                         navController.navigate(route) {
                             popUpTo(BottomNavItem.Home.route) {
                                 inclusive = false
+                                saveState = true
                             }
                             launchSingleTop = true
+                            restoreState = true
                         }
-                    }
+                        pendingImportData = null
+                    },
+                    onNavigateToHome = {
+                        navController.popBackStack(BottomNavItem.Home.route, inclusive = false)
+                        pendingImportData = null
+                    },
+                    importData = data
                 )
-            } else {
+            } ?: run {
                 LaunchedEffect(Unit) {
                     navController.popBackStack()
                 }
@@ -251,8 +377,8 @@ fun DuoScheduleNavGraph(
                 externalImportUri = null
                 onImportHandled()
             },
-            onImportSuccess = { courses ->
-                pendingImportCourses = courses
+            onImportSuccess = { importData ->
+                pendingImportData = importData
                 showExternalImportDialog = false
                 externalImportUri = null
                 onImportHandled()
@@ -267,7 +393,7 @@ fun DuoScheduleNavGraph(
 private fun ExternalImportDialog(
     uri: Uri,
     onDismiss: () -> Unit,
-    onImportSuccess: (List<CourseImportData>) -> Unit,
+    onImportSuccess: (ImportPreviewData) -> Unit,
     viewModel: com.duoschedule.ui.settings.SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -308,7 +434,12 @@ private fun ExternalImportDialog(
                     }
                 } else if (internalResult != null) {
                     if (internalResult!!.success && internalResult!!.courses.isNotEmpty()) {
-                        Text("成功解析 ${internalResult!!.courses.size} 门课程")
+                        val fileTypeText = if (internalResult!!.fileType == com.duoschedule.data.importexport.CsvFileType.APP_EXPORT) {
+                            "应用导出文件"
+                        } else {
+                            "模板文件"
+                        }
+                        Text("检测到 $fileTypeText，共 ${internalResult!!.courses.size} 门课程")
                         if (internalResult!!.errors.isNotEmpty()) {
                             Text(
                                 text = "部分课程解析失败：",
@@ -343,7 +474,16 @@ private fun ExternalImportDialog(
         },
         confirmButton = {
             if (internalResult != null && internalResult!!.success && internalResult!!.courses.isNotEmpty()) {
-                TextButton(onClick = { onImportSuccess(internalResult!!.courses) }) {
+                TextButton(onClick = {
+                    onImportSuccess(ImportPreviewData(
+                        courses = internalResult!!.courses,
+                        fileType = internalResult!!.fileType,
+                        settingsA = internalResult!!.settingsA,
+                        settingsB = internalResult!!.settingsB,
+                        personAName = internalResult!!.personAName,
+                        personBName = internalResult!!.personBName
+                    ))
+                }) {
                     Text("继续")
                 }
             } else if (internalResult != null) {

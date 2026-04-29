@@ -4,10 +4,10 @@ import com.duoschedule.data.local.CourseDao;
 import com.duoschedule.data.local.SettingsDataStore;
 import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
+import dagger.internal.Provider;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
-import javax.inject.Provider;
 
 @ScopeMetadata("javax.inject.Singleton")
 @QualifierMetadata
@@ -22,14 +22,15 @@ import javax.inject.Provider;
     "KotlinInternal",
     "KotlinInternalInJava",
     "cast",
-    "deprecation"
+    "deprecation",
+    "nullness:initialization.field.uninitialized"
 })
 public final class CourseRepository_Factory implements Factory<CourseRepository> {
   private final Provider<CourseDao> courseDaoProvider;
 
   private final Provider<SettingsDataStore> settingsDataStoreProvider;
 
-  public CourseRepository_Factory(Provider<CourseDao> courseDaoProvider,
+  private CourseRepository_Factory(Provider<CourseDao> courseDaoProvider,
       Provider<SettingsDataStore> settingsDataStoreProvider) {
     this.courseDaoProvider = courseDaoProvider;
     this.settingsDataStoreProvider = settingsDataStoreProvider;

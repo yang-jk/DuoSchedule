@@ -10,8 +10,8 @@ import android.content.pm.ServiceInfo
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import com.duoschedule.MainActivity
 import com.duoschedule.R
 import com.duoschedule.data.local.CourseDao
@@ -34,12 +34,17 @@ class LiveUpdateService : Service() {
         const val ACTION_START = "com.duoschedule.action.START_LIVE_UPDATE"
         const val ACTION_STOP = "com.duoschedule.action.STOP_LIVE_UPDATE"
         const val ACTION_UPDATE = "com.duoschedule.action.UPDATE_LIVE_UPDATE"
+        const val ACTION_PRE_START = "com.duoschedule.action.PRE_START_LIVE_UPDATE"
         
         const val EXTRA_COURSE_NAME = "course_name"
         const val EXTRA_COURSE_LOCATION = "course_location"
         const val EXTRA_REMAINING_MINUTES = "remaining_minutes"
+        const val EXTRA_END_HOUR = "end_hour"
+        const val EXTRA_END_MINUTE = "end_minute"
+        const val EXTRA_IS_PRE_START = "is_pre_start"
         
         private var isRunning = false
+        private var wakeLock: PowerManager.WakeLock? = null
         
         fun isServiceRunning(): Boolean = isRunning
         
@@ -47,11 +52,33 @@ class LiveUpdateService : Service() {
             val intent = Intent(context, LiveUpdateService::class.java).apply {
                 action = ACTION_START
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            context.startForegroundService(intent)
+        }
+        
+        fun start(
+            context: Context,
+            courseName: String,
+            courseLocation: String,
+            remainingMinutes: Int,
+            endHour: Int = -1,
+            endMinute: Int = -1
+        ) {
+            val intent = Intent(context, LiveUpdateService::class.java).apply {
+                action = ACTION_START
+                putExtra(EXTRA_COURSE_NAME, courseName)
+                putExtra(EXTRA_COURSE_LOCATION, courseLocation)
+                putExtra(EXTRA_REMAINING_MINUTES, remainingMinutes)
+                putExtra(EXTRA_END_HOUR, endHour)
+                putExtra(EXTRA_END_MINUTE, endMinute)
             }
+            context.startForegroundService(intent)
+        }
+        
+        fun preStart(context: Context) {
+            val intent = Intent(context, LiveUpdateService::class.java).apply {
+                action = ACTION_PRE_START
+            }
+            context.startForegroundService(intent)
         }
         
         fun stop(context: Context) {
@@ -90,6 +117,8 @@ class LiveUpdateService : Service() {
     private var currentCourseName: String = ""
     private var currentCourseLocation: String = ""
     private var currentRemainingMinutes: Int = 0
+    private var currentCourseEndTime: LocalTime? = null
+    private var isPreStartMode: Boolean = false
     
     private lateinit var notificationManager: NotificationManager
 
@@ -100,17 +129,71 @@ class LiveUpdateService : Service() {
     override fun onCreate() {
         super.onCreate()
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        PromotedNotificationBuilder.createNotificationChannels(this)
         isRunning = true
+        
+        acquireWakeLock()
+        
         Log.d(TAG, "服务已创建")
+    }
+    
+    private fun acquireWakeLock() {
+        try {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = powerManager.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "DuoSchedule::LiveUpdateService"
+            )
+            wakeLock?.acquire(10 * 60 * 1000L)
+            Log.d(TAG, "WakeLock acquired")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to acquire WakeLock", e)
+        }
+    }
+    
+    private fun releaseWakeLock() {
+        try {
+            wakeLock?.let {
+                if (it.isHeld) {
+                    it.release()
+                    Log.d(TAG, "WakeLock released")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to release WakeLock", e)
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> {
+            ACTION_PRE_START -> {
+                isPreStartMode = true
+                Log.d(TAG, "预启动模式: 启动前台服务保持进程存活")
                 startForegroundService()
                 startAutoUpdate()
+            }
+            ACTION_START -> {
+                isPreStartMode = false
+                intent.getStringExtra(EXTRA_COURSE_NAME)?.let { currentCourseName = it }
+                intent.getStringExtra(EXTRA_COURSE_LOCATION)?.let { currentCourseLocation = it }
+                currentRemainingMinutes = intent.getIntExtra(EXTRA_REMAINING_MINUTES, 0)
+                
+                val endHour = intent.getIntExtra(EXTRA_END_HOUR, -1)
+                val endMinute = intent.getIntExtra(EXTRA_END_MINUTE, -1)
+                if (endHour >= 0 && endMinute >= 0) {
+                    currentCourseEndTime = LocalTime.of(endHour, endMinute)
+                }
+                
+                Log.d(TAG, "服务启动: $currentCourseName, 剩余 $currentRemainingMinutes 分钟, 结束时间: $currentCourseEndTime")
+                
+                startForegroundService()
+                startAutoUpdate()
+                
+                if (currentCourseName.isNotEmpty()) {
+                    updateNotification()
+                }
             }
             ACTION_STOP -> {
                 stopForeground(STOP_FOREGROUND_REMOVE)
@@ -130,6 +213,7 @@ class LiveUpdateService : Service() {
         updateJob?.cancel()
         serviceScope.cancel()
         isRunning = false
+        releaseWakeLock()
         Log.d(TAG, "服务已销毁")
         super.onDestroy()
     }
@@ -155,7 +239,9 @@ class LiveUpdateService : Service() {
             while (isActive) {
                 delay(60_000)
                 refreshCourseState()
-                updateNotification()
+                if (!isPreStartMode) {
+                    updateNotification()
+                }
             }
         }
     }
@@ -171,9 +257,11 @@ class LiveUpdateService : Service() {
                 personType = PersonType.PERSON_B
             ).filter { it.isInWeek(currentWeekB) }
 
+            var foundOngoingCourse = false
+            
             for (course in personBCourses) {
                 val courseStartTime = LocalTime.of(course.startHour, course.startMinute)
-                val courseEndTime = courseStartTime.plusMinutes(course.duration.toLong())
+                val courseEndTime = LocalTime.of(course.endHour, course.endMinute)
                 
                 if (currentTime.isAfter(courseStartTime) && currentTime.isBefore(courseEndTime)) {
                     val remainingMinutes = java.time.Duration.between(currentTime, courseEndTime).toMinutes().toInt()
@@ -181,10 +269,22 @@ class LiveUpdateService : Service() {
                     currentCourseName = course.name
                     currentCourseLocation = course.location ?: ""
                     currentRemainingMinutes = remainingMinutes
+                    currentCourseEndTime = courseEndTime
+                    isPreStartMode = false
                     
+                    foundOngoingCourse = true
                     Log.d(TAG, "刷新课程状态: ${course.name}, 剩余${remainingMinutes}分钟")
                     break
                 }
+            }
+            
+            if (!foundOngoingCourse && currentCourseName.isNotEmpty()) {
+                Log.d(TAG, "课程已结束，停止服务: $currentCourseName")
+                currentCourseName = ""
+                currentCourseLocation = ""
+                currentRemainingMinutes = 0
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
             }
         } catch (e: Exception) {
             Log.e(TAG, "刷新课程状态失败", e)
@@ -208,73 +308,29 @@ class LiveUpdateService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val endTime = System.currentTimeMillis() + currentRemainingMinutes * 60 * 1000L
+        val liveNotificationEnabled = runBlocking { settingsDataStore.getLiveNotificationEnabled() }
 
-        if (Build.VERSION.SDK_INT >= 36) {
-            val canPostPromoted = notificationManager.canPostPromotedNotifications()
-            val liveEnabled = runBlocking { settingsDataStore.getLiveNotificationEnabled() }
-            
-            Log.d(TAG, "=== LiveUpdateService 实况通知调试 ===")
-            Log.d(TAG, "canPostPromotedNotifications: $canPostPromoted")
-            Log.d(TAG, "liveNotificationEnabled: $liveEnabled")
-            Log.d(TAG, "课程: $currentCourseName, 剩余: ${currentRemainingMinutes}分钟")
+        Log.d(TAG, "=== LiveUpdateService 实况通知调试 ===")
+        Log.d(TAG, "SDK版本: ${Build.VERSION.SDK_INT}")
+        Log.d(TAG, "liveNotificationEnabled: $liveNotificationEnabled")
+        Log.d(TAG, "课程: $currentCourseName, 剩余: ${currentRemainingMinutes}分钟")
 
-            val miuiNotification = MiuiIslandHelper.createMiuiIslandNotification(
+        if (isPreStartMode || currentCourseName.isEmpty()) {
+            return PromotedNotificationBuilder.buildWaitingNotification(
                 context = this,
-                channelId = CourseNotificationManager.CHANNEL_ID_ONGOING,
-                courseName = currentCourseName,
-                location = currentCourseLocation,
-                remainingMinutes = currentRemainingMinutes,
-                pendingIntent = pendingIntent,
-                notificationId = NOTIFICATION_ID
+                pendingIntent = pendingIntent
             )
-            
-            if (miuiNotification != null) {
-                Log.d(TAG, "使用小米动态岛通知")
-                return miuiNotification
-            }
-
-            val useLiveNotification = liveEnabled && canPostPromoted
-            
-            val builder = NotificationCompat.Builder(this, CourseNotificationManager.CHANNEL_ID_ONGOING)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle(currentCourseName)
-                .setContentText("$currentCourseLocation · 剩余 $currentRemainingMinutes 分钟")
-                .setContentIntent(pendingIntent)
-                .setOngoing(true)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_STATUS)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setOnlyAlertOnce(true)
-                .setUsesChronometer(true)
-                .setChronometerCountDown(true)
-                .setWhen(endTime)
-                .setRequestPromotedOngoing(useLiveNotification)
-            
-            if (useLiveNotification) {
-                builder.setShortCriticalText("剩余 $currentRemainingMinutes 分钟")
-                Log.d(TAG, ">>> LiveUpdateService 实况通知已启用 <<<")
-            } else {
-                Log.w(TAG, "实况通知未启用: liveEnabled=$liveEnabled, canPost=$canPostPromoted")
-            }
-
-            return builder.build()
-        } else {
-            return NotificationCompat.Builder(this, CourseNotificationManager.CHANNEL_ID_ONGOING)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle(currentCourseName)
-                .setContentText(currentCourseLocation)
-                .setContentIntent(pendingIntent)
-                .setOngoing(true)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_STATUS)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setOnlyAlertOnce(true)
-                .setUsesChronometer(true)
-                .setChronometerCountDown(true)
-                .setWhen(endTime)
-                .setSubText("剩余 $currentRemainingMinutes 分钟")
-                .build()
         }
+
+        return PromotedNotificationBuilder.buildOngoingNotification(
+            context = this,
+            courseName = currentCourseName,
+            location = currentCourseLocation,
+            remainingMinutes = currentRemainingMinutes,
+            totalMinutes = 45,
+            pendingIntent = pendingIntent,
+            liveNotificationEnabled = liveNotificationEnabled,
+            courseEndTime = currentCourseEndTime
+        )
     }
 }

@@ -6,6 +6,7 @@ import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.ThemeMode
 import com.duoschedule.data.model.TodayCourseDisplayMode
+import com.duoschedule.notification.SilentModeType
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import javax.inject.Inject
@@ -76,14 +77,14 @@ class CourseRepository @Inject constructor(
     fun getCourseCellHeight(): Flow<Int> = 
         settingsDataStore.courseCellHeight
 
+    fun getShowDashedBorder(): Flow<Boolean> =
+        settingsDataStore.showDashedBorder
+
     fun getNotificationEnabled(): Flow<Boolean> = 
         settingsDataStore.notificationEnabled
 
     fun getNotificationAdvanceTime(): Flow<Int> = 
         settingsDataStore.notificationAdvanceTime
-
-    fun getIslandDisplayMode(): Flow<String> = 
-        settingsDataStore.islandDisplayMode
 
     fun getLiveNotificationEnabled(): Flow<Boolean> = 
         settingsDataStore.liveNotificationEnabled
@@ -93,6 +94,30 @@ class CourseRepository @Inject constructor(
 
     fun getThemeMode(): Flow<ThemeMode> = 
         settingsDataStore.themeMode
+
+    fun getAutoSilentEnabled(): Flow<Boolean> = 
+        settingsDataStore.autoSilentEnabled
+
+    fun getAutoSilentModeType(): Flow<String> = 
+        settingsDataStore.autoSilentModeType
+
+    fun getAutoSilentAdvanceTime(): Flow<Int> =
+        settingsDataStore.autoSilentAdvanceTime
+
+    fun getCourseNameFontSize(): Flow<Int> =
+        settingsDataStore.courseNameFontSize
+
+    fun getCourseLocationFontSize(): Flow<Int> =
+        settingsDataStore.courseLocationFontSize
+
+    suspend fun getAutoSilentEnabledSync(): Boolean = 
+        settingsDataStore.getAutoSilentEnabled()
+
+    suspend fun getAutoSilentModeTypeSync(): SilentModeType = 
+        settingsDataStore.getAutoSilentModeType()
+
+    suspend fun getAutoSilentAdvanceTimeSync(): Int =
+        settingsDataStore.getAutoSilentAdvanceTime()
 
     suspend fun setSemesterStartDate(personType: PersonType, date: LocalDate) = 
         settingsDataStore.setSemesterStartDate(personType, date)
@@ -124,14 +149,14 @@ class CourseRepository @Inject constructor(
     suspend fun setCourseCellHeight(height: Int) = 
         settingsDataStore.setCourseCellHeight(height)
 
+    suspend fun setShowDashedBorder(show: Boolean) =
+        settingsDataStore.setShowDashedBorder(show)
+
     suspend fun setNotificationEnabled(enabled: Boolean) = 
         settingsDataStore.setNotificationEnabled(enabled)
 
     suspend fun setNotificationAdvanceTime(minutes: Int) = 
         settingsDataStore.setNotificationAdvanceTime(minutes)
-
-    suspend fun setIslandDisplayMode(mode: String) = 
-        settingsDataStore.setIslandDisplayMode(mode)
 
     suspend fun setLiveNotificationEnabled(enabled: Boolean) = 
         settingsDataStore.setLiveNotificationEnabled(enabled)
@@ -141,6 +166,21 @@ class CourseRepository @Inject constructor(
 
     suspend fun setThemeMode(mode: ThemeMode) = 
         settingsDataStore.setThemeMode(mode)
+
+    suspend fun setAutoSilentEnabled(enabled: Boolean) = 
+        settingsDataStore.setAutoSilentEnabled(enabled)
+
+    suspend fun setAutoSilentModeType(modeType: SilentModeType) = 
+        settingsDataStore.setAutoSilentModeType(modeType)
+
+    suspend fun setAutoSilentAdvanceTime(minutes: Int) =
+        settingsDataStore.setAutoSilentAdvanceTime(minutes)
+
+    suspend fun setCourseNameFontSize(size: Int) =
+        settingsDataStore.setCourseNameFontSize(size)
+
+    suspend fun setCourseLocationFontSize(size: Int) =
+        settingsDataStore.setCourseLocationFontSize(size)
 
     fun calculateCurrentWeek(startDate: LocalDate, totalWeeks: Int): Int = 
         settingsDataStore.calculateCurrentWeek(startDate, totalWeeks)
@@ -155,11 +195,16 @@ class CourseRepository @Inject constructor(
         val courses = courseDao.getCoursesByPersonSync(course.personType)
             .filter { it.id != excludeId && it.dayOfWeek == course.dayOfWeek }
         
+        android.util.Log.d("CourseRepository", "checkTimeConflict: course=${course.name}, excludeId=$excludeId, checking ${courses.size} courses")
+        
         for (existing in courses) {
+            android.util.Log.d("CourseRepository", "  checking against: ${existing.name} (id=${existing.id})")
             if (hasTimeOverlap(course, existing)) {
+                android.util.Log.d("CourseRepository", "  CONFLICT DETECTED with ${existing.name}")
                 return true
             }
         }
+        android.util.Log.d("CourseRepository", "  NO CONFLICT")
         return false
     }
 
@@ -169,29 +214,31 @@ class CourseRepository @Inject constructor(
         val start2 = course2.startHour * 60 + course2.startMinute
         val end2 = course2.endHour * 60 + course2.endMinute
         
+        android.util.Log.d("CourseRepository", "    time check: course1(${course1.startWeek}-${course1.endWeek}) ${course1.getStartTimeString()}-${course1.getEndTimeString()} vs course2(${course2.startWeek}-${course2.endWeek}) ${course2.getStartTimeString()}-${course2.getEndTimeString()}")
+        
         if (start1 >= end2 || start2 >= end1) {
+            android.util.Log.d("CourseRepository", "    no time overlap (time ranges don't intersect)")
             return false
         }
         
+        android.util.Log.d("CourseRepository", "    time overlap exists, checking weeks...")
         return hasWeekOverlap(course1, course2)
     }
 
     private fun hasWeekOverlap(course1: Course, course2: Course): Boolean {
-        if (course1.weekType == com.duoschedule.data.model.WeekType.ALL && 
-            course2.weekType == com.duoschedule.data.model.WeekType.ALL) {
-            return true
-        }
-        
         val weeks1 = getActiveWeeks(course1)
         val weeks2 = getActiveWeeks(course2)
-        return weeks1.intersect(weeks2).isNotEmpty()
+        val intersection = weeks1.intersect(weeks2)
+        android.util.Log.d("CourseRepository", "    weeks1=$weeks1, weeks2=$weeks2, intersection=$intersection")
+        return intersection.isNotEmpty()
     }
 
     private fun getActiveWeeks(course: Course): Set<Int> {
+        val weekRange = course.startWeek..course.endWeek
         return when (course.weekType) {
-            com.duoschedule.data.model.WeekType.ALL -> (course.startWeek..course.endWeek).toSet()
-            com.duoschedule.data.model.WeekType.ODD -> (course.startWeek..course.endWeek step 2).toSet()
-            com.duoschedule.data.model.WeekType.EVEN -> ((course.startWeek + 1)..course.endWeek step 2).toSet()
+            com.duoschedule.data.model.WeekType.ALL -> weekRange.toSet()
+            com.duoschedule.data.model.WeekType.ODD -> weekRange.filter { it % 2 == 1 }.toSet()
+            com.duoschedule.data.model.WeekType.EVEN -> weekRange.filter { it % 2 == 0 }.toSet()
             com.duoschedule.data.model.WeekType.CUSTOM -> {
                 if (course.customWeeks.isNotEmpty()) {
                     course.customWeeks.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet()
@@ -200,5 +247,67 @@ class CourseRepository @Inject constructor(
                 }
             }
         }
+    }
+
+    suspend fun updateCourseTimesForPerson(
+        personType: PersonType,
+        periodTimes: List<String>
+    ) {
+        val courses = courseDao.getCoursesByPersonSync(personType)
+        
+        for (course in courses) {
+            val newStartTime = getTimeFromPeriod(course.startPeriod, periodTimes)
+            val newEndTime = getTimeFromPeriodEnd(course.endPeriod, periodTimes)
+            
+            if (newStartTime != null && newEndTime != null) {
+                val updatedCourse = course.copy(
+                    startHour = newStartTime.first,
+                    startMinute = newStartTime.second,
+                    endHour = newEndTime.first,
+                    endMinute = newEndTime.second
+                )
+                courseDao.updateCourse(updatedCourse)
+            }
+        }
+    }
+
+    private fun getTimeFromPeriod(period: Int, periodTimes: List<String>): Pair<Int, Int>? {
+        if (periodTimes.isEmpty() || period < 1 || period > periodTimes.size) return null
+        
+        val timeRange = periodTimes[period - 1]
+        val times = timeRange.split("-")
+        
+        if (times.size == 2) {
+            val startParts = times[0].split(":")
+            if (startParts.size == 2) {
+                try {
+                    return Pair(startParts[0].toInt(), startParts[1].toInt())
+                } catch (e: NumberFormatException) {
+                    return null
+                }
+            }
+        }
+        
+        return null
+    }
+
+    private fun getTimeFromPeriodEnd(period: Int, periodTimes: List<String>): Pair<Int, Int>? {
+        if (periodTimes.isEmpty() || period < 1 || period > periodTimes.size) return null
+        
+        val timeRange = periodTimes[period - 1]
+        val times = timeRange.split("-")
+        
+        if (times.size == 2) {
+            val endParts = times[1].split(":")
+            if (endParts.size == 2) {
+                try {
+                    return Pair(endParts[0].toInt(), endParts[1].toInt())
+                } catch (e: NumberFormatException) {
+                    return null
+                }
+            }
+        }
+        
+        return null
     }
 }

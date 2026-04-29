@@ -10,7 +10,6 @@ import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,8 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.duoschedule.ui.theme.getDialogBackgroundColor
-import com.duoschedule.ui.theme.getPersonBColor
+import com.duoschedule.ui.theme.*
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.emptyBackdrop
 import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -32,7 +32,8 @@ fun PeriodPickerBottomSheet(
     selectedEndPeriod: Int,
     onSelectionChange: (dayOfWeek: Int, startPeriod: Int, endPeriod: Int) -> Unit,
     onDismiss: () -> Unit,
-    sheetState: SheetState
+    sheetState: SheetState,
+    backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
     var currentDayOfWeek by remember(selectedDayOfWeek) { mutableIntStateOf(selectedDayOfWeek) }
     var currentStartPeriod by remember(selectedStartPeriod) { mutableIntStateOf(selectedStartPeriod) }
@@ -44,38 +45,24 @@ fun PeriodPickerBottomSheet(
         }
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
+    val darkTheme = LocalDarkTheme.current
+
+    GlassBottomSheet(
+        onDismiss = onDismiss,
         sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-        containerColor = getDialogBackgroundColor(),
-        scrimColor = MaterialTheme.colorScheme.background.copy(alpha = 0.5f),
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .padding(top = 12.dp)
-                    .width(40.dp)
-                    .height(4.dp)
-                    .then(
-                        Modifier
-                            .background(
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                RoundedCornerShape(2.dp)
-                            )
-                    )
-            )
-        }
-    ) {
+        backdrop = backdrop,
+        darkTheme = darkTheme
+    ) { bottomSheetBackdrop ->
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp)
+                .padding(horizontal = GlassBottomSheetDefaults.ContentHorizontalPadding)
+                .padding(top = GlassBottomSheetDefaults.ContentTopPadding, bottom = GlassBottomSheetDefaults.ContentBottomPadding)
         ) {
             Text(
                 text = "选择上课时间",
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                color = getLabelsVibrantPrimary()
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -121,35 +108,26 @@ fun PeriodPickerBottomSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                OutlinedButton(
+                LiquidGlassButton(
+                    text = "取消",
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Text("取消")
-                }
+                    backdrop = bottomSheetBackdrop,
+                    style = LiquidGlassButtonStyle.NonTinted
+                )
 
-                Button(
+                LiquidGlassButton(
+                    text = "确定",
                     onClick = {
                         onSelectionChange(currentDayOfWeek, currentStartPeriod, currentEndPeriod)
                         onDismiss()
                     },
                     modifier = Modifier.weight(1f),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Text("确定")
-                }
+                    backdrop = bottomSheetBackdrop,
+                    style = LiquidGlassButtonStyle.Tinted
+                )
             }
         }
-    }
-}
-
-private fun getItemAlpha(distance: Int): Float {
-    return when (distance) {
-        0 -> 1.0f
-        1 -> 0.7f
-        2 -> 0.5f
-        else -> 0.3f
     }
 }
 
@@ -208,7 +186,6 @@ private fun DayOfWeekPicker(
             contentPadding = PaddingValues(top = itemHeight, bottom = itemHeight)
         ) {
             items(days.size) { index ->
-                val day = index + 1
                 val isSelected = index == centerItemIndex
                 
                 val animatedColor by animateColorAsState(
