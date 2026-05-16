@@ -43,6 +43,7 @@ fun CurrentCourseCard(
     personAState: CurrentCourseState,
     personBState: CurrentCourseState,
     modifier: Modifier = Modifier,
+    singleModeEnabled: Boolean = false,
     backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
     val darkTheme = LocalDarkTheme.current
@@ -101,22 +102,24 @@ fun CurrentCourseCard(
         PersonCourseColumn(
             state = personBState,
             personColor = personBColor,
-            modifier = Modifier.weight(1f),
+            modifier = if (singleModeEnabled) Modifier.fillMaxWidth() else Modifier.weight(1f),
             backdrop = backdrop
         )
-        
-        VerticalDivider(
-            color = if (darkTheme) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f),
-            thickness = 1.dp,
-            modifier = Modifier.height(100.dp)
-        )
-        
-        PersonCourseColumn(
-            state = personAState,
-            personColor = personAColor,
-            modifier = Modifier.weight(1f),
-            backdrop = backdrop
-        )
+
+        if (!singleModeEnabled) {
+            VerticalDivider(
+                color = if (darkTheme) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f),
+                thickness = 1.dp,
+                modifier = Modifier.height(100.dp)
+            )
+
+            PersonCourseColumn(
+                state = personAState,
+                personColor = personAColor,
+                modifier = Modifier.weight(1f),
+                backdrop = backdrop
+            )
+        }
     }
 }
 

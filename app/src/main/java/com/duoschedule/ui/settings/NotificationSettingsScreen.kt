@@ -173,7 +173,7 @@ fun NotificationSettingsScreen(
                     GlassSymbolIconButton(
                         onClick = onNavigateBack,
                         style = GlassSymbolButtonStyle.NonTinted,
-                        size = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
+                        buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
                         contentPadding = PaddingValues(start = Spacing.sm)
                     ) {
                         Icon(
@@ -199,28 +199,16 @@ fun NotificationSettingsScreen(
         ) {
             Spacer(modifier = Modifier.height(Spacing.sm))
 
-            SettingsSection(title = "通知开关") {
-                SettingsToggleRow(
-                    title = "启用通知",
-                    subtitle = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
-                        "需要授予通知权限"
-                    } else {
-                        "开启后将收到课前提醒通知"
-                    },
-                    icon = Icons.Outlined.Notifications,
-                    iconBackgroundColor = IOSColors.Red,
-                    checked = notificationEnabled && hasNotificationPermission,
-                    onCheckedChange = { enabled ->
-                        if (enabled) {
-                            requestNotificationPermissionIfNeeded()
-                        } else {
-                            viewModel.setNotificationEnabled(false)
-                        }
-                    }
-                )
-            }
-
-            if (notificationEnabled && hasNotificationPermission) {
+            if (!notificationEnabled || !hasNotificationPermission) {
+                SettingsSection(title = "通知状态") {
+                    SettingsNavigationRow(
+                        title = "通知已关闭，请在主设置页开启通知",
+                        icon = Icons.Outlined.Info,
+                        iconBackgroundColor = IOSColors.Gray,
+                        onClick = {}
+                    )
+                }
+            } else {
                 SettingsSection(title = "提醒设置") {
                     SettingsNavigationRow(
                         title = "课前提醒时间",
@@ -301,70 +289,25 @@ fun NotificationSettingsScreen(
                         }
                     }
                 }
-            }
 
-            SettingsSection(title = "权限管理") {
-                SettingsNavigationRow(
-                    title = "通知权限",
-                    subtitle = if (hasNotificationPermission) "已授予" else "未授予，点击授权",
-                    icon = Icons.Outlined.Settings,
-                    iconBackgroundColor = if (hasNotificationPermission) IOSColors.Green else IOSColors.Red,
-                    onClick = { viewModel.openNotificationSettings(context) }
-                )
-
-                if (!isIgnoringBatteryOptimizations) {
+                SettingsSection(title = "权限管理") {
                     SettingsNavigationRow(
-                        title = "电池优化",
-                        subtitle = "⚠️ 未关闭电池优化可能导致通知延迟",
-                        icon = Icons.Outlined.BatterySaver,
-                        iconBackgroundColor = IOSColors.Orange,
-                        onClick = {
-                            try {
-                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                                    data = "package:${context.packageName}".toUri()
-                                }
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                    data = "package:${context.packageName}".toUri()
-                                }
-                                context.startActivity(intent)
-                            }
-                        }
+                        title = "通知权限",
+                        subtitle = if (hasNotificationPermission) "已授予" else "未授予，点击授权",
+                        icon = Icons.Outlined.Settings,
+                        iconBackgroundColor = if (hasNotificationPermission) IOSColors.Green else IOSColors.Red,
+                        onClick = { viewModel.openNotificationSettings(context) }
                     )
-                } else {
-                    SettingsNavigationRow(
-                        title = "电池优化",
-                        subtitle = "✓ 已关闭，通知可准时送达",
-                        icon = Icons.Outlined.BatterySaver,
-                        iconBackgroundColor = IOSColors.Green,
-                        onClick = {
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = "package:${context.packageName}".toUri()
-                            }
-                            context.startActivity(intent)
-                        }
-                    )
-                }
 
-                val isXiaomiDevice = Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true) ||
-                                     Build.MANUFACTURER.equals("Redmi", ignoreCase = true)
-                if (isXiaomiDevice) {
-                    SettingsNavigationRow(
-                        title = "自启动权限（小米）",
-                        subtitle = "⚠️ 必须开启才能收到通知",
-                        icon = Icons.Outlined.Start,
-                        iconBackgroundColor = IOSColors.Red,
-                        onClick = {
-                            try {
-                                val intent = Intent().apply {
-                                    action = "miui.intent.action.OP_AUTO_START"
-                                    addCategory(Intent.CATEGORY_DEFAULT)
-                                }
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
+                    if (!isIgnoringBatteryOptimizations) {
+                        SettingsNavigationRow(
+                            title = "电池优化",
+                            subtitle = "⚠️ 未关闭电池优化可能导致通知延迟",
+                            icon = Icons.Outlined.BatterySaver,
+                            iconBackgroundColor = IOSColors.Orange,
+                            onClick = {
                                 try {
-                                    val intent = Intent("android.settings.APPLICATION_DETAILS_SETTINGS").apply {
+                                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                                         data = "package:${context.packageName}".toUri()
                                     }
                                     context.startActivity(intent)
@@ -375,93 +318,110 @@ fun NotificationSettingsScreen(
                                     context.startActivity(intent)
                                 }
                             }
-                        }
-                    )
-                    
-                    SettingsNavigationRow(
-                        title = "后台运行权限（小米）",
-                        subtitle = "允许应用在后台运行",
-                        icon = Icons.Outlined.AppSettingsAlt,
-                        iconBackgroundColor = IOSColors.Blue,
-                        onClick = {
-                            try {
-                                val intent = Intent("miui.intent.action.PER_MIUI_APP_SETTINGS").apply {
-                                    putExtra("package", context.packageName)
-                                }
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
+                        )
+                    } else {
+                        SettingsNavigationRow(
+                            title = "电池优化",
+                            subtitle = "✓ 已关闭，通知可准时送达",
+                            icon = Icons.Outlined.BatterySaver,
+                            iconBackgroundColor = IOSColors.Green,
+                            onClick = {
                                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                                     data = "package:${context.packageName}".toUri()
                                 }
                                 context.startActivity(intent)
                             }
-                        }
-                    )
-                }
+                        )
+                    }
 
-                if (isAndroid12OrAbove && !canScheduleExactAlarms) {
-                    SettingsNavigationRow(
-                        title = "精确闹钟权限",
-                        subtitle = "⚠️ 未开启可能导致通知延迟几分钟",
-                        icon = Icons.Outlined.Alarm,
-                        iconBackgroundColor = IOSColors.Orange,
-                        onClick = {
-                            try {
-                                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
-                                    data = "package:${context.packageName}".toUri()
+                    val isXiaomiDevice = Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true) ||
+                                         Build.MANUFACTURER.equals("Redmi", ignoreCase = true)
+                    if (isXiaomiDevice) {
+                        SettingsNavigationRow(
+                            title = "自启动权限（小米）",
+                            subtitle = "⚠️ 必须开启才能收到通知",
+                            icon = Icons.Outlined.Start,
+                            iconBackgroundColor = IOSColors.Red,
+                            onClick = {
+                                try {
+                                    val intent = Intent().apply {
+                                        action = "miui.intent.action.OP_AUTO_START"
+                                        addCategory(Intent.CATEGORY_DEFAULT)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    try {
+                                        val intent = Intent("android.settings.APPLICATION_DETAILS_SETTINGS").apply {
+                                            data = "package:${context.packageName}".toUri()
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data = "package:${context.packageName}".toUri()
+                                        }
+                                        context.startActivity(intent)
+                                    }
                                 }
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
+                            }
+                        )
+                        
+                        SettingsNavigationRow(
+                            title = "后台运行权限（小米）",
+                            subtitle = "允许应用在后台运行",
+                            icon = Icons.Outlined.AppSettingsAlt,
+                            iconBackgroundColor = IOSColors.Blue,
+                            onClick = {
+                                try {
+                                    val intent = Intent("miui.intent.action.PER_MIUI_APP_SETTINGS").apply {
+                                        putExtra("package", context.packageName)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                        data = "package:${context.packageName}".toUri()
+                                    }
+                                    context.startActivity(intent)
+                                }
+                            }
+                        )
+                    }
+
+                    if (isAndroid12OrAbove && !canScheduleExactAlarms) {
+                        SettingsNavigationRow(
+                            title = "精确闹钟权限",
+                            subtitle = "⚠️ 未开启可能导致通知延迟几分钟",
+                            icon = Icons.Outlined.Alarm,
+                            iconBackgroundColor = IOSColors.Orange,
+                            onClick = {
+                                try {
+                                    val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                                        data = "package:${context.packageName}".toUri()
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                        data = "package:${context.packageName}".toUri()
+                                    }
+                                    context.startActivity(intent)
+                                }
+                            }
+                        )
+                    } else if (isAndroid12OrAbove && canScheduleExactAlarms) {
+                        SettingsNavigationRow(
+                            title = "精确闹钟权限",
+                            subtitle = "✓ 已开启，通知将准时送达",
+                            icon = Icons.Outlined.Alarm,
+                            iconBackgroundColor = IOSColors.Green,
+                            onClick = {
                                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                                     data = "package:${context.packageName}".toUri()
                                 }
                                 context.startActivity(intent)
                             }
-                        }
-                    )
-                } else if (isAndroid12OrAbove && canScheduleExactAlarms) {
-                    SettingsNavigationRow(
-                        title = "精确闹钟权限",
-                        subtitle = "✓ 已开启，通知将准时送达",
-                        icon = Icons.Outlined.Alarm,
-                        iconBackgroundColor = IOSColors.Green,
-                        onClick = {
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = "package:${context.packageName}".toUri()
-                            }
-                            context.startActivity(intent)
-                        }
-                    )
+                        )
+                    }
                 }
-            }
 
-            SettingsSection(title = "调试测试") {
-                SettingsNavigationRow(
-                    title = "测试通知",
-                    subtitle = "立即发送一条测试通知",
-                    icon = Icons.Outlined.NotificationsActive,
-                    iconBackgroundColor = IOSColors.Orange,
-                    onClick = { viewModel.testNotification() }
-                )
-                
-                SettingsNavigationRow(
-                    title = "测试上课中通知",
-                    subtitle = "立即启动上课中实况通知",
-                    icon = Icons.Outlined.PlayCircle,
-                    iconBackgroundColor = IOSColors.Purple,
-                    onClick = { viewModel.testOngoingNotification(context) }
-                )
-                
-                SettingsNavigationRow(
-                    title = "重新调度通知",
-                    subtitle = "手动触发通知调度",
-                    icon = Icons.Outlined.Refresh,
-                    iconBackgroundColor = IOSColors.Blue,
-                    onClick = { viewModel.rescheduleNotifications() }
-                )
-            }
-
-            if (notificationEnabled) {
                 val isXiaomiDevice = Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true) ||
                                      Build.MANUFACTURER.equals("Redmi", ignoreCase = true)
                 val allPermissionsOk = isIgnoringBatteryOptimizations && 
@@ -522,15 +482,41 @@ fun NotificationSettingsScreen(
                         }
                     }
                 }
-            }
 
-            SettingsFooter(
-                text = if (notificationEnabled) {
-                    "通知将在每节课开始前 $reminderMinutesBefore 分钟提醒您。"
-                } else {
-                    "开启通知后，您将在课程开始前收到提醒。"
+                SettingsSection(title = "调试") {
+                    SettingsNavigationRow(
+                        title = "测试通知",
+                        subtitle = "立即发送一条测试通知",
+                        icon = Icons.Outlined.NotificationsActive,
+                        iconBackgroundColor = IOSColors.Gray,
+                        onClick = { viewModel.testNotification() }
+                    )
+                    
+                    SettingsNavigationRow(
+                        title = "测试上课中通知",
+                        subtitle = "立即启动上课中实况通知",
+                        icon = Icons.Outlined.PlayCircle,
+                        iconBackgroundColor = IOSColors.Gray,
+                        onClick = { viewModel.testOngoingNotification(context) }
+                    )
+                    
+                    SettingsNavigationRow(
+                        title = "重新调度通知",
+                        subtitle = "手动触发通知调度",
+                        icon = Icons.Outlined.Refresh,
+                        iconBackgroundColor = IOSColors.Gray,
+                        onClick = { viewModel.rescheduleNotifications() }
+                    )
                 }
-            )
+
+                SettingsFooter(
+                    text = "调试功能仅供排查通知问题使用"
+                )
+
+                SettingsFooter(
+                    text = "通知将在每节课开始前 $reminderMinutesBefore 分钟提醒您。"
+                )
+            }
 
             Spacer(modifier = Modifier.weight(1f))
         }

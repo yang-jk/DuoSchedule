@@ -33,3 +33,12 @@ navigation/
 Thumbs.db
 .codebuddy/
 .trae/
+.claude/
+.vscode/
+key.properties
+keystore
+*.logcat
+*.zip
+duoschedule-update-tmp/
+fix-gradle-lock.bat
+AGENTS.md

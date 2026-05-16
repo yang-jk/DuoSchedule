@@ -256,14 +256,23 @@ fun IOSSwitch(
     enabled: Boolean = true
 ) {
     val backdrop = LocalBackdrop.current ?: emptyBackdrop()
-    
-    LiquidToggle(
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-        modifier = modifier,
-        backdrop = backdrop,
-        enabled = enabled
-    )
+    var shouldAnimate by remember { mutableStateOf(false) }
+
+    CompositionLocalProvider(LocalToggleShouldAnimate provides shouldAnimate) {
+        LiquidToggle(
+            checked = checked,
+            onCheckedChange = { newValue ->
+                shouldAnimate = true
+                onCheckedChange(newValue)
+            },
+            modifier = modifier,
+            backdrop = backdrop,
+            enabled = enabled
+        )
+    }
+    LaunchedEffect(checked) {
+        if (shouldAnimate) shouldAnimate = false
+    }
 }
 
 @Composable

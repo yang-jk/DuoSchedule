@@ -10,9 +10,11 @@ import com.duoschedule.data.repository.CourseRepository
 import com.duoschedule.notification.CourseNotificationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -52,6 +54,9 @@ class CourseEditViewModel @Inject constructor(
     private val _state = MutableStateFlow(CourseEditState())
     val state: StateFlow<CourseEditState> = _state.asStateFlow()
 
+    val singleModeEnabled: StateFlow<Boolean> = repository.getSingleModeEnabled()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     private val cachedTotalWeeks = MutableStateFlow(16)
     private val cachedTotalPeriods = MutableStateFlow(5)
     private val cachedPeriodTimes = MutableStateFlow<List<String>>(emptyList())
@@ -67,7 +72,15 @@ class CourseEditViewModel @Inject constructor(
     val teacherHistory: StateFlow<List<String>> = _teacherHistory.asStateFlow()
 
     init {
-        loadSettings(PersonType.PERSON_B)
+        viewModelScope.launch {
+            val isSingleMode = repository.getSingleModeEnabled().first()
+            if (isSingleMode) {
+                _state.value = _state.value.copy(personType = PersonType.PERSON_A)
+                loadSettings(PersonType.PERSON_A)
+            } else {
+                loadSettings(PersonType.PERSON_B)
+            }
+        }
         loadHistory()
     }
 

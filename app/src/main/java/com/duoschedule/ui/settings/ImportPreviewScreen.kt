@@ -160,7 +160,7 @@ fun ImportPreviewScreen(
                     GlassSymbolIconButton(
                         onClick = onDismiss,
                         style = GlassSymbolButtonStyle.NonTinted,
-                        size = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
+                        buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
                         contentPadding = PaddingValues(start = Spacing.sm)
                     ) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = getLabelsVibrantPrimary())

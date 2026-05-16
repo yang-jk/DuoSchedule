@@ -4,8 +4,11 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -28,6 +31,7 @@ import com.duoschedule.ui.theme.DuoScheduleTheme
 import com.duoschedule.ui.theme.LiquidBottomTab
 import com.duoschedule.ui.theme.LiquidBottomTabs
 import com.duoschedule.ui.theme.LocalBackdrop
+import com.duoschedule.ui.theme.LocalSharedTransitionScope
 import com.duoschedule.ui.theme.LocalDarkTheme
 import com.duoschedule.ui.theme.LocalLiquidBottomTabContentColor
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -38,19 +42,36 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private var pendingImportUri: Uri? = null
-    
+    private lateinit var predictiveBackCallback: OnBackPressedCallback
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         PerformanceMonitor.recordStartupComplete()
-        
+
         pendingImportUri = extractFileUri(intent)
-        
+
+        predictiveBackCallback = object : OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() {
+                isEnabled = false
+                onBackPressedDispatcher.onBackPressed()
+                isEnabled = true
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, predictiveBackCallback)
+
+        @OptIn(ExperimentalSharedTransitionApi::class)
         setContent {
             val viewModel: SettingsViewModel = hiltViewModel()
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
-            
+            val predictiveBackEnabled by viewModel.predictiveBackEnabled.collectAsStateWithLifecycle()
+            val singleModeEnabled by viewModel.singleModeEnabled.collectAsStateWithLifecycle()
+
+            LaunchedEffect(predictiveBackEnabled) {
+                predictiveBackCallback.isEnabled = !predictiveBackEnabled
+            }
+
             DuoScheduleTheme(themeMode = themeMode) {
                 val darkTheme = LocalDarkTheme.current
                 val navController = rememberNavController()
@@ -59,20 +80,43 @@ class MainActivity : ComponentActivity() {
 
                 var selectedTabIndex by remember { mutableIntStateOf(0) }
 
-                val bottomNavItems = listOf(
-                    BottomNavItem.Home,
-                    BottomNavItem.ScheduleB,
-                    BottomNavItem.ScheduleA,
-                    BottomNavItem.Settings
-                )
+                val bottomNavItems = if (singleModeEnabled) {
+                    listOf(
+                        BottomNavItem.Home,
+                        BottomNavItem.ScheduleB,
+                        BottomNavItem.Settings
+                    )
+                } else {
+                    listOf(
+                        BottomNavItem.Home,
+                        BottomNavItem.ScheduleB,
+                        BottomNavItem.ScheduleA,
+                        BottomNavItem.Settings
+                    )
+                }
 
                 val showBottomBar = currentRoute in bottomNavItems.map { it.route }
-                
+
                 val personAName by viewModel.personAName.collectAsStateWithLifecycle()
                 val personBName by viewModel.personBName.collectAsStateWithLifecycle()
 
+                LaunchedEffect(singleModeEnabled) {
+                    if (singleModeEnabled && currentRoute == BottomNavItem.ScheduleA.route) {
+                        navController.navigate(BottomNavItem.ScheduleB.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                    val routeIndex = bottomNavItems.indexOfFirst { it.route == currentRoute }.coerceAtLeast(0)
+                    selectedTabIndex = routeIndex
+                }
+
                 val backgroundColor = MaterialTheme.colorScheme.background
                 val backdrop = rememberLayerBackdrop()
+                val contentBackdrop = rememberLayerBackdrop()
 
                 Box(modifier = Modifier.fillMaxSize()) {
                     Box(
@@ -82,20 +126,31 @@ class MainActivity : ComponentActivity() {
                             .background(backgroundColor)
                     )
 
-                    CompositionLocalProvider(LocalBackdrop provides backdrop) {
-                        DuoScheduleNavGraph(
-                            navController = navController,
-                            startDestination = BottomNavItem.Home.route,
-                            pendingImportUri = pendingImportUri,
-                            onImportHandled = {
-                                pendingImportUri = null
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .layerBackdrop(contentBackdrop)
+                    ) {
+                        SharedTransitionLayout {
+                            CompositionLocalProvider(
+                                LocalSharedTransitionScope provides this,
+                                LocalBackdrop provides backdrop
+                            ) {
+                                DuoScheduleNavGraph(
+                                    navController = navController,
+                                    startDestination = BottomNavItem.Home.route,
+                                    pendingImportUri = pendingImportUri,
+                                    onImportHandled = {
+                                        pendingImportUri = null
+                                    }
+                                )
                             }
-                        )
+                        }
                     }
 
                     if (showBottomBar) {
                         val currentSelectedIndex = bottomNavItems.indexOfFirst { it.route == currentRoute }.coerceAtLeast(0)
-                        LaunchedEffect(currentRoute) {
+                        LaunchedEffect(currentRoute, bottomNavItems.size) {
                             selectedTabIndex = currentSelectedIndex
                         }
 
@@ -112,7 +167,7 @@ class MainActivity : ComponentActivity() {
                                     restoreState = true
                                 }
                             },
-                            backdrop = backdrop,
+                            backdrop = contentBackdrop,
                             tabsCount = bottomNavItems.size,
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
@@ -122,7 +177,7 @@ class MainActivity : ComponentActivity() {
                             bottomNavItems.forEachIndexed { index, item ->
                                 val displayTitle = when (item) {
                                     is BottomNavItem.ScheduleA -> "${personAName}的课表"
-                                    is BottomNavItem.ScheduleB -> "${personBName}的课表"
+                                    is BottomNavItem.ScheduleB -> if (singleModeEnabled) "课表" else "${personBName}的课表"
                                     else -> item.title
                                 }
                                 LiquidBottomTab(

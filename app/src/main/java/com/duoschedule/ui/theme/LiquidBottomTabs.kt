@@ -128,7 +128,7 @@ fun LiquidBottomTabs(
         var currentIndex by remember(selectedTabIndex) {
             mutableIntStateOf(selectedTabIndex())
         }
-        val dampedDragAnimation = remember(animationScope) {
+        val dampedDragAnimation = remember(animationScope, tabsCount) {
             DampedDragAnimation(
                 animationScope = animationScope,
                 initialValue = selectedTabIndex().toFloat(),
@@ -174,7 +174,7 @@ fun LiquidBottomTabs(
                 }
         }
 
-        val interactiveHighlight = remember(animationScope) {
+        val interactiveHighlight = remember(animationScope, tabsCount) {
             InteractiveHighlight(
                 animationScope = animationScope,
                 position = { size, offset ->

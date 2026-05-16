@@ -105,10 +105,25 @@ class DampedDragAnimation(
         }
     }
 
+    private var snapPending = false
+
     fun updateValue(value: Float) {
         val targetValue = value.coerceIn(valueRange)
         animationScope.launch {
-            launch { valueAnimation.animateTo(targetValue, valueAnimationSpec) { updateVelocity() } }
+            if (snapPending) {
+                valueAnimation.snapTo(targetValue)
+                snapPending = false
+            } else {
+                launch { valueAnimation.animateTo(targetValue, valueAnimationSpec) { updateVelocity() } }
+            }
+        }
+    }
+
+    fun snapToValue(value: Float) {
+        val targetValue = value.coerceIn(valueRange)
+        snapPending = true
+        animationScope.launch {
+            valueAnimation.snapTo(targetValue)
         }
     }
 

@@ -42,6 +42,7 @@ class LiveUpdateService : Service() {
         const val EXTRA_END_HOUR = "end_hour"
         const val EXTRA_END_MINUTE = "end_minute"
         const val EXTRA_IS_PRE_START = "is_pre_start"
+        const val EXTRA_TOTAL_MINUTES = "total_minutes"
         
         private var isRunning = false
         private var wakeLock: PowerManager.WakeLock? = null

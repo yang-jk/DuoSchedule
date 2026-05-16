@@ -1,6 +1,8 @@
 package com.duoschedule.ui.edit
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -60,6 +62,7 @@ fun CourseEditScreen(
     val periodTimes by viewModel.periodTimes.collectAsState()
     val courseHistory by viewModel.courseHistory.collectAsState()
     val teacherHistory by viewModel.teacherHistory.collectAsState()
+    val singleModeEnabled by viewModel.singleModeEnabled.collectAsState()
 
     val weekPickerState = rememberModalBottomSheetState()
     val periodPickerState = rememberModalBottomSheetState()
@@ -143,11 +146,13 @@ fun CourseEditScreen(
                 )
             }
 
-            item {
-                PersonTypeSection(
-                    personType = state.personType,
-                    onPersonTypeChange = viewModel::setPersonType
-                )
+            if (!singleModeEnabled) {
+                item {
+                    PersonTypeSection(
+                        personType = state.personType,
+                        onPersonTypeChange = viewModel::setPersonType
+                    )
+                }
             }
 
             item {
@@ -209,25 +214,14 @@ fun CourseEditScreen(
     if (showDeleteDialog) {
         GlassAlert(
             onDismissRequest = { showDeleteDialog = false },
+            onConfirm = {
+                viewModel.deleteCourse()
+                showDeleteDialog = false
+            },
             title = "删除课程",
             text = "确定要删除这门课程吗？此操作不可撤销。",
-            confirmButton = {
-                LiquidGlassButton(
-                    onClick = {
-                        viewModel.deleteCourse()
-                        showDeleteDialog = false
-                    },
-                    text = "删除",
-                    style = LiquidGlassButtonStyle.Tinted
-                )
-            },
-            dismissButton = {
-                LiquidGlassButton(
-                    onClick = { showDeleteDialog = false },
-                    text = "取消",
-                    style = LiquidGlassButtonStyle.NonTinted
-                )
-            }
+            confirmText = "删除",
+            dismissText = "取消"
         )
     }
 }
@@ -256,7 +250,7 @@ private fun CourseEditTopBar(
             GlassSymbolIconButton(
                 onClick = onNavigateBack,
                 style = GlassSymbolButtonStyle.NonTinted,
-                size = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
+                buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
                 contentPadding = PaddingValues(start = Spacing.sm)
             ) {
                 Icon(
@@ -271,7 +265,7 @@ private fun CourseEditTopBar(
                 GlassSymbolIconButton(
                     onClick = onDelete,
                     style = GlassSymbolButtonStyle.NonTinted,
-                    size = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize
+                    buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize
                 ) {
                     Icon(
                         Icons.Default.Delete, 
@@ -284,7 +278,7 @@ private fun CourseEditTopBar(
             GlassSymbolIconButton(
                 onClick = onSave,
                 style = GlassSymbolButtonStyle.Tinted,
-                size = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize
+                buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize
             ) {
                 Icon(
                     Icons.Default.Check, 
@@ -821,4 +815,205 @@ private fun formatWeekRanges(weeks: Set<Int>): String {
     
     val result = ranges.joinToString(", ")
     return if (weeks.size == 1) "第${result}周" else "${result}周"
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun CourseEditContent(
+    courseId: Long?,
+    initialDayOfWeek: Int? = null,
+    initialPeriod: Int? = null,
+    initialPersonType: PersonType? = null,
+    onNavigateBack: () -> Unit,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    sharedElementSourceKey: String = "",
+    viewModel: CourseEditViewModel = hiltViewModel()
+) {
+    val state by viewModel.state.collectAsState()
+    val totalWeeks by viewModel.totalWeeks.collectAsState()
+    val totalPeriods by viewModel.totalPeriods.collectAsState()
+    val periodTimes by viewModel.periodTimes.collectAsState()
+    val courseHistory by viewModel.courseHistory.collectAsState()
+    val teacherHistory by viewModel.teacherHistory.collectAsState()
+    val singleModeEnabled by viewModel.singleModeEnabled.collectAsState()
+
+    val weekPickerState = rememberModalBottomSheetState()
+    val periodPickerState = rememberModalBottomSheetState()
+    var showWeekPicker by remember { mutableStateOf(false) }
+    var showPeriodPicker by remember { mutableStateOf(false) }
+
+    val darkTheme = LocalDarkTheme.current
+    val labelsPrimary = getLabelsVibrantPrimary()
+    val labelsSecondary = getLabelsVibrantSecondary()
+    val labelsTertiary = getLabelsVibrantTertiary()
+
+    LaunchedEffect(courseId) {
+        if (courseId != null && courseId > 0) {
+            viewModel.loadCourse(courseId)
+        }
+    }
+
+    LaunchedEffect(initialDayOfWeek, initialPeriod, initialPersonType) {
+        if (courseId == null || courseId <= 0) {
+            initialDayOfWeek?.let { viewModel.setInitialDayOfWeek(it) }
+            initialPeriod?.let { viewModel.setInitialPeriod(it) }
+            initialPersonType?.let { viewModel.setInitialPersonType(it) }
+        }
+    }
+
+    LaunchedEffect(state.saved, state.deleted) {
+        if (state.saved || state.deleted) {
+            onNavigateBack()
+        }
+    }
+
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showCourseNameSuggestions by remember { mutableStateOf(false) }
+    var showTeacherSuggestions by remember { mutableStateOf(false) }
+
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(
+                if (sharedElementSourceKey.isNotEmpty()) {
+                    sharedTransitionScope?.let { scope ->
+                        with(scope) {
+                            Modifier.sharedElement(
+                                rememberSharedContentState(key = sharedElementSourceKey),
+                                animatedVisibilityScope = animatedVisibilityScope
+                            )
+                        }
+                    } ?: Modifier
+                } else Modifier
+            )
+    ) {
+        Scaffold(
+            topBar = {
+                CourseEditTopBar(
+                    isEditing = state.isEditing,
+                    onNavigateBack = onNavigateBack,
+                    onDelete = { showDeleteDialog = true },
+                    onSave = viewModel::saveCourse
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { paddingValues ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(top = Spacing.md, bottom = Spacing.iOS26.groupSpacing),
+                verticalArrangement = Arrangement.spacedBy(Spacing.lg)
+            ) {
+                item {
+                    AnimatedVisibility(
+                        visible = state.errorMessage != null,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        ErrorMessageCard(
+                            message = state.errorMessage ?: "",
+                            modifier = Modifier.padding(horizontal = Spacing.lg)
+                        )
+                    }
+                }
+
+                item {
+                    CourseNameSection(
+                        name = state.name,
+                        onNameChange = { 
+                            viewModel.setName(it)
+                            showCourseNameSuggestions = it.isNotEmpty()
+                        },
+                        courseHistory = courseHistory,
+                        showSuggestions = showCourseNameSuggestions,
+                        onSuggestionClick = { history ->
+                            viewModel.selectFromHistory(history)
+                            showCourseNameSuggestions = false
+                        },
+                        onDismissSuggestions = { showCourseNameSuggestions = false }
+                    )
+                }
+
+                if (!singleModeEnabled) {
+                    item {
+                        PersonTypeSection(
+                            personType = state.personType,
+                            onPersonTypeChange = viewModel::setPersonType
+                        )
+                    }
+                }
+
+                item {
+                    CourseDetailsSection(
+                        dayOfWeek = state.dayOfWeek,
+                        startPeriod = state.startPeriod,
+                        endPeriod = state.endPeriod,
+                        selectedWeeks = state.selectedWeeks,
+                        totalWeeks = totalWeeks,
+                        location = state.location,
+                        teacher = state.teacher,
+                        teacherHistory = teacherHistory,
+                        showTeacherSuggestions = showTeacherSuggestions,
+                        onPeriodClick = { showPeriodPicker = true },
+                        onWeekClick = { showWeekPicker = true },
+                        onLocationChange = viewModel::setLocation,
+                        onTeacherChange = { 
+                            viewModel.setTeacher(it)
+                            showTeacherSuggestions = it.isNotEmpty()
+                        },
+                        onTeacherSuggestionClick = { teacher ->
+                            viewModel.setTeacher(teacher)
+                            showTeacherSuggestions = false
+                        }
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(Spacing.xxl))
+                }
+            }
+        }
+    }
+
+    if (showWeekPicker) {
+        WeekPickerBottomSheet(
+            totalWeeks = totalWeeks,
+            selectedWeeks = state.selectedWeeks,
+            onWeeksChange = viewModel::setSelectedWeeks,
+            onDismiss = { showWeekPicker = false },
+            sheetState = weekPickerState
+        )
+    }
+
+    if (showPeriodPicker) {
+        PeriodPickerBottomSheet(
+            totalPeriods = totalPeriods,
+            selectedDayOfWeek = state.dayOfWeek,
+            selectedStartPeriod = state.startPeriod,
+            selectedEndPeriod = state.endPeriod,
+            onSelectionChange = { dayOfWeek, startPeriod, endPeriod ->
+                viewModel.setDayOfWeek(dayOfWeek)
+                viewModel.setPeriods(startPeriod, endPeriod)
+            },
+            onDismiss = { showPeriodPicker = false },
+            sheetState = periodPickerState
+        )
+    }
+
+    if (showDeleteDialog) {
+        GlassAlert(
+            onDismissRequest = { showDeleteDialog = false },
+            onConfirm = {
+                viewModel.deleteCourse()
+                showDeleteDialog = false
+            },
+            title = "删除课程",
+            text = "确定要删除这门课程吗？此操作不可撤销。",
+            confirmText = "删除",
+            dismissText = "取消"
+        )
+    }
 }

@@ -385,44 +385,55 @@ object ComponentSize {
     }
 }
 
-val CourseColorPalette = listOf(
-    Color(0xFF7EC8E3),
-    Color(0xFF8ED4A8),
-    Color(0xFFFFB5A7),
-    Color(0xFFB5A8D4),
-    Color(0xFFFFCF9F),
-    Color(0xFFA8D8D8),
-    Color(0xFFF8B4D9),
-    Color(0xFFC4E0B4),
-    Color(0xFFFFB7B2),
-    Color(0xFFB4C7E7),
-    Color(0xFFFFD9A0),
-    Color(0xFFD4A5A5),
-    Color(0xFFA5D6D6),
-    Color(0xFFE7B5C4),
-    Color(0xFFB5D8C4),
-    Color(0xFFFFD4A3)
+val CourseColorPaletteLight = listOf(
+    Color(0xFF2196F3),
+    Color(0xFF4CAF50),
+    Color(0xFFE53935),
+    Color(0xFF7B1FA2),
+    Color(0xFFFF9800),
+    Color(0xFF00897B),
+    Color(0xFFD81B60),
+    Color(0xFF558B2F),
+    Color(0xFFF4511E),
+    Color(0xFF1565C0),
+    Color(0xFFFFB300),
+    Color(0xFF6D4C41),
+    Color(0xFF00838F),
+    Color(0xFFAD1457),
+    Color(0xFF2E7D32),
+    Color(0xFFE65100)
+)
+
+val CourseColorPaletteDark = listOf(
+    Color(0xFF64B5F6),
+    Color(0xFF81C784),
+    Color(0xFFEF5350),
+    Color(0xFFBA68C8),
+    Color(0xFFFFB74D),
+    Color(0xFF4DB6AC),
+    Color(0xFFF06292),
+    Color(0xFFAED581),
+    Color(0xFFFF8A65),
+    Color(0xFF5C6BC0),
+    Color(0xFFFFD54F),
+    Color(0xFFA1887F),
+    Color(0xFF4DD0E1),
+    Color(0xFFF48FB1),
+    Color(0xFF81C784),
+    Color(0xFFFFB74D)
 )
 
 fun getCourseColor(courseName: String, darkTheme: Boolean): Color {
     val hash = courseName.hashCode()
-    val index = Math.abs(hash) % CourseColorPalette.size
-    val baseColor = CourseColorPalette[index]
-    return if (darkTheme) {
-        Color(
-            red = (baseColor.red * 1.15f).coerceIn(0f, 1f),
-            green = (baseColor.green * 1.15f).coerceIn(0f, 1f),
-            blue = (baseColor.blue * 1.15f).coerceIn(0f, 1f)
-        )
-    } else {
-        baseColor
-    }
+    val palette = if (darkTheme) CourseColorPaletteDark else CourseColorPaletteLight
+    val index = Math.abs(hash) % palette.size
+    return palette[index]
 }
 
 fun getCourseColorByName(courseName: String): Color {
     val hash = courseName.hashCode()
-    val index = Math.abs(hash) % CourseColorPalette.size
-    return CourseColorPalette[index]
+    val index = Math.abs(hash) % CourseColorPaletteLight.size
+    return CourseColorPaletteLight[index]
 }
 
 val LocalDarkTheme = compositionLocalOf { false }

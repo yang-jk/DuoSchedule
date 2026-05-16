@@ -123,6 +123,12 @@ class SettingsViewModel @Inject constructor(
     val courseLocationFontSize: StateFlow<Int> = repository.getCourseLocationFontSize()
         .stateIn(viewModelScope, SharingStarted.Lazily, 11)
 
+    val predictiveBackEnabled: StateFlow<Boolean> = repository.getPredictiveBackEnabled()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val singleModeEnabled: StateFlow<Boolean> = repository.getSingleModeEnabled()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     fun setSemesterStartDate(personType: PersonType, date: LocalDate) {
         viewModelScope.launch {
             repository.setSemesterStartDate(personType, date)
@@ -247,6 +253,18 @@ class SettingsViewModel @Inject constructor(
     fun setCourseLocationFontSize(size: Int) {
         viewModelScope.launch {
             repository.setCourseLocationFontSize(size)
+        }
+    }
+
+    fun setPredictiveBackEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setPredictiveBackEnabled(enabled)
+        }
+    }
+
+    fun setSingleModeEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setSingleModeEnabled(enabled)
         }
     }
 

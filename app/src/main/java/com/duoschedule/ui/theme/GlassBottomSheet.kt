@@ -14,7 +14,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -23,9 +22,6 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.colorControls
-import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.highlight.Highlight
 
 object GlassBottomSheetDefaults {
@@ -71,30 +67,6 @@ fun GlassBottomSheet(
         bottomEnd = GlassBottomSheetDefaults.CornerRadiusBottom
     )
 
-    val layer1Tint = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.Layer1_Tint
-    } else {
-        LiquidGlassColors.BottomSheet.Light.Layer1_Tint
-    }
-    
-    val layer1Alpha = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.Layer1_Alpha
-    } else {
-        LiquidGlassColors.BottomSheet.Light.Layer1_Alpha
-    }
-    
-    val layer2Base = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.Layer2_Base
-    } else {
-        LiquidGlassColors.BottomSheet.Light.Layer2_Base
-    }
-    
-    val glassEffect = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.GlassEffect
-    } else {
-        LiquidGlassColors.BottomSheet.Light.GlassEffect
-    }
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = actualSheetState,
@@ -113,24 +85,12 @@ fun GlassBottomSheet(
                         backdrop = backdrop,
                         shape = { shape },
                         effects = {
-                            colorControls(
-                                brightness = if (darkTheme) 0f else 0.2f,
-                                saturation = 1.5f
-                            )
-                            blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
-                            lens(
-                                refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
-                                refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
-                                chromaticAberration = true,
-                                depthEffect = true
-                            )
+                            glassCardEffects(darkTheme, density)
                         },
                         highlight = { Highlight.Plain },
                         exportedBackdrop = bottomSheetBackdrop,
                         onDrawSurface = {
-                            drawRect(layer1Tint.copy(alpha = layer1Alpha))
-                            drawRect(layer2Base, blendMode = BlendMode.ColorDodge)
-                            drawRect(glassEffect)
+                            glassCardSurfaceColors(darkTheme)
                         }
                     )
                     .navigationBarsPadding()

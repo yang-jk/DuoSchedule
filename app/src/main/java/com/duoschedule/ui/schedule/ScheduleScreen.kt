@@ -1,10 +1,17 @@
 package com.duoschedule.ui.schedule
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -51,9 +58,11 @@ import androidx.lifecycle.viewModelScope
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.edit.CoursePreviewBottomSheet
+import com.duoschedule.ui.edit.CourseEditContent
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.settings.components.GlassConfirmDialog
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 import com.duoschedule.ui.theme.getPersonAColor
@@ -61,7 +70,7 @@ import com.duoschedule.ui.theme.getPersonBColor
 import com.duoschedule.ui.theme.BorderRadius
 import com.duoschedule.ui.theme.Spacing
 import com.duoschedule.ui.theme.LocalDarkTheme
-import com.duoschedule.ui.theme.getCourseColorByName
+import com.duoschedule.ui.theme.getCourseColor
 import com.duoschedule.ui.theme.GlassSymbolIconButton
 import com.duoschedule.ui.theme.GlassSymbolButtonStyle
 import com.duoschedule.ui.theme.getLabelsVibrantPrimary
@@ -87,14 +96,24 @@ import com.kyant.backdrop.highlight.Highlight
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalMaterial3Api::class)
+data class EditTarget(
+    val courseId: Long?,
+    val dayOfWeek: Int?,
+    val periodIndex: Int?,
+    val sourceKey: String
+)
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun ScheduleScreen(
     personType: PersonType,
-    onNavigateToEdit: (Long?, Int?, Int?) -> Unit,
     viewModel: ScheduleViewModel = hiltViewModel()
 ) {
     val courses by viewModel.getCoursesByPerson(personType).collectAsState(initial = emptyList())
+    var editTarget by remember { mutableStateOf<EditTarget?>(null) }
+    val editTransitionScope = rememberCoroutineScope()
+
+    BackHandler(enabled = editTarget != null) { editTarget = null }
     val currentWeek by viewModel.getCurrentWeek(personType).collectAsState()
     val totalWeeks by viewModel.getTotalWeeks(personType).collectAsState()
     val semesterStartDate by viewModel.getSemesterStartDate(personType).collectAsState()
@@ -214,50 +233,66 @@ fun ScheduleScreen(
     val labelsSecondary = getLabelsVibrantSecondary()
     val labelsTertiary = getLabelsVibrantTertiary()
 
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+
+    AnimatedContent(
+        targetState = editTarget,
+        transitionSpec = {
+            fadeIn(animationSpec = appleSpring(AppleSpring.Gentle)) togetherWith
+            fadeOut(animationSpec = appleSpring(AppleSpring.Gentle))
+        },
+        label = "schedule_edit_transition"
+    ) { target ->
+        if (target == null) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
     ) {
-        TopAppBar(
-            title = {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "第 $selectedWeek 周",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = labelsPrimary,
-                        modifier = Modifier.clickable { showWeekSelector = !showWeekSelector }
-                    )
-                }
-            },
-            navigationIcon = {
-                Text(
-                    "${personName}的课表",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = labelsPrimary
-                )
-                Spacer(modifier = Modifier.width(Spacing.sm))
-            },
-            actions = {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .height(56.dp)
+                .padding(horizontal = Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "${personName}的课表",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = labelsPrimary,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "第 $selectedWeek 周",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = labelsPrimary,
+                modifier = Modifier.clickable { showWeekSelector = !showWeekSelector }
+            )
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.CenterEnd
+            ) {
                 GlassSymbolIconButton(
-                    onClick = { onNavigateToEdit(null, null, null) },
-                    style = GlassSymbolButtonStyle.NonTinted
+                    onClick = { editTarget = EditTarget(null, null, null, "addButton_${personType.name}") },
+                    style = GlassSymbolButtonStyle.NonTinted,
+                    modifier = sharedTransitionScope?.let { scope ->
+                        with(scope) {
+                            Modifier.sharedElement(
+                                rememberSharedContentState(key = "addButton_${personType.name}"),
+                                animatedVisibilityScope = this@AnimatedContent
+                            )
+                        }
+                    } ?: Modifier
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "添加课程", tint = labelsPrimary)
                 }
-                Spacer(modifier = Modifier.width(Spacing.sm))
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent
-            )
-        )
+            }
+        }
 
         Column(
             modifier = Modifier.fillMaxSize()
@@ -370,7 +405,7 @@ fun ScheduleScreen(
                                 selectedCourse = course
                             },
                             onEmptySlotClick = { dayOfWeek, periodIndex ->
-                                onNavigateToEdit(null, dayOfWeek, periodIndex)
+                                editTarget = EditTarget(null, dayOfWeek, periodIndex, "addButton_${personType.name}")
                             },
                             onCourseLongPress = { course, cellBounds ->
                                 contextMenuCellBounds = cellBounds
@@ -384,7 +419,11 @@ fun ScheduleScreen(
                                     ContextMenuItem(
                                         label = "编辑"
                                     ) {
-                                        onNavigateToEdit(course.id, null, null)
+                                        showContextMenu = false
+                                        editTransitionScope.launch {
+                                            delay(150)
+                                            editTarget = EditTarget(course.id, null, null, "courseCard_${course.id}")
+                                        }
                                     },
                                     ContextMenuItem(
                                         label = "删除",
@@ -433,13 +472,15 @@ fun ScheduleScreen(
                                     ContextMenuItem(
                                         label = "添加课程"
                                     ) {
-                                        onNavigateToEdit(null, dayOfWeek, period)
+                                        editTarget = EditTarget(null, dayOfWeek, period, "addButton_${personType.name}")
                                     }
                                 )
                                 
                                 contextMenuItems = items
                                 showContextMenu = true
-                            }
+                            },
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = this@AnimatedContent
                         )
                     }
                     
@@ -467,7 +508,9 @@ fun ScheduleScreen(
                                 onCourseClick = { },
                                 onEmptySlotClick = { _, _ -> },
                                 onCourseLongPress = { _, _ -> },
-                                onEmptySlotLongPress = { _, _, _ -> }
+                                onEmptySlotLongPress = { _, _, _ -> },
+                                sharedTransitionScope = null,
+                                animatedVisibilityScope = null
                             )
                         }
                     }
@@ -496,7 +539,9 @@ fun ScheduleScreen(
                                 onCourseClick = { },
                                 onEmptySlotClick = { _, _ -> },
                                 onCourseLongPress = { _, _ -> },
-                                onEmptySlotLongPress = { _, _, _ -> }
+                                onEmptySlotLongPress = { _, _, _ -> },
+                                sharedTransitionScope = null,
+                                animatedVisibilityScope = null
                             )
                         }
                     }
@@ -513,6 +558,19 @@ fun ScheduleScreen(
             }
         }
     }
+        } else {
+            CourseEditContent(
+                courseId = target.courseId,
+                initialDayOfWeek = target.dayOfWeek,
+                initialPeriod = target.periodIndex,
+                initialPersonType = personType,
+                onNavigateBack = { editTarget = null },
+                animatedVisibilityScope = this@AnimatedContent,
+                sharedElementSourceKey = target.sourceKey,
+                viewModel = hiltViewModel(key = "edit_${target.courseId ?: "new"}_${personType.name}")
+            )
+        }
+    }
 
     if (showPreview && selectedCourse != null) {
         CoursePreviewBottomSheet(
@@ -525,7 +583,7 @@ fun ScheduleScreen(
                 showPreview = false
                 val course = selectedCourse
                 selectedCourse = null
-                course?.let { onNavigateToEdit(it.id, null, null) }
+                course?.let { editTarget = EditTarget(it.id, null, null, "courseCard_${it.id}") }
             },
             onDelete = {
                 showDeleteConfirm = true
@@ -804,7 +862,9 @@ fun WeeklyScheduleGrid(
     onCourseClick: (Course) -> Unit,
     onEmptySlotClick: (Int, Int) -> Unit,
     onCourseLongPress: (Course, CellBounds) -> Unit,
-    onEmptySlotLongPress: (Int, Int, CellBounds) -> Unit
+    onEmptySlotLongPress: (Int, Int, CellBounds) -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?
 ) {
     var selectedEmptySlot by remember { mutableStateOf<EmptySlotPosition?>(null) }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("M/d") }
@@ -980,7 +1040,9 @@ fun WeeklyScheduleGrid(
                                 courseLocationFontSize = courseLocationFontSize,
                                 onCourseClick = onCourseClick,
                                 onCourseLongPress = onCourseLongPress,
-                                gridOffsetY = gridOffsetY
+                                gridOffsetY = gridOffsetY,
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope
                             )
                         }
                     }
@@ -1164,7 +1226,7 @@ private fun RowScope.EmptySlot(
     }
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 private fun CourseOverlayCard(
     course: Course,
@@ -1181,7 +1243,9 @@ private fun CourseOverlayCard(
     courseLocationFontSize: Int,
     onCourseClick: (Course) -> Unit,
     onCourseLongPress: (Course, CellBounds) -> Unit,
-    gridOffsetY: Int
+    gridOffsetY: Int,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?
 ) {
     val isCurrentWeekCourse = course.isInWeek(currentWeek)
     val darkTheme = LocalDarkTheme.current
@@ -1218,6 +1282,18 @@ private fun CourseOverlayCard(
             .offset { IntOffset(offsetX, offsetY) }
             .width(with(density) { cardWidth.toDp() })
             .height(with(density) { totalHeightPx.toDp() })
+            .then(
+                sharedTransitionScope?.let { scope ->
+                    animatedVisibilityScope?.let { avScope ->
+                        with(scope) {
+                            Modifier.sharedElement(
+                                rememberSharedContentState(key = "courseCard_${course.id}"),
+                                animatedVisibilityScope = avScope
+                            )
+                        }
+                    }
+                } ?: Modifier
+            )
             .scale(scale)
             .clip(shape)
             .graphicsLayer {
@@ -1230,7 +1306,7 @@ private fun CourseOverlayCard(
             .background(fillShadow)
             .then(
                 run {
-                    val courseColor = getCourseColorByName(course.name)
+                    val courseColor = getCourseColor(course.name, darkTheme)
                     val alpha = if (showNonCurrentWeekCourses && !isCurrentWeekCourse) 0.35f else 0.92f
                     Modifier.background(
                         Brush.verticalGradient(

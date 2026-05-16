@@ -73,7 +73,7 @@ fun PeriodTimesSettingsScreen(
                     GlassSymbolIconButton(
                         onClick = onNavigateBack,
                         style = GlassSymbolButtonStyle.NonTinted,
-                        size = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
+                        buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
                         contentPadding = PaddingValues(start = Spacing.sm)
                     ) {
                         Icon(

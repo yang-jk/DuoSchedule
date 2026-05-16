@@ -61,6 +61,7 @@ fun MainScreen(
     val displayMode by viewModel.todayCourseDisplayMode.collectAsState()
     val personAPeriodTimes by viewModel.personAPeriodTimes.collectAsState()
     val personBPeriodTimes by viewModel.personBPeriodTimes.collectAsState()
+    val singleModeEnabled by viewModel.singleModeEnabled.collectAsState()
 
     val currentTime = remember { mutableStateOf(LocalTime.now()) }
     val today = remember { LocalDate.now() }
@@ -108,17 +109,21 @@ fun MainScreen(
                 personAName = personAName,
                 personBName = personBName,
                 personACurrentWeek = personACurrentWeek,
-                personBCurrentWeek = personBCurrentWeek
+                personBCurrentWeek = personBCurrentWeek,
+                singleModeEnabled = singleModeEnabled
             )
 
             CurrentCourseSection(
                 personAState = personACurrentCourse,
-                personBState = personBCurrentCourse
+                personBState = personBCurrentCourse,
+                singleModeEnabled = singleModeEnabled
             )
 
-            FreeTimeSection(
-                freeTimeSlots = freeTimeSlots
-            )
+            if (!singleModeEnabled) {
+                FreeTimeSection(
+                    freeTimeSlots = freeTimeSlots
+                )
+            }
 
             TodayScheduleSection(
                 personATodayCourses = personATodayCourses,
@@ -134,7 +139,8 @@ fun MainScreen(
                 onCourseClick = { course, personType ->
                     selectedCourse = course
                     selectedCoursePersonType = personType
-                }
+                },
+                singleModeEnabled = singleModeEnabled
             )
         }
 
@@ -198,7 +204,8 @@ private fun HeaderSection(
     personAName: String,
     personBName: String,
     personACurrentWeek: Int,
-    personBCurrentWeek: Int
+    personBCurrentWeek: Int,
+    singleModeEnabled: Boolean = false
 ) {
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
@@ -268,16 +275,18 @@ private fun HeaderSection(
                     style = MaterialTheme.typography.labelSmall,
                     color = labelsSecondary
                 )
-                Text(
-                    text = "|",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = labelsTertiary
-                )
-                Text(
-                    text = "${personAName}第${personACurrentWeek}周",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = labelsSecondary
-                )
+                if (!singleModeEnabled) {
+                    Text(
+                        text = "|",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = labelsTertiary
+                    )
+                    Text(
+                        text = "${personAName}第${personACurrentWeek}周",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = labelsSecondary
+                    )
+                }
             }
         }
     }
@@ -286,7 +295,8 @@ private fun HeaderSection(
 @Composable
 private fun CurrentCourseSection(
     personAState: com.duoschedule.ui.model.CurrentCourseState,
-    personBState: com.duoschedule.ui.model.CurrentCourseState
+    personBState: com.duoschedule.ui.model.CurrentCourseState,
+    singleModeEnabled: Boolean = false
 ) {
     val labelsPrimary = getLabelsVibrantPrimary()
     
@@ -305,7 +315,8 @@ private fun CurrentCourseSection(
         
         CurrentCourseCard(
             personAState = personAState,
-            personBState = personBState
+            personBState = personBState,
+            singleModeEnabled = singleModeEnabled
         )
     }
 }
@@ -346,8 +357,10 @@ private fun TodayScheduleSection(
     personAName: String,
     personBName: String,
     onDisplayModeChange: (TodayCourseDisplayMode) -> Unit,
-    onCourseClick: (Course, PersonType) -> Unit
+    onCourseClick: (Course, PersonType) -> Unit,
+    singleModeEnabled: Boolean = false
 ) {
+    val effectiveDisplayMode = if (singleModeEnabled) TodayCourseDisplayMode.SELF_ONLY else displayMode
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val labelsTertiary = getLabelsVibrantTertiary()
@@ -373,32 +386,34 @@ private fun TodayScheduleSection(
             )
             
             Text(
-                text = "${personATodayCourses.size + personBTodayCourses.size} 节",
+                text = if (singleModeEnabled) "${personBTodayCourses.size} 节" else "${personATodayCourses.size + personBTodayCourses.size} 节",
                 style = MaterialTheme.typography.labelMedium,
                 color = labelsTertiary
             )
         }
 
-        val displayModeOptions = listOf(
-            SegmentOption(TodayCourseDisplayMode.SELF_ONLY, personBName.ifEmpty { "我" }),
-            SegmentOption(TodayCourseDisplayMode.TA_ONLY, personAName.ifEmpty { "Ta" }),
-            SegmentOption(TodayCourseDisplayMode.BOTH, "全部")
-        )
+        if (!singleModeEnabled) {
+            val displayModeOptions = listOf(
+                SegmentOption(TodayCourseDisplayMode.SELF_ONLY, personBName.ifEmpty { "我" }),
+                SegmentOption(TodayCourseDisplayMode.TA_ONLY, personAName.ifEmpty { "Ta" }),
+                SegmentOption(TodayCourseDisplayMode.BOTH, "全部")
+            )
 
-        SegmentedControl(
-            options = displayModeOptions,
-            selectedOption = displayMode,
-            onOptionSelected = onDisplayModeChange,
-            modifier = Modifier.padding(bottom = Spacing.sm)
-        )
+            SegmentedControl(
+                options = displayModeOptions,
+                selectedOption = displayMode,
+                onOptionSelected = onDisplayModeChange,
+                modifier = Modifier.padding(bottom = Spacing.sm)
+            )
+        }
 
-        if (personATodayCourses.isEmpty() && personBTodayCourses.isEmpty()) {
+        if (personBTodayCourses.isEmpty() && (singleModeEnabled || personATodayCourses.isEmpty())) {
             EmptyScheduleCard()
         } else {
             ScheduleList(
                 personACourses = personATodayCourses,
                 personBCourses = personBTodayCourses,
-                displayMode = displayMode,
+                displayMode = effectiveDisplayMode,
                 currentHour = currentHour,
                 currentMinute = currentMinute,
                 periodTimesA = personAPeriodTimes,

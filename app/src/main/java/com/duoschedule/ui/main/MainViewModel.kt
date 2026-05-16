@@ -75,6 +75,9 @@ class MainViewModel @Inject constructor(
     val personBPeriodTimes: StateFlow<List<String>> = repository.getPeriodTimes(PersonType.PERSON_B)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    val singleModeEnabled: StateFlow<Boolean> = repository.getSingleModeEnabled()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     private val currentDayOfWeek: StateFlow<Int> = kotlinx.coroutines.flow.MutableStateFlow(getCurrentDayOfWeek())
         .stateIn(viewModelScope, SharingStarted.Eagerly, getCurrentDayOfWeek())
 

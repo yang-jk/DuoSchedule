@@ -11,7 +11,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.duoschedule.data.model.ThemeMode
 import com.duoschedule.data.model.TodayCourseDisplayMode
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
@@ -22,7 +21,6 @@ fun DisplaySettingsScreen(
     onNavigateBack: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val themeMode by viewModel.themeMode.collectAsState()
     val todayCourseDisplayMode by viewModel.todayCourseDisplayMode.collectAsState()
     val showSaturday by viewModel.showSaturday.collectAsState()
     val showSunday by viewModel.showSunday.collectAsState()
@@ -36,24 +34,24 @@ fun DisplaySettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Text(
                         text = "显示设置",
                         color = labelsPrimary,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.SemiBold
                         )
-                    ) 
+                    )
                 },
                 navigationIcon = {
                     GlassSymbolIconButton(
                         onClick = onNavigateBack,
                         style = GlassSymbolButtonStyle.NonTinted,
-                        size = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
+                        buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
                         contentPadding = PaddingValues(start = Spacing.sm)
                     ) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack, 
+                            Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "返回",
                             tint = labelsPrimary
                         )
@@ -74,21 +72,6 @@ fun DisplaySettingsScreen(
             verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
         ) {
             Spacer(modifier = Modifier.height(Spacing.sm))
-
-            SettingsSection(title = "外观") {
-                SettingsMenuRow(
-                    title = "主题模式",
-                    subtitle = "选择应用的显示主题",
-                    icon = Icons.Outlined.Palette,
-                    iconBackgroundColor = IOSColors.Indigo,
-                    selectedOption = getThemeModeLabel(themeMode),
-                    options = ThemeMode.entries.map { getThemeModeLabel(it) },
-                    onOptionSelected = { selected ->
-                        val mode = ThemeMode.entries.find { getThemeModeLabel(it) == selected }
-                        mode?.let { viewModel.setThemeMode(it) }
-                    }
-                )
-            }
 
             SettingsSection(title = "主页显示") {
                 SettingsMenuRow(
@@ -114,9 +97,9 @@ fun DisplaySettingsScreen(
                     checked = showGridSeparator,
                     onCheckedChange = { viewModel.setShowDashedBorder(it) }
                 )
-                
+
                 Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
-                
+
                 SettingsToggleRow(
                     title = "显示周六",
                     subtitle = "在课表中显示周六的课程",
@@ -125,9 +108,9 @@ fun DisplaySettingsScreen(
                     checked = showSaturday,
                     onCheckedChange = { viewModel.setShowSaturday(it) }
                 )
-                
+
                 Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
-                
+
                 SettingsToggleRow(
                     title = "显示周日",
                     subtitle = "在课表中显示周日的课程",
@@ -136,9 +119,9 @@ fun DisplaySettingsScreen(
                     checked = showSunday,
                     onCheckedChange = { viewModel.setShowSunday(it) }
                 )
-                
+
                 Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
-                
+
                 SettingsToggleRow(
                     title = "显示非本周课程",
                     subtitle = "显示不在当前周的课程（灰色显示）",
@@ -162,9 +145,9 @@ fun DisplaySettingsScreen(
                         size?.let { viewModel.setCourseNameFontSize(it) }
                     }
                 )
-                
+
                 Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
-                
+
                 SettingsMenuRow(
                     title = "上课地点字号",
                     subtitle = "设置课表中上课地点的字体大小",
@@ -185,14 +168,6 @@ fun DisplaySettingsScreen(
 
             Spacer(modifier = Modifier.weight(1f))
         }
-    }
-}
-
-private fun getThemeModeLabel(mode: ThemeMode): String {
-    return when (mode) {
-        ThemeMode.FOLLOW_SYSTEM -> "跟随系统"
-        ThemeMode.LIGHT -> "浅色模式"
-        ThemeMode.DARK -> "深色模式"
     }
 }
 

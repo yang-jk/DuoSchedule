@@ -2,14 +2,12 @@ package com.duoschedule.ui.navigation
 
 import android.net.Uri
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -27,11 +25,14 @@ import com.duoschedule.ui.settings.*
 import com.duoschedule.ui.theme.BackgroundsLight
 import com.duoschedule.ui.theme.BackgroundsDark
 import com.duoschedule.ui.theme.LocalDarkTheme
+import com.duoschedule.ui.theme.determineTabDirection
+import com.duoschedule.ui.theme.iosSlideEnter
+import com.duoschedule.ui.theme.iosSlideExit
+import com.duoschedule.ui.theme.iosSlidePopEnter
+import com.duoschedule.ui.theme.iosSlidePopExit
+import com.duoschedule.ui.theme.tabSwitchEnter
+import com.duoschedule.ui.theme.tabSwitchExit
 import kotlinx.coroutines.launch
-
-private val iosTransitionSpec = tween<IntOffset>(durationMillis = 300, easing = FastOutSlowInEasing)
-private val iosFadeSpec = tween<Float>(durationMillis = 300, easing = FastOutSlowInEasing)
-private val bottomNavTransitionSpec = tween<IntOffset>(durationMillis = 250, easing = FastOutSlowInEasing)
 
 private val bottomNavRoutes = listOf(
     BottomNavItem.Home.route,
@@ -44,14 +45,6 @@ private fun isBottomNavRoute(route: String?): Boolean {
     return route in bottomNavRoutes
 }
 
-private fun getSlideDirection(fromRoute: String?, toRoute: String?): Int {
-    if (!isBottomNavRoute(fromRoute) || !isBottomNavRoute(toRoute)) {
-        return 1
-    }
-    val fromIndex = bottomNavRoutes.indexOf(fromRoute)
-    val toIndex = bottomNavRoutes.indexOf(toRoute)
-    return if (toIndex > fromIndex) 1 else -1
-}
 
 
 
@@ -86,100 +79,44 @@ fun DuoScheduleNavGraph(
             val fromRoute = this.initialState?.destination?.route
             val toRoute = this.targetState.destination.route
             val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
-            
+
             if (isBottomNavTransition) {
-                val direction = getSlideDirection(fromRoute, toRoute)
-                slideInHorizontally(
-                    animationSpec = spring(
-                        stiffness = Spring.StiffnessMediumLow,
-                        dampingRatio = Spring.DampingRatioNoBouncy
-                    ),
-                    initialOffsetX = { fullWidth -> 
-                        if (direction > 0) (fullWidth * 0.08f).toInt() else -(fullWidth * 0.08f).toInt()
-                    }
-                ) + fadeIn(
-                    animationSpec = tween(durationMillis = 200, easing = LinearOutSlowInEasing)
-                )
+                tabSwitchEnter(determineTabDirection(fromRoute, toRoute))
             } else {
-                slideInHorizontally(
-                    animationSpec = iosTransitionSpec,
-                    initialOffsetX = { fullWidth -> fullWidth }
-                ) + fadeIn(animationSpec = iosFadeSpec)
+                iosSlideEnter()
             }
         },
         exitTransition = {
             val fromRoute = this.initialState?.destination?.route
             val toRoute = this.targetState.destination.route
             val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
-            
+
             if (isBottomNavTransition) {
-                val direction = getSlideDirection(fromRoute, toRoute)
-                slideOutHorizontally(
-                    animationSpec = spring(
-                        stiffness = Spring.StiffnessMediumLow,
-                        dampingRatio = Spring.DampingRatioNoBouncy
-                    ),
-                    targetOffsetX = { fullWidth -> 
-                        if (direction > 0) -(fullWidth * 0.08f).toInt() else (fullWidth * 0.08f).toInt()
-                    }
-                ) + fadeOut(
-                    animationSpec = tween(durationMillis = 150, easing = FastOutLinearInEasing)
-                )
+                tabSwitchExit(determineTabDirection(fromRoute, toRoute))
             } else {
-                slideOutHorizontally(
-                    animationSpec = iosTransitionSpec,
-                    targetOffsetX = { fullWidth -> -fullWidth / 3 }
-                ) + fadeOut(animationSpec = iosFadeSpec)
+                iosSlideExit()
             }
         },
         popEnterTransition = {
             val fromRoute = this.initialState?.destination?.route
             val toRoute = this.targetState.destination.route
             val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
-            
+
             if (isBottomNavTransition) {
-                val direction = getSlideDirection(fromRoute, toRoute)
-                slideInHorizontally(
-                    animationSpec = spring(
-                        stiffness = Spring.StiffnessMediumLow,
-                        dampingRatio = Spring.DampingRatioNoBouncy
-                    ),
-                    initialOffsetX = { fullWidth -> 
-                        if (direction > 0) (fullWidth * 0.08f).toInt() else -(fullWidth * 0.08f).toInt()
-                    }
-                ) + fadeIn(
-                    animationSpec = tween(durationMillis = 200, easing = LinearOutSlowInEasing)
-                )
+                tabSwitchEnter(determineTabDirection(fromRoute, toRoute))
             } else {
-                slideInHorizontally(
-                    animationSpec = iosTransitionSpec,
-                    initialOffsetX = { fullWidth -> -fullWidth / 3 }
-                ) + fadeIn(animationSpec = iosFadeSpec)
+                iosSlidePopEnter()
             }
         },
         popExitTransition = {
             val fromRoute = this.initialState?.destination?.route
             val toRoute = this.targetState.destination.route
             val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
-            
+
             if (isBottomNavTransition) {
-                val direction = getSlideDirection(fromRoute, toRoute)
-                slideOutHorizontally(
-                    animationSpec = spring(
-                        stiffness = Spring.StiffnessMediumLow,
-                        dampingRatio = Spring.DampingRatioNoBouncy
-                    ),
-                    targetOffsetX = { fullWidth -> 
-                        if (direction > 0) -(fullWidth * 0.08f).toInt() else (fullWidth * 0.08f).toInt()
-                    }
-                ) + fadeOut(
-                    animationSpec = tween(durationMillis = 150, easing = FastOutLinearInEasing)
-                )
+                tabSwitchExit(determineTabDirection(fromRoute, toRoute))
             } else {
-                slideOutHorizontally(
-                    animationSpec = iosTransitionSpec,
-                    targetOffsetX = { fullWidth -> fullWidth }
-                ) + fadeOut(animationSpec = iosFadeSpec)
+                iosSlidePopExit()
             }
         }
     ) {
@@ -194,38 +131,24 @@ fun DuoScheduleNavGraph(
 
         composable(BottomNavItem.ScheduleA.route) {
             ScheduleScreen(
-                personType = PersonType.PERSON_A,
-                onNavigateToEdit = { courseId, dayOfWeek, period ->
-                    val route = buildEditRoute(courseId, dayOfWeek, period, PersonType.PERSON_A)
-                    navController.navigate(route)
-                }
+                personType = PersonType.PERSON_A
             )
         }
 
         composable(BottomNavItem.ScheduleB.route) {
             ScheduleScreen(
-                personType = PersonType.PERSON_B,
-                onNavigateToEdit = { courseId, dayOfWeek, period ->
-                    val route = buildEditRoute(courseId, dayOfWeek, period, PersonType.PERSON_B)
-                    navController.navigate(route)
-                }
+                personType = PersonType.PERSON_B
             )
         }
 
         composable(BottomNavItem.Settings.route) {
             SettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToUserSettings = { navController.navigate("settings/user") },
                 onNavigateToScheduleSettings = { navController.navigate("settings/schedule") },
                 onNavigateToDisplaySettings = { navController.navigate("settings/display") },
                 onNavigateToDataManagement = { navController.navigate("settings/data") },
-                onNavigateToNotificationSettings = { navController.navigate("settings/notification") }
-            )
-        }
-
-        composable("settings/user") {
-            UserSettingsScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateToNotificationSettings = { navController.navigate("settings/notification") },
+                onNavigateToUpdate = { navController.navigate("settings/update") }
             )
         }
 
@@ -279,6 +202,12 @@ fun DuoScheduleNavGraph(
                     pendingImportData = importData
                     navController.navigate("settings/import-preview")
                 }
+            )
+        }
+
+        composable("settings/update") {
+            com.duoschedule.ui.update.UpdateScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
         

@@ -67,6 +67,9 @@ class SettingsDataStore @Inject constructor(
         
         private val COURSE_NAME_FONT_SIZE = intPreferencesKey("course_name_font_size")
         private val COURSE_LOCATION_FONT_SIZE = intPreferencesKey("course_location_font_size")
+        private val PREDICTIVE_BACK_ENABLED = booleanPreferencesKey("predictive_back_enabled")
+        private val SINGLE_MODE_ENABLED = booleanPreferencesKey("single_mode_enabled")
+        private val SKIPPED_VERSION_CODE = intPreferencesKey("skipped_version_code")
 
         private val DEFAULT_PERIOD_TIMES = listOf(
             "08:00-08:45",
@@ -183,6 +186,18 @@ class SettingsDataStore @Inject constructor(
 
     val courseLocationFontSize: Flow<Int> = context.dataStore.data.map { preferences ->
         preferences[COURSE_LOCATION_FONT_SIZE] ?: 11
+    }
+
+    val predictiveBackEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[PREDICTIVE_BACK_ENABLED] ?: true
+    }
+
+    val singleModeEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[SINGLE_MODE_ENABLED] ?: false
+    }
+
+    val skippedVersionCode: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[SKIPPED_VERSION_CODE] ?: -1
     }
 
     suspend fun getNotificationEnabled(): Boolean {
@@ -355,6 +370,24 @@ class SettingsDataStore @Inject constructor(
     suspend fun setCourseLocationFontSize(size: Int) {
         context.dataStore.edit { preferences ->
             preferences[COURSE_LOCATION_FONT_SIZE] = size
+        }
+    }
+
+    suspend fun setPredictiveBackEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PREDICTIVE_BACK_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setSingleModeEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[SINGLE_MODE_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setSkippedVersionCode(code: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[SKIPPED_VERSION_CODE] = code
         }
     }
 

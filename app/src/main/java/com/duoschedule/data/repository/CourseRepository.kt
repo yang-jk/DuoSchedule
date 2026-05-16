@@ -110,6 +110,12 @@ class CourseRepository @Inject constructor(
     fun getCourseLocationFontSize(): Flow<Int> =
         settingsDataStore.courseLocationFontSize
 
+    fun getPredictiveBackEnabled(): Flow<Boolean> =
+        settingsDataStore.predictiveBackEnabled
+
+    fun getSingleModeEnabled(): Flow<Boolean> =
+        settingsDataStore.singleModeEnabled
+
     suspend fun getAutoSilentEnabledSync(): Boolean = 
         settingsDataStore.getAutoSilentEnabled()
 
@@ -181,6 +187,12 @@ class CourseRepository @Inject constructor(
 
     suspend fun setCourseLocationFontSize(size: Int) =
         settingsDataStore.setCourseLocationFontSize(size)
+
+    suspend fun setPredictiveBackEnabled(enabled: Boolean) =
+        settingsDataStore.setPredictiveBackEnabled(enabled)
+
+    suspend fun setSingleModeEnabled(enabled: Boolean) =
+        settingsDataStore.setSingleModeEnabled(enabled)
 
     fun calculateCurrentWeek(startDate: LocalDate, totalWeeks: Int): Int = 
         settingsDataStore.calculateCurrentWeek(startDate, totalWeeks)

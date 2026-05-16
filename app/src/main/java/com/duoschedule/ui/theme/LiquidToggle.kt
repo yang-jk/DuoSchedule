@@ -9,14 +9,12 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
@@ -45,6 +43,8 @@ import com.kyant.backdrop.shadow.Shadow
 import com.kyant.shapes.Capsule
 import kotlinx.coroutines.flow.collectLatest
 
+internal val LocalToggleShouldAnimate = androidx.compose.runtime.compositionLocalOf { false }
+
 @Composable
 fun LiquidToggle(
     checked: Boolean,
@@ -67,35 +67,7 @@ fun LiquidToggle(
     val animationScope = rememberCoroutineScope()
     var didDrag by remember { mutableStateOf(false) }
     var fraction by remember { mutableFloatStateOf(if (checked) 1f else 0f) }
-    
-    val currentChecked by rememberUpdatedState(checked)
-    val currentOnCheckedChange by rememberUpdatedState(onCheckedChange)
-    val currentEnabled by rememberUpdatedState(enabled)
-    
-    val onDragStopped: DampedDragAnimation.() -> Unit = {
-        if (currentEnabled) {
-            if (didDrag) {
-                val newFraction = if (targetValue >= 0.5f) 1f else 0f
-                currentOnCheckedChange(newFraction == 1f)
-                didDrag = false
-            } else {
-                currentOnCheckedChange(!currentChecked)
-            }
-        }
-    }
-    
-    val onDrag: DampedDragAnimation.(IntSize, Offset) -> Unit = { _, dragAmount ->
-        if (currentEnabled && !didDrag) {
-            didDrag = dragAmount.x != 0f
-        }
-        if (currentEnabled) {
-            val delta = dragAmount.x / dragWidth
-            fraction =
-                if (isLtr) (fraction + delta).fastCoerceIn(0f, 1f)
-                else (fraction - delta).fastCoerceIn(0f, 1f)
-        }
-    }
-    
+
     val dampedDragAnimation = remember(animationScope) {
         DampedDragAnimation(
             animationScope = animationScope,
@@ -105,8 +77,25 @@ fun LiquidToggle(
             initialScale = 1f,
             pressedScale = 1.5f,
             onDragStarted = {},
-            onDragStopped = onDragStopped,
-            onDrag = onDrag
+            onDragStopped = {
+                if (didDrag) {
+                    fraction = if (targetValue >= 0.5f) 1f else 0f
+                    onCheckedChange(fraction == 1f)
+                    didDrag = false
+                } else {
+                    fraction = if (checked) 0f else 1f
+                    onCheckedChange(fraction == 1f)
+                }
+            },
+            onDrag = { _, dragAmount ->
+                if (!didDrag) {
+                    didDrag = dragAmount.x != 0f
+                }
+                val delta = dragAmount.x / dragWidth
+                fraction =
+                    if (isLtr) (fraction + delta).fastCoerceIn(0f, 1f)
+                    else (fraction - delta).fastCoerceIn(0f, 1f)
+            }
         )
     }
     LaunchedEffect(dampedDragAnimation) {

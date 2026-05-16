@@ -115,6 +115,7 @@ object GlassBottomBarSpec {
     const val IconScaleUnselected = 1.0f
 }
 
+@Deprecated("Use LiquidBottomTabs instead for proper glass effects with drawBackdrop", ReplaceWith("LiquidBottomTabs"))
 @Composable
 fun GlassBottomBar(
     selectedIndex: Int,
@@ -243,6 +244,7 @@ fun GlassBottomBar(
     }
 }
 
+@Deprecated("Use LiquidBottomTabs instead for proper glass effects with drawBackdrop", ReplaceWith("LiquidBottomTabs"))
 @Composable
 fun RowScope.GlassBottomBarItem(
     selected: Boolean,
