@@ -13,7 +13,7 @@ android {
         applicationId = "com.duoschedule"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
+        versionCode = 10200
         versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
