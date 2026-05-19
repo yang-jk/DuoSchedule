@@ -17,18 +17,12 @@ android {
     namespace = "com.duoschedule"
     compileSdk = 37
 
-    val keystoreFileEnv = providers.environmentVariable("KEYSTORE_FILE").orNull
-    val hasKeystoreFromEnv = !keystoreFileEnv.isNullOrEmpty()
-    val hasKeystoreFromProps = keyPropsFile.exists()
-    
-    if (hasKeystoreFromEnv || hasKeystoreFromProps) {
-        signingConfigs {
-            create("release") {
-                storeFile = file(keystoreFileEnv ?: keyProps.getProperty("storeFile") ?: "")
-                storePassword = providers.environmentVariable("KEYSTORE_PASSWORD").orNull ?: keyProps.getProperty("storePassword") ?: ""
-                keyAlias = providers.environmentVariable("KEY_ALIAS").orNull ?: keyProps.getProperty("keyAlias") ?: ""
-                keyPassword = providers.environmentVariable("KEY_PASSWORD").orNull ?: keyProps.getProperty("keyPassword") ?: ""
-            }
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("KEYSTORE_FILE") ?: keyProps.getProperty("storeFile") ?: "")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: keyProps.getProperty("storePassword") ?: ""
+            keyAlias = System.getenv("KEY_ALIAS") ?: keyProps.getProperty("keyAlias") ?: ""
+            keyPassword = System.getenv("KEY_PASSWORD") ?: keyProps.getProperty("keyPassword") ?: ""
         }
     }
 
@@ -56,9 +50,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            if (hasKeystoreFromEnv || hasKeystoreFromProps) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
