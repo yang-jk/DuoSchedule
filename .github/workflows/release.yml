@@ -44,7 +44,7 @@ jobs:
           VERSION_CODE=$(grep 'versionCode' app/build.gradle.kts | head -1 | sed 's/.*versionCode[[:space:]]*=[[:space:]]*\([0-9]*\).*/\1/')
 
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NAME"
-          CALCULATED_VERSION_CODE=$((MAJOR * 100000 + MINOR * 1000 + PATCH))
+          CALCULATED_VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
 
           echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT

@@ -17,7 +17,10 @@ android {
     namespace = "com.duoschedule"
     compileSdk = 37
 
-    if (keyPropsFile.exists()) {
+    val hasKeystoreFromEnv = !System.getenv("KEYSTORE_FILE").isNullOrEmpty()
+    val hasKeystoreFromProps = keyPropsFile.exists()
+    
+    if (hasKeystoreFromEnv || hasKeystoreFromProps) {
         signingConfigs {
             create("release") {
                 storeFile = file(System.getenv("KEYSTORE_FILE") ?: keyProps.getProperty("storeFile") ?: "")
@@ -32,7 +35,7 @@ android {
         applicationId = "com.duoschedule"
         minSdk = 26
         targetSdk = 36
-        versionCode = 116003
+        versionCode = 11603
         versionName = "1.16.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -52,7 +55,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            if (keyPropsFile.exists()) {
+            if (hasKeystoreFromEnv || hasKeystoreFromProps) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
