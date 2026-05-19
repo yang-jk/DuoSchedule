@@ -104,7 +104,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update update.json
+      - name: Update update.json via GitHub API
         if: success()
         env:
           UPDATE_REPO_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
@@ -116,32 +116,62 @@ jobs:
           REPO_NAME="duoschedule-update"
           TAG_NAME="v${VERSION_NAME}"
           DOWNLOAD_URL="https://github.com/${REPO_OWNER}/DuoSchedule/releases/download/${TAG_NAME}/DuoSchedule-${VERSION_NAME}.apk"
+          API_BASE="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/update.json"
+
+          export VERSION_NAME VERSION_CODE DOWNLOAD_URL RELEASE_NOTES
 
           python3 -c "
-          import json, sys
-          notes = sys.argv[1] if len(sys.argv) > 1 else ''
+          import json, os
           data = {
-            'latestVersion': '${VERSION_NAME}',
-            'latestVersionCode': ${VERSION_CODE},
+            'latestVersion': os.environ['VERSION_NAME'],
+            'latestVersionCode': int(os.environ['VERSION_CODE']),
             'minSupportedVersionCode': 1,
-            'downloadUrl': '${DOWNLOAD_URL}',
-            'releaseNotes': notes,
+            'downloadUrl': os.environ['DOWNLOAD_URL'],
+            'releaseNotes': os.environ.get('RELEASE_NOTES', ''),
             'forceUpdate': False
           }
           with open('update.json', 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-          " "$RELEASE_NOTES"
+          print('update.json generated successfully')
+          "
 
-          git clone https://x-access-token:${UPDATE_REPO_TOKEN}@github.com/${REPO_OWNER}/${REPO_NAME}.git update-repo
+          SHA=$(curl -s -H "Authorization: token ${UPDATE_REPO_TOKEN}" "${API_BASE}" | python3 -c "import json,sys; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null || echo "")
+          echo "Current file SHA: ${SHA:-not found}"
 
-          cp update.json update-repo/update.json
-
-          cd update-repo
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add update.json
-          git commit -m "Update to ${VERSION_NAME} (${VERSION_CODE})" || echo "No changes to commit"
-          git push
+          if [ -n "$SHA" ]; then
+            curl -s -X PUT \
+              -H "Authorization: token ${UPDATE_REPO_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "$(python3 -c "
+          import json, base64, os
+          with open('update.json', 'r', encoding='utf-8') as f:
+            content = f.read()
+          data = {
+            'message': 'Update to ${VERSION_NAME} (${VERSION_CODE})',
+            'content': base64.b64encode(content.encode('utf-8')).decode('ascii'),
+            'sha': '${SHA}'
+          }
+          print(json.dumps(data))
+          ")" \
+              "${API_BASE}"
+            echo "update.json updated successfully"
+          else
+            curl -s -X PUT \
+              -H "Authorization: token ${UPDATE_REPO_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "$(python3 -c "
+          import json, base64, os
+          with open('update.json', 'r', encoding='utf-8') as f:
+            content = f.read()
+          data = {
+            'message': 'Create update.json for ${VERSION_NAME} (${VERSION_CODE})',
+            'content': base64.b64encode(content.encode('utf-8')).decode('ascii')
+          }
+          print(json.dumps(data))
+          ")" \
+              "${API_BASE}"
+            echo "update.json created successfully"
+          fi
 
       - name: Notify via ServerChan
         if: always()
@@ -150,7 +180,6 @@ jobs:
           BUILD_STATUS: ${{ job.status }}
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
-          CHANGELOG: ${{ steps.version.outputs.changelog }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ -z "$SERVERCHAN_URL" ]; then
@@ -176,6 +205,9 @@ jobs:
             json.dump(data, f, ensure_ascii=False)
           "
 
-          curl -s -X POST "${SERVERCHAN_URL}" \
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${SERVERCHAN_URL}" \
             -H "Content-Type: application/json" \
-            -d @notify.json
+            -d @notify.json)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          echo "ServerChan response (HTTP $HTTP_CODE): $BODY"
