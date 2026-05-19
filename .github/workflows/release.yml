@@ -61,7 +61,7 @@ jobs:
         run: |
           CHANGELOG=""
           if [ -f Product-Spec-CHANGELOG.md ]; then
-            CHANGELOG=$(awk "/^## \\[${{ steps.version.outputs.version_name }}\\]/{flag=1;next}/^## \\[/{flag=0}flag" Product-Spec-CHANGELOG.md | sed '/^---$/d;/^### 状态/d;/^### 修改文件/d;/^- `.*$/d;/^$/d')
+            CHANGELOG=$(awk "/^## \\[${{ steps.version.outputs.version_name }}\\]/{flag=1;next}/^## \\[/{flag=0}flag" Product-Spec-CHANGELOG.md | sed '/^---$/d;/^### 状态/d;/^### 修改文件/d;/^- `.*$/d;/^$/d;s/^### 变更内容//;s/^### 变更类型//;s/\*\*//g;s/^## //')
           fi
           if [ -z "$CHANGELOG" ]; then
             CHANGELOG="版本 ${{ steps.version.outputs.version_name }} 更新"
@@ -162,6 +162,9 @@ jobs:
           BUILD_STATUS=$(format_status "$BUILD_OUTCOME")
           RELEASE_STATUS=$(format_status "$RELEASE_OUTCOME")
           UPDATE_REPO_STATUS=$(format_status "$UPDATE_REPO_OUTCOME")
+          export BUILD_STATUS
+          export RELEASE_STATUS
+          export UPDATE_REPO_STATUS
 
           if [ "$BUILD_OUTCOME" = "success" ] && [ "$RELEASE_OUTCOME" = "success" ] && [ "$UPDATE_REPO_OUTCOME" = "success" ]; then
             export TITLE="✅ DuoSchedule v${VERSION_NAME} 发布成功"
@@ -169,19 +172,19 @@ jobs:
             export TITLE="⚠️ DuoSchedule v${VERSION_NAME} 发布异常"
           fi
 
-          export DESP="**版本**: ${VERSION_NAME} (${VERSION_CODE})
-
-          **APK 构建**: ${BUILD_STATUS}
-          **Release 创建**: ${RELEASE_STATUS}
-          **更新仓库**: ${UPDATE_REPO_STATUS}
-
-          [查看构建详情](${RUN_URL})"
-
           python3 -c "
           import json, os
+          version_name = os.environ['VERSION_NAME']
+          version_code = os.environ['VERSION_CODE']
+          build_status = os.environ['BUILD_STATUS']
+          release_status = os.environ['RELEASE_STATUS']
+          update_repo_status = os.environ['UPDATE_REPO_STATUS']
+          run_url = os.environ['RUN_URL']
+          title = os.environ['TITLE']
+          desp = f'版本: {version_name} ({version_code})  \nAPK 构建: {build_status}  \nRelease 创建: {release_status}  \n更新仓库: {update_repo_status}  \n\n构建详情: {run_url}'
           data = {
-            'title': os.environ['TITLE'],
-            'desp': os.environ['DESP']
+            'title': title,
+            'desp': desp
           }
           with open('notify.json', 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False)

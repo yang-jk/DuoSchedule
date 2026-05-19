@@ -6,6 +6,34 @@
 
 ---
 
+---
+
+## [1.16.3] - 2026-05-19
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复应用内更新安装 APK 崩溃 + 优化更新日志和 ServerChan 通知格式**
+
+1. **修复**：AndroidManifest.xml 添加 REQUEST_INSTALL_PACKAGES 权限声明，修复安装 APK 时 SecurityException 崩溃
+2. **优化**：changelog 提取去除 Markdown 特征（加粗标记、标题符号、变更类型/内容标签），输出纯文本
+3. **优化**：ServerChan 通知使用 Markdown 兼容换行（行尾双空格），确保正确分行显示
+
+### 修改文件
+
+- `AndroidManifest.xml`（新增 REQUEST_INSTALL_PACKAGES 权限声明）
+- `.github/workflows/release.yml`（优化 changelog 提取和 ServerChan 通知格式）
+- `app/build.gradle.kts`（versionCode 116001→116003，versionName 1.16.1→1.16.3）
+- `Product-Spec.md`（版本号 1.16.1→1.16.3）
+- `Product-Spec-CHANGELOG.md`（更新变更记录）
+
+---
+
+---
+
 ## [1.16.0] - 2026-05-19
 
 ### 变更类型：功能增强
@@ -1822,6 +1850,6 @@
 
 ---
 
-**文档版本**：1.16.0
+**文档版本**：1.16.3
 
 **最后更新**：2026-05-19
