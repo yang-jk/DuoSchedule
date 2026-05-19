@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -5,30 +7,23 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+val keyPropsFile = rootProject.file("key.properties")
+val keyProps = Properties()
+if (keyPropsFile.exists()) {
+    keyProps.load(keyPropsFile.inputStream())
+}
+
 android {
     namespace = "com.duoschedule"
     compileSdk = 37
 
-    val keystoreFile = System.getenv("KEYSTORE_FILE")
-        ?: file("../key.properties").let { props ->
-            if (props.exists()) {
-                val propsObj = java.util.Properties()
-                propsObj.load(props.inputStream())
-                propsObj.getProperty("storeFile")
-            } else null
-        }
-
-    if (keystoreFile != null) {
-        val keystoreProps = java.util.Properties().apply {
-            val propsFile = file("../key.properties")
-            if (propsFile.exists()) load(propsFile.inputStream())
-        }
+    if (keyPropsFile.exists()) {
         signingConfigs {
             create("release") {
-                storeFile = file(System.getenv("KEYSTORE_FILE") ?: keystoreProps.getProperty("storeFile") ?: "")
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: keystoreProps.getProperty("storePassword") ?: ""
-                keyAlias = System.getenv("KEY_ALIAS") ?: keystoreProps.getProperty("keyAlias") ?: ""
-                keyPassword = System.getenv("KEY_PASSWORD") ?: keystoreProps.getProperty("keyPassword") ?: ""
+                storeFile = file(System.getenv("KEYSTORE_FILE") ?: keyProps.getProperty("storeFile") ?: "")
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: keyProps.getProperty("storePassword") ?: ""
+                keyAlias = System.getenv("KEY_ALIAS") ?: keyProps.getProperty("keyAlias") ?: ""
+                keyPassword = System.getenv("KEY_PASSWORD") ?: keyProps.getProperty("keyPassword") ?: ""
             }
         }
     }
@@ -57,7 +52,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            if (keystoreFile != null) {
+            if (keyPropsFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
