@@ -17,16 +17,17 @@ android {
     namespace = "com.duoschedule"
     compileSdk = 37
 
-    val hasKeystoreFromEnv = !System.getenv("KEYSTORE_FILE").isNullOrEmpty()
+    val keystoreFileEnv = providers.environmentVariable("KEYSTORE_FILE").orNull
+    val hasKeystoreFromEnv = !keystoreFileEnv.isNullOrEmpty()
     val hasKeystoreFromProps = keyPropsFile.exists()
     
     if (hasKeystoreFromEnv || hasKeystoreFromProps) {
         signingConfigs {
             create("release") {
-                storeFile = file(System.getenv("KEYSTORE_FILE") ?: keyProps.getProperty("storeFile") ?: "")
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: keyProps.getProperty("storePassword") ?: ""
-                keyAlias = System.getenv("KEY_ALIAS") ?: keyProps.getProperty("keyAlias") ?: ""
-                keyPassword = System.getenv("KEY_PASSWORD") ?: keyProps.getProperty("keyPassword") ?: ""
+                storeFile = file(keystoreFileEnv ?: keyProps.getProperty("storeFile") ?: "")
+                storePassword = providers.environmentVariable("KEYSTORE_PASSWORD").orNull ?: keyProps.getProperty("storePassword") ?: ""
+                keyAlias = providers.environmentVariable("KEY_ALIAS").orNull ?: keyProps.getProperty("keyAlias") ?: ""
+                keyPassword = providers.environmentVariable("KEY_PASSWORD").orNull ?: keyProps.getProperty("keyPassword") ?: ""
             }
         }
     }
