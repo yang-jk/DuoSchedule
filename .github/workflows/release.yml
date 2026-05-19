@@ -111,67 +111,7 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
           RELEASE_NOTES: ${{ steps.version.outputs.changelog }}
-        run: |
-          REPO_OWNER="yang-jk"
-          REPO_NAME="duoschedule-update"
-          TAG_NAME="v${VERSION_NAME}"
-          DOWNLOAD_URL="https://github.com/${REPO_OWNER}/DuoSchedule/releases/download/${TAG_NAME}/DuoSchedule-${VERSION_NAME}.apk"
-          API_BASE="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/update.json"
-
-          export VERSION_NAME VERSION_CODE DOWNLOAD_URL RELEASE_NOTES
-
-          python3 -c "
-          import json, os
-          data = {
-            'latestVersion': os.environ['VERSION_NAME'],
-            'latestVersionCode': int(os.environ['VERSION_CODE']),
-            'minSupportedVersionCode': 1,
-            'downloadUrl': os.environ['DOWNLOAD_URL'],
-            'releaseNotes': os.environ.get('RELEASE_NOTES', ''),
-            'forceUpdate': False
-          }
-          with open('update.json', 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-          print('update.json generated successfully')
-          "
-
-          SHA=$(curl -s -H "Authorization: token ${UPDATE_REPO_TOKEN}" "${API_BASE}" | python3 -c "import json,sys; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null || echo "")
-          echo "Current file SHA: ${SHA:-not found}"
-
-          if [ -n "$SHA" ]; then
-            curl -s -X PUT \
-              -H "Authorization: token ${UPDATE_REPO_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d "$(python3 -c "
-          import json, base64, os
-          with open('update.json', 'r', encoding='utf-8') as f:
-            content = f.read()
-          data = {
-            'message': 'Update to ${VERSION_NAME} (${VERSION_CODE})',
-            'content': base64.b64encode(content.encode('utf-8')).decode('ascii'),
-            'sha': '${SHA}'
-          }
-          print(json.dumps(data))
-          ")" \
-              "${API_BASE}"
-            echo "update.json updated successfully"
-          else
-            curl -s -X PUT \
-              -H "Authorization: token ${UPDATE_REPO_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d "$(python3 -c "
-          import json, base64, os
-          with open('update.json', 'r', encoding='utf-8') as f:
-            content = f.read()
-          data = {
-            'message': 'Create update.json for ${VERSION_NAME} (${VERSION_CODE})',
-            'content': base64.b64encode(content.encode('utf-8')).decode('ascii')
-          }
-          print(json.dumps(data))
-          ")" \
-              "${API_BASE}"
-            echo "update.json created successfully"
-          fi
+        run: python3 scripts/update_repo.py
 
       - name: Notify via ServerChan
         if: always()
