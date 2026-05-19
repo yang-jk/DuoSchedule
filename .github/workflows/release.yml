@@ -158,19 +158,24 @@ jobs:
             exit 0
           fi
 
+          if [ "$BUILD_STATUS" = "success" ]; then
+            TITLE="✅ DuoSchedule v${VERSION_NAME} 构建成功"
+            DESP="**版本**: ${VERSION_NAME} (${VERSION_CODE})\n\n**状态**: 构建成功，已发布 Release\n\n[查看构建详情](${RUN_URL})"
+          else
+            TITLE="❌ DuoSchedule 构建失败"
+            DESP="**状态**: 构建失败\n\n[查看构建详情](${RUN_URL})"
+          fi
+
           python3 -c "
-          import json, sys, urllib.request
-          title = sys.argv[1]
-          desp = sys.argv[2]
-          url = sys.argv[3]
-          data = json.dumps({'title': title, 'desp': desp}, ensure_ascii=False).encode('utf-8')
-          req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
-          try:
-              with urllib.request.urlopen(req) as resp:
-                  print(f'Notification sent: {resp.status}')
-          except Exception as e:
-              print(f'Notification failed: {e}')
-          " \
-            "$(if [ "$BUILD_STATUS" = "success" ]; then echo "✅ DuoSchedule v${VERSION_NAME} 构建成功"; else echo "❌ DuoSchedule 构建失败"; fi)" \
-            "$(if [ "$BUILD_STATUS" = "success" ]; then echo "**版本**: ${VERSION_NAME} (${VERSION_CODE})\n\n**状态**: 构建成功，已发布 Release\n\n[查看构建详情](${RUN_URL})\n\n---\n\n${CHANGELOG}"; else echo "**状态**: 构建失败\n\n[查看构建详情](${RUN_URL})"; fi)" \
-            "$SERVERCHAN_URL"
+          import json, os
+          data = {
+            'title': os.environ['TITLE'],
+            'desp': os.environ['DESP']
+          }
+          with open('notify.json', 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False)
+          "
+
+          curl -s -X POST "${SERVERCHAN_URL}" \
+            -H "Content-Type: application/json" \
+            -d @notify.json
