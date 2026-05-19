@@ -159,11 +159,11 @@ jobs:
           fi
 
           if [ "$BUILD_STATUS" = "success" ]; then
-            TITLE="✅ DuoSchedule v${VERSION_NAME} 构建成功"
-            DESP="**版本**: ${VERSION_NAME} (${VERSION_CODE})\n\n**状态**: 构建成功，已发布 Release\n\n[查看构建详情](${RUN_URL})"
+            export TITLE="✅ DuoSchedule v${VERSION_NAME} 构建成功"
+            export DESP="**版本**: ${VERSION_NAME} (${VERSION_CODE})\n\n**状态**: 构建成功，已发布 Release\n\n[查看构建详情](${RUN_URL})"
           else
-            TITLE="❌ DuoSchedule 构建失败"
-            DESP="**状态**: 构建失败\n\n[查看构建详情](${RUN_URL})"
+            export TITLE="❌ DuoSchedule 构建失败"
+            export DESP="**状态**: 构建失败\n\n[查看构建详情](${RUN_URL})"
           fi
 
           python3 -c "
