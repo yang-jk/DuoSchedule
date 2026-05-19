@@ -25,7 +25,7 @@ class PersonTypeTest {
 
     @Test
     fun personType_values_hasExactlyTwo() {
-        assertEquals("Should have exactly 2 PersonType values", 2, PersonType.values().size)
+        assertEquals("Should have exactly 2 PersonType values", 2, PersonType.entries.size)
     }
 
     @Test
@@ -33,7 +33,7 @@ class PersonTypeTest {
         assertEquals(
             "PERSON_A should be first enum value",
             PersonType.PERSON_A,
-            PersonType.values()[0]
+            PersonType.entries[0]
         )
     }
 

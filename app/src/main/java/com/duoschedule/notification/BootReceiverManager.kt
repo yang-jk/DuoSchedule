@@ -35,6 +35,7 @@ object BootReceiverManager {
         Log.i(TAG, "BootReceiver 状态已更新: ${if (hasCourses) "启用(有课)" else "禁用(无课)"}")
     }
 
+    @Suppress("unused")
     fun isBootReceiverEnabled(context: Context): Boolean {
         val state = context.packageManager.getComponentEnabledSetting(
             ComponentName(context, BootReceiver::class.java)

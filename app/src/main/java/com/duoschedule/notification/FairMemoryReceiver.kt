@@ -33,9 +33,6 @@ class FairMemoryReceiver : IBinder.DeathRecipient {
         private const val KEY_REPLY = "reply"
         const val TRANSACTION_EXCEPTION_REPLY = IBinder.FIRST_CALL_TRANSACTION
 
-        const val NOTIFY_TYPE_PSS = 1000
-        const val NOTIFY_TYPE_HEAP = 2000
-
         const val RESULT_SUCCESS = 0
         const val RESULT_FAILURE = 1
     }
@@ -86,7 +83,11 @@ class FairMemoryReceiver : IBinder.DeathRecipient {
             val notifyId = bundle.getInt(KEY_NOTIFY_ID)
             val reason = bundle.getString(KEY_REASON)
             val actionType = bundle.getString(KEY_ACTION)
-            val callbackBinder = bundle.getBinder(KEY_CALLBACK)
+            val callbackBinder: IBinder? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                bundle.getBinder(KEY_CALLBACK)
+            } else {
+                null
+            }
 
             val extraData = data.getBundle(BUNDLE_KEY_EXTRA)
             var heapAlloc = 0
@@ -146,7 +147,7 @@ class FairMemoryReceiver : IBinder.DeathRecipient {
                 try {
                     mRemote = callback
                     mRemote?.linkToDeath(this, 0)
-                } catch (e: RemoteException) {
+                } catch (_: RemoteException) {
                     mRemote = null
                     return false
                 }

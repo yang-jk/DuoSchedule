@@ -125,16 +125,15 @@ class CsvExporterPersonTypeTest {
 
     @Test
     fun oldFormat_nameMapping_taNameBelongsToB() {
-        val personAName: String?
-        val personBName: String?
         val parts = arrayOf("Ta的名称", "对方")
-        personAName = null
-        personBName = null
+        var personAName: String? = null
+        var personBName: String? = null
         when (parts[0]) {
-            "Ta的名称" -> personBName == parts[1]
-            "我的名称" -> personAName == parts[1]
+            "Ta的名称" -> personBName = parts[1]
+            "我的名称" -> personAName = parts[1]
         }
-        assertEquals(true, true)
+        assertEquals("对方", personBName)
+        assertEquals(null, personAName)
     }
 
     private fun parsePersonTypeNewFormat(

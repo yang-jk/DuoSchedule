@@ -6,8 +6,8 @@ import org.junit.Test
 class TodayCourseDisplayModeTest {
 
     @Test
-    fun displayMode_values_hasThree() {
-        assertEquals(3, TodayCourseDisplayMode.values().size)
+    fun displayMode_entries_hasThree() {
+        assertEquals(3, TodayCourseDisplayMode.entries.size)
     }
 
     @Test
@@ -33,22 +33,14 @@ class TodayCourseDisplayModeTest {
     }
 
     @Test
-    fun selfOnly_labelIsSelf() {
-        val label = when (TodayCourseDisplayMode.SELF_ONLY) {
-            TodayCourseDisplayMode.SELF_ONLY -> "仅我的"
-            TodayCourseDisplayMode.TA_ONLY -> "仅Ta的"
-            TodayCourseDisplayMode.BOTH -> "全部"
-        }
-        assertEquals("仅我的", label)
-    }
-
-    @Test
-    fun taOnly_labelIsOther() {
-        val label = when (TodayCourseDisplayMode.TA_ONLY) {
-            TodayCourseDisplayMode.SELF_ONLY -> "仅我的"
-            TodayCourseDisplayMode.TA_ONLY -> "仅Ta的"
-            TodayCourseDisplayMode.BOTH -> "全部"
-        }
-        assertEquals("仅Ta的", label)
+    fun displayMode_labels() {
+        val labels = mapOf(
+            TodayCourseDisplayMode.SELF_ONLY to "仅我的",
+            TodayCourseDisplayMode.TA_ONLY to "仅Ta的",
+            TodayCourseDisplayMode.BOTH to "全部"
+        )
+        assertEquals("仅我的", labels[TodayCourseDisplayMode.SELF_ONLY])
+        assertEquals("仅Ta的", labels[TodayCourseDisplayMode.TA_ONLY])
+        assertEquals("全部", labels[TodayCourseDisplayMode.BOTH])
     }
 }
