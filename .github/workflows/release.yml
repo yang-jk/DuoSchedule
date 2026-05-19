@@ -37,6 +37,7 @@ jobs:
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore
 
       - name: Build release APK
+        id: build
         env:
           KEYSTORE_FILE: app/keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -63,6 +64,7 @@ jobs:
           } >> $GITHUB_OUTPUT
 
       - name: Rename APK
+        if: success()
         run: |
           mv app/build/outputs/apk/release/app-release-unsigned.apk \
              app/build/outputs/apk/release/DuoSchedule-${{ steps.version.outputs.version_name }}.apk \
@@ -71,6 +73,7 @@ jobs:
              app/build/outputs/apk/release/DuoSchedule-${{ steps.version.outputs.version_name }}.apk
 
       - name: Create or update tag
+        if: success()
         run: |
           TAG="v${{ steps.version.outputs.version_name }}"
           git config user.name "github-actions[bot]"
@@ -79,6 +82,7 @@ jobs:
           git push origin "$TAG" --force
 
       - name: Create GitHub Release
+        if: success()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version_name }}
@@ -97,6 +101,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update update.json
+        if: success()
         env:
           UPDATE_REPO_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
@@ -131,3 +136,25 @@ jobs:
           git add update.json
           git commit -m "Update to ${VERSION_NAME} (${VERSION_CODE})" || echo "No changes to commit"
           git push
+
+      - name: Notify via ServerChan
+        if: always()
+        env:
+          SERVERCHAN_URL: ${{ secrets.SERVERCHAN_URL }}
+          BUILD_STATUS: ${{ job.status }}
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          CHANGELOG: ${{ steps.version.outputs.changelog }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "$BUILD_STATUS" = "success" ]; then
+            TITLE="✅ DuoSchedule v${VERSION_NAME} 构建成功"
+            DESP="**版本**: ${VERSION_NAME} (${VERSION_CODE})\n\n**状态**: 构建成功，已发布 Release\n\n[查看构建详情](${RUN_URL})\n\n---\n\n${CHANGELOG}"
+          else
+            TITLE="❌ DuoSchedule 构建失败"
+            DESP="**状态**: 构建失败\n\n[查看构建详情](${RUN_URL})"
+          fi
+
+          curl -s -X POST "${SERVERCHAN_URL}" \
+            -H "Content-Type: application/json" \
+            -d "{\"title\":\"${TITLE}\",\"desp\":\"${DESP}\"}" > /dev/null 2>&1
