@@ -64,6 +64,7 @@ class FairMemoryReceiver : IBinder.DeathRecipient {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 context.registerReceiver(mReceiver, filter, null, mHandler, Context.RECEIVER_EXPORTED)
             } else {
+                @Suppress("UnspecifiedRegisterReceiverFlag")
                 context.registerReceiver(mReceiver, filter, null, mHandler)
             }
             mInitialized = true

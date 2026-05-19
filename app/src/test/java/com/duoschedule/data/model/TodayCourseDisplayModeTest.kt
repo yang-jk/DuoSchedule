@@ -10,26 +10,26 @@ class TodayCourseDisplayModeTest {
         assertEquals(3, TodayCourseDisplayMode.entries.size)
     }
 
+    @Suppress("WHEN_WITHOUT_ELSE")
+    private fun mapToPersonType(mode: TodayCourseDisplayMode): PersonType = when (mode) {
+        TodayCourseDisplayMode.SELF_ONLY -> PersonType.PERSON_A
+        TodayCourseDisplayMode.TA_ONLY -> PersonType.PERSON_B
+        TodayCourseDisplayMode.BOTH -> PersonType.PERSON_A
+    }
+
     @Test
     fun selfOnly_mapsToPersonA() {
-        val mode = TodayCourseDisplayMode.SELF_ONLY
-        val personType = when (mode) {
-            TodayCourseDisplayMode.SELF_ONLY -> PersonType.PERSON_A
-            TodayCourseDisplayMode.TA_ONLY -> PersonType.PERSON_B
-            TodayCourseDisplayMode.BOTH -> PersonType.PERSON_A
-        }
-        assertEquals("SELF_ONLY should map to PERSON_A (我)", PersonType.PERSON_A, personType)
+        assertEquals(PersonType.PERSON_A, mapToPersonType(TodayCourseDisplayMode.SELF_ONLY))
     }
 
     @Test
     fun taOnly_mapsToPersonB() {
-        val mode = TodayCourseDisplayMode.TA_ONLY
-        val personType = when (mode) {
-            TodayCourseDisplayMode.SELF_ONLY -> PersonType.PERSON_A
-            TodayCourseDisplayMode.TA_ONLY -> PersonType.PERSON_B
-            TodayCourseDisplayMode.BOTH -> PersonType.PERSON_A
-        }
-        assertEquals("TA_ONLY should map to PERSON_B (Ta)", PersonType.PERSON_B, personType)
+        assertEquals(PersonType.PERSON_B, mapToPersonType(TodayCourseDisplayMode.TA_ONLY))
+    }
+
+    @Test
+    fun both_mapsToPersonA() {
+        assertEquals(PersonType.PERSON_A, mapToPersonType(TodayCourseDisplayMode.BOTH))
     }
 
     @Test
