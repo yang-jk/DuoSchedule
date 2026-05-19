@@ -117,18 +117,20 @@ jobs:
           TAG_NAME="v${VERSION_NAME}"
           DOWNLOAD_URL="https://github.com/${REPO_OWNER}/DuoSchedule/releases/download/${TAG_NAME}/DuoSchedule-${VERSION_NAME}.apk"
 
-          ESCAPED_NOTES=$(echo "$RELEASE_NOTES" | sed 's/"/\\"/g' | tr '\n' ' ' | sed 's/  */ /g')
-
-          cat > update.json <<EOF
-          {
-            "latestVersion": "${VERSION_NAME}",
-            "latestVersionCode": ${VERSION_CODE},
-            "minSupportedVersionCode": 1,
-            "downloadUrl": "${DOWNLOAD_URL}",
-            "releaseNotes": "${ESCAPED_NOTES}",
-            "forceUpdate": false
+          python3 -c "
+          import json, sys
+          notes = sys.argv[1] if len(sys.argv) > 1 else ''
+          data = {
+            'latestVersion': '${VERSION_NAME}',
+            'latestVersionCode': ${VERSION_CODE},
+            'minSupportedVersionCode': 1,
+            'downloadUrl': '${DOWNLOAD_URL}',
+            'releaseNotes': notes,
+            'forceUpdate': False
           }
-          EOF
+          with open('update.json', 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+          " "$RELEASE_NOTES"
 
           git clone https://x-access-token:${UPDATE_REPO_TOKEN}@github.com/${REPO_OWNER}/${REPO_NAME}.git update-repo
 
@@ -151,14 +153,24 @@ jobs:
           CHANGELOG: ${{ steps.version.outputs.changelog }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          if [ "$BUILD_STATUS" = "success" ]; then
-            TITLE="✅ DuoSchedule v${VERSION_NAME} 构建成功"
-            DESP="**版本**: ${VERSION_NAME} (${VERSION_CODE})\n\n**状态**: 构建成功，已发布 Release\n\n[查看构建详情](${RUN_URL})\n\n---\n\n${CHANGELOG}"
-          else
-            TITLE="❌ DuoSchedule 构建失败"
-            DESP="**状态**: 构建失败\n\n[查看构建详情](${RUN_URL})"
+          if [ -z "$SERVERCHAN_URL" ]; then
+            echo "SERVERCHAN_URL not configured, skipping notification"
+            exit 0
           fi
 
-          curl -s -X POST "${SERVERCHAN_URL}" \
-            -H "Content-Type: application/json" \
-            -d "{\"title\":\"${TITLE}\",\"desp\":\"${DESP}\"}" > /dev/null 2>&1
+          python3 -c "
+          import json, sys, urllib.request
+          title = sys.argv[1]
+          desp = sys.argv[2]
+          url = sys.argv[3]
+          data = json.dumps({'title': title, 'desp': desp}, ensure_ascii=False).encode('utf-8')
+          req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+          try:
+              with urllib.request.urlopen(req) as resp:
+                  print(f'Notification sent: {resp.status}')
+          except Exception as e:
+              print(f'Notification failed: {e}')
+          " \
+            "$(if [ "$BUILD_STATUS" = "success" ]; then echo "✅ DuoSchedule v${VERSION_NAME} 构建成功"; else echo "❌ DuoSchedule 构建失败"; fi)" \
+            "$(if [ "$BUILD_STATUS" = "success" ]; then echo "**版本**: ${VERSION_NAME} (${VERSION_CODE})\n\n**状态**: 构建成功，已发布 Release\n\n[查看构建详情](${RUN_URL})\n\n---\n\n${CHANGELOG}"; else echo "**状态**: 构建失败\n\n[查看构建详情](${RUN_URL})"; fi)" \
+            "$SERVERCHAN_URL"
