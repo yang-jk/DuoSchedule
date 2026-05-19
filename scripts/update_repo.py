@@ -67,7 +67,7 @@ except Exception as e:
     print(f"Error: {e}")
     sys.exit(1)
 
-purge_url = f"https://purge.jsdelivr.net/gh/{REPO_OWNER}/{REPO_NAME}@update.json"
+purge_url = f"https://purge.jsdelivr.net/gh/{REPO_OWNER}/{REPO_NAME}@main/update.json"
 print(f"Purging jsdelivr cache: {purge_url}")
 try:
     req = urllib.request.Request(purge_url)

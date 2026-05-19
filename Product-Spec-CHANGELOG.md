@@ -2,7 +2,33 @@
 
 本文档记录产品需求文档的所有变更历史，遵循语义化版本规范。
 
-版本号计算公式：versionCode = MAJOR × 10000 + MINOR × 1000 + PATCH
+版本号计算公式：versionCode = MAJOR × 100000 + MINOR × 1000 + PATCH
+
+---
+
+## [1.16.0] - 2026-05-19
+
+### 变更类型：功能增强
+
+### 状态：已实现
+
+### 变更内容
+
+**重写 GitHub Actions 发布工作流与版本号计算规则**
+
+1. **BREAKING**：版本号计算公式从 `MAJOR × 10000 + MINOR × 1000 + PATCH` 改为 `MAJOR × 100000 + MINOR × 1000 + PATCH`，使 versionCode 与 versionName 视觉对应关系更直观（如 2.06.06 → 206006）
+2. **新增**：工作流自动从 versionName 计算 versionCode，并校验与 build.gradle.kts 中声明的一致，不一致时构建失败
+3. **优化**：将版本信息提取和 changelog 提取拆分为独立步骤，changelog 提取失败时使用默认文案兜底
+4. **优化**：GitHub Release 步骤和更新仓库步骤添加 step id，支持状态追踪
+5. **新增**：更新仓库步骤添加 `continue-on-error: true`，失败不阻塞后续通知
+6. **增强**：ServerChan 通知改为汇总模式，分别报告 APK 构建、Release 创建、更新仓库三个步骤的独立状态（✅成功/❌失败/⏭️跳过），包含版本号（versionName + versionCode）
+
+### 修改文件
+
+- `.github/workflows/release.yml`（重写工作流：新增 versionCode 校验、changelog 独立提取、ServerChan 汇总通知）
+- `app/build.gradle.kts`（versionCode 25000→116000，versionName 1.15.0→1.16.0）
+- `Product-Spec.md`（版本号 1.15.0→1.16.0，更新版本号计算公式）
+- `Product-Spec-CHANGELOG.md`（更新版本号计算公式 + 新增变更记录）
 
 ---
 
@@ -1792,10 +1818,10 @@
 - **MINOR（次版本号）**：向下兼容的功能性新增
 - **PATCH（修订号）**：向下兼容的问题修正
 
-版本号计算公式：versionCode = MAJOR × 10000 + MINOR × 1000 + PATCH
+版本号计算公式：versionCode = MAJOR × 100000 + MINOR × 1000 + PATCH
 
 ---
 
-**文档版本**：1.6.0
+**文档版本**：1.16.0
 
-**最后更新**：2026-05-17
+**最后更新**：2026-05-19

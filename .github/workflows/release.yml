@@ -37,6 +37,41 @@ jobs:
           fi
           chmod +x gradlew
 
+      - name: Extract version info and verify versionCode
+        id: version
+        run: |
+          VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*versionName[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/')
+          VERSION_CODE=$(grep 'versionCode' app/build.gradle.kts | head -1 | sed 's/.*versionCode[[:space:]]*=[[:space:]]*\([0-9]*\).*/\1/')
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NAME"
+          CALCULATED_VERSION_CODE=$((MAJOR * 100000 + MINOR * 1000 + PATCH))
+
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "calculated_version_code=$CALCULATED_VERSION_CODE" >> $GITHUB_OUTPUT
+
+          if [ "$VERSION_CODE" != "$CALCULATED_VERSION_CODE" ]; then
+            echo "::error::versionCode mismatch! build.gradle.kts has $VERSION_CODE, but formula (MAJOR×100000 + MINOR×1000 + PATCH) calculates $CALCULATED_VERSION_CODE for versionName $VERSION_NAME"
+            exit 1
+          fi
+          echo "✅ versionCode verification passed: $VERSION_CODE"
+
+      - name: Extract changelog
+        id: changelog
+        run: |
+          CHANGELOG=""
+          if [ -f Product-Spec-CHANGELOG.md ]; then
+            CHANGELOG=$(awk "/^## \\[${{ steps.version.outputs.version_name }}\\]/{flag=1;next}/^## \\[/{flag=0}flag" Product-Spec-CHANGELOG.md | sed '/^---$/d;/^### 状态/d;/^### 修改文件/d;/^- `.*$/d;/^$/d')
+          fi
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="版本 ${{ steps.version.outputs.version_name }} 更新"
+          fi
+          {
+            echo "changelog<<EOF"
+            echo "$CHANGELOG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
       - name: Decode keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore
 
@@ -48,24 +83,6 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease
-
-      - name: Extract version info and changelog
-        id: version
-        run: |
-          VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*versionName[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/')
-          VERSION_CODE=$(grep 'versionCode' app/build.gradle.kts | head -1 | sed 's/.*versionCode[[:space:]]*=[[:space:]]*\([0-9]*\).*/\1/')
-          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
-          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
-
-          CHANGELOG=""
-          if [ -f Product-Spec-CHANGELOG.md ]; then
-            CHANGELOG=$(awk "/^## \\[${VERSION_NAME}\\]/{flag=1;next}/^## \\[/{flag=0}flag" Product-Spec-CHANGELOG.md | sed '/^---$/d;/^### 状态/d;/^### 修改文件/d;/^- `.*$/d;/^$/d')
-          fi
-          {
-            echo "changelog<<EOF"
-            echo "$CHANGELOG"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
 
       - name: Rename APK
         if: success()
@@ -86,6 +103,7 @@ jobs:
           git push origin "$TAG" --force
 
       - name: Create GitHub Release
+        id: release
         if: success()
         uses: softprops/action-gh-release@v2
         with:
@@ -98,28 +116,32 @@ jobs:
 
             ---
 
-            ${{ steps.version.outputs.changelog }}
+            ${{ steps.changelog.outputs.changelog }}
           files: |
             app/build/outputs/apk/release/DuoSchedule-${{ steps.version.outputs.version_name }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update update.json via GitHub API
+        id: update_repo
         if: success()
+        continue-on-error: true
         env:
           UPDATE_REPO_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
-          RELEASE_NOTES: ${{ steps.version.outputs.changelog }}
+          RELEASE_NOTES: ${{ steps.changelog.outputs.changelog }}
         run: python3 scripts/update_repo.py
 
       - name: Notify via ServerChan
         if: always()
         env:
           SERVERCHAN_URL: ${{ secrets.SERVERCHAN_URL }}
-          BUILD_STATUS: ${{ job.status }}
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          RELEASE_OUTCOME: ${{ steps.release.outcome }}
+          UPDATE_REPO_OUTCOME: ${{ steps.update_repo.outcome }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ -z "$SERVERCHAN_URL" ]; then
@@ -127,19 +149,33 @@ jobs:
             exit 0
           fi
 
-          if [ "$BUILD_STATUS" = "success" ]; then
-            export TITLE="✅ DuoSchedule v${VERSION_NAME} 构建成功"
-            export DESP="**版本**: ${VERSION_NAME} (${VERSION_CODE})
+          format_status() {
+            local outcome="$1"
+            case "$outcome" in
+              success) echo "✅ 成功" ;;
+              failure) echo "❌ 失败" ;;
+              skipped) echo "⏭️ 跳过" ;;
+              *) echo "❓ $outcome" ;;
+            esac
+          }
 
-**状态**: 构建成功，已发布 Release
+          BUILD_STATUS=$(format_status "$BUILD_OUTCOME")
+          RELEASE_STATUS=$(format_status "$RELEASE_OUTCOME")
+          UPDATE_REPO_STATUS=$(format_status "$UPDATE_REPO_OUTCOME")
 
-[查看构建详情](${RUN_URL})"
+          if [ "$BUILD_OUTCOME" = "success" ] && [ "$RELEASE_OUTCOME" = "success" ] && [ "$UPDATE_REPO_OUTCOME" = "success" ]; then
+            export TITLE="✅ DuoSchedule v${VERSION_NAME} 发布成功"
           else
-            export TITLE="❌ DuoSchedule 构建失败"
-            export DESP="**状态**: 构建失败
-
-[查看构建详情](${RUN_URL})"
+            export TITLE="⚠️ DuoSchedule v${VERSION_NAME} 发布异常"
           fi
+
+          export DESP="**版本**: ${VERSION_NAME} (${VERSION_CODE})
+
+          **APK 构建**: ${BUILD_STATUS}
+          **Release 创建**: ${RELEASE_STATUS}
+          **更新仓库**: ${UPDATE_REPO_STATUS}
+
+          [查看构建详情](${RUN_URL})"
 
           python3 -c "
           import json, os
