@@ -22,7 +22,7 @@ class AppUpdateChecker @Inject constructor(
     companion object {
         private const val TAG = "AppUpdateChecker"
         private const val UPDATE_JSON_URL =
-            "https://raw.githubusercontent.com/yang-jk/duoschedule-update/main/update.json"
+            "https://cdn.jsdelivr.net/gh/yang-jk/duoschedule-update@update.json"
         private const val CONNECT_TIMEOUT_SECONDS = 10L
         private const val READ_TIMEOUT_SECONDS = 15L
     }
