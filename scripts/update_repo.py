@@ -66,3 +66,12 @@ except urllib.error.HTTPError as e:
 except Exception as e:
     print(f"Error: {e}")
     sys.exit(1)
+
+purge_url = f"https://purge.jsdelivr.net/gh/{REPO_OWNER}/{REPO_NAME}@update.json"
+print(f"Purging jsdelivr cache: {purge_url}")
+try:
+    req = urllib.request.Request(purge_url)
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        print(f"Purge response: {resp.status}")
+except Exception as e:
+    print(f"Purge failed (non-fatal): {e}")
