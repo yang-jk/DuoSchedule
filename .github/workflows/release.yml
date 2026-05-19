@@ -2,8 +2,8 @@ name: Build & Release APK
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -39,15 +41,23 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease
 
-      - name: Extract version info
+      - name: Extract version info and changelog
         id: version
         run: |
           VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*versionName[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/')
           VERSION_CODE=$(grep 'versionCode' app/build.gradle.kts | head -1 | sed 's/.*versionCode[[:space:]]*=[[:space:]]*\([0-9]*\).*/\1/')
-          TAG_NAME=${GITHUB_REF#refs/tags/}
           echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
-          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+          CHANGELOG=""
+          if [ -f Product-Spec-CHANGELOG.md ]; then
+            CHANGELOG=$(awk "/^## \\[${VERSION_NAME}\\]/{flag=1;next}/^## \\[/{flag=0}flag" Product-Spec-CHANGELOG.md | sed '/^---$/d;/^### 状态/d;/^### 修改文件/d;/^- `.*$/d;/^$/d')
+          fi
+          {
+            echo "changelog<<EOF"
+            echo "$CHANGELOG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Rename APK
         run: |
@@ -57,10 +67,18 @@ jobs:
           mv app/build/outputs/apk/release/app-release.apk \
              app/build/outputs/apk/release/DuoSchedule-${{ steps.version.outputs.version_name }}.apk
 
+      - name: Create or update tag
+        run: |
+          TAG="v${{ steps.version.outputs.version_name }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f "$TAG"
+          git push origin "$TAG" --force
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag_name }}
+          tag_name: v${{ steps.version.outputs.version_name }}
           name: DuoSchedule ${{ steps.version.outputs.version_name }}
           body: |
             ## DuoSchedule ${{ steps.version.outputs.version_name }}
@@ -68,7 +86,8 @@ jobs:
             版本号: ${{ steps.version.outputs.version_code }}
 
             ---
-            更新内容请查看提交记录。
+
+            ${{ steps.version.outputs.changelog }}
           files: |
             app/build/outputs/apk/release/DuoSchedule-${{ steps.version.outputs.version_name }}.apk
         env:
@@ -79,11 +98,14 @@ jobs:
           UPDATE_REPO_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
-          TAG_NAME: ${{ steps.version.outputs.tag_name }}
+          RELEASE_NOTES: ${{ steps.version.outputs.changelog }}
         run: |
           REPO_OWNER="yang-jk"
           REPO_NAME="duoschedule-update"
+          TAG_NAME="v${VERSION_NAME}"
           DOWNLOAD_URL="https://github.com/${REPO_OWNER}/DuoSchedule/releases/download/${TAG_NAME}/DuoSchedule-${VERSION_NAME}.apk"
+
+          ESCAPED_NOTES=$(echo "$RELEASE_NOTES" | sed 's/"/\\"/g' | tr '\n' ' ' | sed 's/  */ /g')
 
           cat > update.json <<EOF
           {
@@ -91,7 +113,7 @@ jobs:
             "latestVersionCode": ${VERSION_CODE},
             "minSupportedVersionCode": 1,
             "downloadUrl": "${DOWNLOAD_URL}",
-            "releaseNotes": "DuoSchedule ${VERSION_NAME}",
+            "releaseNotes": "${ESCAPED_NOTES}",
             "forceUpdate": false
           }
           EOF
