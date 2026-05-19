@@ -2,33 +2,41 @@ package com.duoschedule.notification
 
 import android.content.Context
 import android.util.Log
-import androidx.work.Constraints
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.duoschedule.DuoScheduleApp
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
 
-class NotificationRescheduleWorker(
-    context: Context,
-    workerParams: WorkerParameters
+@HiltWorker
+class NotificationRescheduleWorker @AssistedInject constructor(
+    @Assisted private val context: Context,
+    @Assisted private val workerParams: WorkerParameters,
+    private val notificationManager: CourseNotificationManager,
+    private val courseDao: com.duoschedule.data.local.CourseDao
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
         try {
             Log.i(TAG, "========== NotificationRescheduleWorker 开始执行 ==========")
             Log.i(TAG, "当前时间: ${java.time.LocalTime.now()}")
-            
-            val app = applicationContext as DuoScheduleApp
-            
-            val hasOngoing = app.notificationManager.checkAndShowOngoingNotification()
+
+            val allCourses = courseDao.getAllCoursesSync()
+            if (allCourses.isEmpty()) {
+                Log.i(TAG, "No courses found, skipping reschedule")
+                Log.i(TAG, "========== NotificationRescheduleWorker 执行完成(无课程) ==========")
+                return Result.success()
+            }
+
+            val hasOngoing = notificationManager.checkAndShowOngoingNotification()
             Log.i(TAG, "当前课程检查结果: hasOngoing=$hasOngoing")
-            
-            app.notificationManager.scheduleReminderNotifications()
-            
+
+            notificationManager.scheduleReminderNotifications()
+
             Log.i(TAG, "通知重新调度完成")
             Log.i(TAG, "========== NotificationRescheduleWorker 执行完成 ==========")
             return Result.success()
@@ -44,17 +52,10 @@ class NotificationRescheduleWorker(
 
         fun schedule(context: Context) {
             Log.d(TAG, "调度定期通知重新调度任务")
-            
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
-                .setRequiresBatteryNotLow(false)
-                .setRequiresCharging(false)
-                .build()
 
             val workRequest = PeriodicWorkRequestBuilder<NotificationRescheduleWorker>(
                 15, TimeUnit.MINUTES
             )
-                .setConstraints(constraints)
                 .setInitialDelay(1, TimeUnit.MINUTES)
                 .build()
 
@@ -64,23 +65,16 @@ class NotificationRescheduleWorker(
                     ExistingPeriodicWorkPolicy.UPDATE,
                     workRequest
                 )
-            
+
             Log.d(TAG, "定期通知重新调度任务已调度，间隔 15 分钟")
         }
-        
+
         fun scheduleQuickCheck(context: Context) {
             Log.d(TAG, "调度快速检查任务")
-            
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
-                .setRequiresBatteryNotLow(false)
-                .setRequiresCharging(false)
-                .build()
 
             val workRequest = PeriodicWorkRequestBuilder<NotificationRescheduleWorker>(
-                5, TimeUnit.MINUTES
+                15, TimeUnit.MINUTES
             )
-                .setConstraints(constraints)
                 .setInitialDelay(30, TimeUnit.SECONDS)
                 .build()
 
@@ -90,10 +84,10 @@ class NotificationRescheduleWorker(
                     ExistingPeriodicWorkPolicy.UPDATE,
                     workRequest
                 )
-            
-            Log.d(TAG, "快速检查任务已调度，间隔 5 分钟")
+
+            Log.d(TAG, "快速检查任务已调度，间隔 15 分钟")
         }
-        
+
         fun cancel(context: Context) {
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
             WorkManager.getInstance(context).cancelUniqueWork("${WORK_NAME}_quick")

@@ -336,12 +336,14 @@ fun GlassTextField(
         ),
         keyboardOptions = KeyboardOptions.Default,
         keyboardActions = KeyboardActions.Default,
-        cursorBrush = Brush.verticalGradient(
-            colors = listOf(
-                if (darkTheme) IOS26Colors.TintBlue else IOSColors.Blue,
-                if (darkTheme) IOS26Colors.TintBlue else IOSColors.Blue
+        cursorBrush = remember(darkTheme) {
+            Brush.verticalGradient(
+                colors = listOf(
+                    if (darkTheme) IOS26Colors.TintBlue else IOSColors.Blue,
+                    if (darkTheme) IOS26Colors.TintBlue else IOSColors.Blue
+                )
             )
-        ),
+        },
         decorationBox = { innerTextField ->
             Row(
                 modifier = Modifier

@@ -32,6 +32,7 @@ fun UpdateScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { Text("检查更新") },
@@ -58,7 +59,7 @@ fun UpdateScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(top = paddingValues.calculateTopPadding())
                 .padding(horizontal = Spacing.lg)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -90,6 +91,8 @@ fun UpdateScreen(
                     onRetry = { viewModel.checkForUpdate(context) }
                 )
             }
+
+            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
     }
 }

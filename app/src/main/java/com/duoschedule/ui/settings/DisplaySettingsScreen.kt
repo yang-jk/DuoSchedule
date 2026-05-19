@@ -14,6 +14,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.TodayCourseDisplayMode
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
+import com.duoschedule.ui.theme.ScrollTopBlurOverlay
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +35,7 @@ fun DisplaySettingsScreen(
     val labelsPrimary = getLabelsVibrantPrimary()
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = {
@@ -64,11 +68,18 @@ fun DisplaySettingsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
+        val scrollBackdrop = rememberLayerBackdrop()
+        val scrollState = rememberScrollState()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = paddingValues.calculateTopPadding())
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState)
+                .layerBackdrop(scrollBackdrop),
             verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
         ) {
             Spacer(modifier = Modifier.height(Spacing.sm))
@@ -166,7 +177,11 @@ fun DisplaySettingsScreen(
                 text = "显示设置会影响课表和主页的显示方式。"
             )
 
+            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             Spacer(modifier = Modifier.weight(1f))
+        }
+
+        ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollState.value)
         }
     }
 }

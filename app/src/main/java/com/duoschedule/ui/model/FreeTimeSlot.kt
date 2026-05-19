@@ -1,7 +1,9 @@
 package com.duoschedule.ui.model
 
+import androidx.compose.runtime.Immutable
 import java.util.Locale
 
+@Immutable
 data class FreeTimeSlot(
     val startHour: Int,
     val startMinute: Int,

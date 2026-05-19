@@ -1,5 +1,6 @@
 package com.duoschedule.notification
 
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -44,10 +45,23 @@ class LiveUpdateService : Service() {
         const val EXTRA_IS_PRE_START = "is_pre_start"
         const val EXTRA_TOTAL_MINUTES = "total_minutes"
         
+        @Volatile
         private var isRunning = false
         private var wakeLock: PowerManager.WakeLock? = null
         
         fun isServiceRunning(): Boolean = isRunning
+        
+        fun isServiceRunning(context: Context): Boolean {
+            if (isRunning) {
+                val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                val running = am.getRunningServices(Int.MAX_VALUE)
+                    .any { it.service.className == LiveUpdateService::class.java.name }
+                if (!running) {
+                    isRunning = false
+                }
+            }
+            return isRunning
+        }
         
         fun start(context: Context) {
             val intent = Intent(context, LiveUpdateService::class.java).apply {
@@ -62,7 +76,8 @@ class LiveUpdateService : Service() {
             courseLocation: String,
             remainingMinutes: Int,
             endHour: Int = -1,
-            endMinute: Int = -1
+            endMinute: Int = -1,
+            totalMinutes: Int = 45
         ) {
             val intent = Intent(context, LiveUpdateService::class.java).apply {
                 action = ACTION_START
@@ -71,6 +86,7 @@ class LiveUpdateService : Service() {
                 putExtra(EXTRA_REMAINING_MINUTES, remainingMinutes)
                 putExtra(EXTRA_END_HOUR, endHour)
                 putExtra(EXTRA_END_MINUTE, endMinute)
+                putExtra(EXTRA_TOTAL_MINUTES, totalMinutes)
             }
             context.startForegroundService(intent)
         }
@@ -112,14 +128,16 @@ class LiveUpdateService : Service() {
     lateinit var settingsDataStore: SettingsDataStore
 
     private val binder = LocalBinder()
-    private var serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var updateJob: Job? = null
-    
+
     private var currentCourseName: String = ""
     private var currentCourseLocation: String = ""
     private var currentRemainingMinutes: Int = 0
     private var currentCourseEndTime: LocalTime? = null
     private var isPreStartMode: Boolean = false
+    private var cachedLiveNotificationEnabled: Boolean = true
+    private var currentTotalMinutes: Int = 0
     
     private lateinit var notificationManager: NotificationManager
 
@@ -168,12 +186,20 @@ class LiveUpdateService : Service() {
     override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (!serviceScope.isActive) {
+            Log.w(TAG, "serviceScope已取消，停止服务")
+            stopSelf()
+            return START_NOT_STICKY
+        }
         when (intent?.action) {
             ACTION_PRE_START -> {
                 isPreStartMode = true
                 Log.d(TAG, "预启动模式: 启动前台服务保持进程存活")
                 startForegroundService()
                 startAutoUpdate()
+                serviceScope.launch {
+                    cachedLiveNotificationEnabled = settingsDataStore.getLiveNotificationEnabled()
+                }
             }
             ACTION_START -> {
                 isPreStartMode = false
@@ -187,10 +213,19 @@ class LiveUpdateService : Service() {
                     currentCourseEndTime = LocalTime.of(endHour, endMinute)
                 }
                 
+                currentTotalMinutes = intent.getIntExtra(EXTRA_TOTAL_MINUTES, 0)
+                if (currentTotalMinutes <= 0 && currentCourseEndTime != null) {
+                    val now = LocalTime.now()
+                    currentTotalMinutes = java.time.Duration.between(now, currentCourseEndTime).toMinutes().toInt() + currentRemainingMinutes
+                }
+                
                 Log.d(TAG, "服务启动: $currentCourseName, 剩余 $currentRemainingMinutes 分钟, 结束时间: $currentCourseEndTime")
                 
                 startForegroundService()
                 startAutoUpdate()
+                serviceScope.launch {
+                    cachedLiveNotificationEnabled = settingsDataStore.getLiveNotificationEnabled()
+                }
                 
                 if (currentCourseName.isNotEmpty()) {
                     updateNotification()
@@ -251,16 +286,16 @@ class LiveUpdateService : Service() {
         try {
             val today = LocalDate.now()
             val currentTime = LocalTime.now()
-            val currentWeekB = settingsDataStore.getCurrentWeek(PersonType.PERSON_B).first()
+            val currentWeekA = settingsDataStore.getCurrentWeek(PersonType.PERSON_A).first()
 
-            val personBCourses = courseDao.getCoursesForDaySync(
+            val personACourses = courseDao.getCoursesForDaySync(
                 dayOfWeek = today.dayOfWeek.value,
-                personType = PersonType.PERSON_B
-            ).filter { it.isInWeek(currentWeekB) }
+                personType = PersonType.PERSON_A
+            ).filter { it.isInWeek(currentWeekA) }
 
             var foundOngoingCourse = false
             
-            for (course in personBCourses) {
+            for (course in personACourses) {
                 val courseStartTime = LocalTime.of(course.startHour, course.startMinute)
                 val courseEndTime = LocalTime.of(course.endHour, course.endMinute)
                 
@@ -271,6 +306,7 @@ class LiveUpdateService : Service() {
                     currentCourseLocation = course.location ?: ""
                     currentRemainingMinutes = remainingMinutes
                     currentCourseEndTime = courseEndTime
+                    currentTotalMinutes = course.duration
                     isPreStartMode = false
                     
                     foundOngoingCourse = true
@@ -309,7 +345,7 @@ class LiveUpdateService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val liveNotificationEnabled = runBlocking { settingsDataStore.getLiveNotificationEnabled() }
+        val liveNotificationEnabled = cachedLiveNotificationEnabled
 
         Log.d(TAG, "=== LiveUpdateService 实况通知调试 ===")
         Log.d(TAG, "SDK版本: ${Build.VERSION.SDK_INT}")
@@ -328,7 +364,7 @@ class LiveUpdateService : Service() {
             courseName = currentCourseName,
             location = currentCourseLocation,
             remainingMinutes = currentRemainingMinutes,
-            totalMinutes = 45,
+            totalMinutes = currentTotalMinutes,
             pendingIntent = pendingIntent,
             liveNotificationEnabled = liveNotificationEnabled,
             courseEndTime = currentCourseEndTime

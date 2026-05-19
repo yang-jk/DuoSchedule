@@ -128,7 +128,9 @@ class ScheduleWidgetReceiverMIUI : AppWidgetProvider() {
                     R.id.person_a_time,
                     if (currentCourseA != null) {
                         val remaining = currentCourseA.getRemainingMinutes(currentHour, currentMinute)
-                        val periodText = if (currentCourseA.startPeriod == currentCourseA.endPeriod) {
+                        val periodText = if (currentCourseA.isCustomTime) {
+                            currentCourseA.getTimeString()
+                        } else if (currentCourseA.startPeriod == currentCourseA.endPeriod) {
                             "第${currentCourseA.startPeriod}节"
                         } else {
                             "第${currentCourseA.startPeriod}-${currentCourseA.endPeriod}节"
@@ -148,7 +150,9 @@ class ScheduleWidgetReceiverMIUI : AppWidgetProvider() {
                     R.id.person_b_time,
                     if (currentCourseB != null) {
                         val remaining = currentCourseB.getRemainingMinutes(currentHour, currentMinute)
-                        val periodText = if (currentCourseB.startPeriod == currentCourseB.endPeriod) {
+                        val periodText = if (currentCourseB.isCustomTime) {
+                            currentCourseB.getTimeString()
+                        } else if (currentCourseB.startPeriod == currentCourseB.endPeriod) {
                             "第${currentCourseB.startPeriod}节"
                         } else {
                             "第${currentCourseB.startPeriod}-${currentCourseB.endPeriod}节"
@@ -181,10 +185,10 @@ class ScheduleWidgetReceiverMIUI : AppWidgetProvider() {
                 try {
                     val errorViews = RemoteViews(context.packageName, R.layout.schedule_widget)
                     errorViews.setTextViewText(R.id.widget_week, "")
-                    errorViews.setTextViewText(R.id.person_a_label, "Ta")
+                    errorViews.setTextViewText(R.id.person_a_label, "我")
                     errorViews.setTextViewText(R.id.person_a_course, "加载中...")
                     errorViews.setTextViewText(R.id.person_a_time, "")
-                    errorViews.setTextViewText(R.id.person_b_label, "我")
+                    errorViews.setTextViewText(R.id.person_b_label, "Ta")
                     errorViews.setTextViewText(R.id.person_b_course, "加载中...")
                     errorViews.setTextViewText(R.id.person_b_time, "")
                     

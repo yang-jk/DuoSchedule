@@ -37,12 +37,14 @@ import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.highlight.Highlight
 import kotlin.math.roundToInt
 
+@Stable
 data class ContextMenuItem(
     val label: String,
     val isDestructive: Boolean = false,
     val action: () -> Unit
 )
 
+@Immutable
 data class CellBounds(
     val x: Int,
     val y: Int,

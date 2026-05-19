@@ -9,7 +9,7 @@ object PerformanceMonitor {
     private const val SLOW_THRESHOLD_MS = 16L
     
     private val startTimes = ConcurrentHashMap<String, Long>()
-    private val startupMetrics = mutableMapOf<String, Long>()
+    private val startupMetrics = ConcurrentHashMap<String, Long>()
     
     private var appStartTime: Long = 0
     private var isInitialized = false

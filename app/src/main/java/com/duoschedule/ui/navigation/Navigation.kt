@@ -36,8 +36,8 @@ import kotlinx.coroutines.launch
 
 private val bottomNavRoutes = listOf(
     BottomNavItem.Home.route,
-    BottomNavItem.ScheduleB.route,
     BottomNavItem.ScheduleA.route,
+    BottomNavItem.ScheduleB.route,
     BottomNavItem.Settings.route
 )
 
@@ -178,7 +178,7 @@ fun DuoScheduleNavGraph(
             
             PeriodTimesSettingsScreen(
                 personType = personType,
-                personName = if (personType == PersonType.PERSON_A) "Ta" else "我",
+                personName = if (personType == PersonType.PERSON_A) "我" else "Ta",
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -215,15 +215,7 @@ fun DuoScheduleNavGraph(
             pendingImportData?.let { data ->
                 ImportPreviewScreen(
                     courses = data.courses,
-                    onConfirm = { selectedCourses, targetPerson, mergeMode ->
-                        navController.navigate(BottomNavItem.Home.route) {
-                            popUpTo(BottomNavItem.Home.route) {
-                                inclusive = false
-                            }
-                            launchSingleTop = true
-                        }
-                        pendingImportData = null
-                    },
+                    onConfirm = { _, _, _ -> },
                     onDismiss = {
                         navController.popBackStack(BottomNavItem.Home.route, inclusive = false)
                         pendingImportData = null
@@ -263,28 +255,28 @@ fun DuoScheduleNavGraph(
                 navArgument("courseId") {
                     type = NavType.StringType
                     nullable = true
-                    defaultValue = null
+                    defaultValue = ""
                 },
                 navArgument("dayOfWeek") {
-                    type = NavType.IntType
-                    defaultValue = -1
+                    type = NavType.StringType
+                    defaultValue = "-1"
                 },
                 navArgument("period") {
-                    type = NavType.IntType
-                    defaultValue = -1
+                    type = NavType.StringType
+                    defaultValue = "-1"
                 },
                 navArgument("personType") {
                     type = NavType.StringType
                     nullable = true
-                    defaultValue = null
+                    defaultValue = ""
                 }
             )
         ) { backStackEntry ->
             val courseIdStr = backStackEntry.arguments?.getString("courseId")
-            val courseId = courseIdStr?.toLongOrNull()
-            val dayOfWeek = backStackEntry.arguments?.getInt("dayOfWeek") ?: -1
-            val period = backStackEntry.arguments?.getInt("period") ?: -1
-            val personTypeStr = backStackEntry.arguments?.getString("personType")
+            val courseId = courseIdStr?.takeIf { it.isNotEmpty() }?.toLongOrNull()
+            val dayOfWeek = backStackEntry.arguments?.getString("dayOfWeek")?.toIntOrNull() ?: -1
+            val period = backStackEntry.arguments?.getString("period")?.toIntOrNull() ?: -1
+            val personTypeStr = backStackEntry.arguments?.getString("personType")?.takeIf { it.isNotEmpty() }
             val initialPersonType = personTypeStr?.let { 
                 try { PersonType.valueOf(it) } catch (e: Exception) { null }
             }
@@ -410,7 +402,8 @@ private fun ExternalImportDialog(
                         settingsA = internalResult!!.settingsA,
                         settingsB = internalResult!!.settingsB,
                         personAName = internalResult!!.personAName,
-                        personBName = internalResult!!.personBName
+                        personBName = internalResult!!.personBName,
+                        exportVersion = internalResult!!.exportVersion
                     ))
                 }) {
                     Text("继续")

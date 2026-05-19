@@ -2,6 +2,7 @@ package com.duoschedule.data.importexport
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.WeekType
@@ -16,11 +17,12 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 object CsvExporter {
-    private const val CSV_HEADER = "课程名称,星期,开始时间,结束时间,地点,教师,周次类型,开始周,结束周,自定义周次,所属人"
+    private const val TAG = "CsvExporter"
+    private const val CSV_HEADER = "课程名称,星期,开始时间,结束时间,地点,教师,周次类型,开始周,结束周,自定义周次,所属人,自定义时间"
     private const val TEMPLATE_HEADER = "课程名称（必填）,星期(1-7),开始节次,结束节次,教室地点,上课老师,周次"
     private const val SETTINGS_HEADER = "# 课表设置"
-    private const val PERSON_A_MARKER = "# Ta的课表设置"
-    private const val PERSON_B_MARKER = "# 我的课表设置"
+    private const val PERSON_A_MARKER = "# 我的课表设置"
+    private const val PERSON_B_MARKER = "# Ta的课表设置"
     private const val PERSON_NAMES_MARKER = "# 用户名称"
 
     suspend fun exportToCsv(
@@ -30,13 +32,14 @@ object CsvExporter {
         settingsA: ScheduleSettingsExport?,
         settingsB: ScheduleSettingsExport?,
         personAName: String,
-        personBName: String
+        personBName: String,
+        swapPersons: Boolean = false
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             context.contentResolver.openOutputStream(uri)?.use { outputStream ->
                 OutputStreamWriter(outputStream, "UTF-8").use { writer ->
                     writer.write("\uFEFF")
-                    writeExportContent(writer, courses, settingsA, settingsB, personAName, personBName)
+                    writeExportContent(writer, courses, settingsA, settingsB, personAName, personBName, swapPersons)
                 }
             }
             Result.success(Unit)
@@ -51,11 +54,12 @@ object CsvExporter {
         settingsA: ScheduleSettingsExport?,
         settingsB: ScheduleSettingsExport?,
         personAName: String,
-        personBName: String
+        personBName: String,
+        swapPersons: Boolean = false
     ) {
         file.bufferedWriter(Charsets.UTF_8).use { writer ->
             writer.write("\uFEFF")
-            writeExportContent(writer, courses, settingsA, settingsB, personAName, personBName)
+            writeExportContent(writer, courses, settingsA, settingsB, personAName, personBName, swapPersons)
         }
     }
 
@@ -65,37 +69,43 @@ object CsvExporter {
         settingsA: ScheduleSettingsExport?,
         settingsB: ScheduleSettingsExport?,
         personAName: String,
-        personBName: String
+        personBName: String,
+        swapPersons: Boolean = false
     ) {
+        val effectiveSettingsA = if (swapPersons) settingsB else settingsA
+        val effectiveSettingsB = if (swapPersons) settingsA else settingsB
+        val effectivePersonAName = if (swapPersons) personBName else personAName
+        val effectivePersonBName = if (swapPersons) personAName else personBName
+
         writer.append("# 双人课程表导出文件\n")
         writer.append("# 导出时间: ${DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(java.time.LocalDateTime.now())}\n")
-        writer.append("# 版本: 2.0\n\n")
-        
+        writer.append("# 版本: ${if (swapPersons) "5.0" else "4.0"}\n\n")
+
         writer.append("$PERSON_NAMES_MARKER\n")
-        writer.append("Ta的名称,$personAName\n")
-        writer.append("我的名称,$personBName\n\n")
-        
-        if (settingsA != null) {
+        writer.append("我的名称,$effectivePersonAName\n")
+        writer.append("Ta的名称,$effectivePersonBName\n\n")
+
+        if (effectiveSettingsA != null) {
             writer.append("$PERSON_A_MARKER\n")
-            writer.append("开学时间,${LocalDate.ofEpochDay(settingsA.semesterStartDate)}\n")
-            writer.append("学期总周数,${settingsA.totalWeeks}\n")
-            writer.append("当前周次,${settingsA.currentWeek}\n")
-            writer.append("每天节数,${settingsA.totalPeriods}\n")
-            writer.append("课程时间,${settingsA.periodTimes.joinToString(";")}\n\n")
+            writer.append("开学时间,${LocalDate.ofEpochDay(effectiveSettingsA.semesterStartDate)}\n")
+            writer.append("学期总周数,${effectiveSettingsA.totalWeeks}\n")
+            writer.append("当前周次,${effectiveSettingsA.currentWeek}\n")
+            writer.append("每天节数,${effectiveSettingsA.totalPeriods}\n")
+            writer.append("课程时间,${effectiveSettingsA.periodTimes.joinToString(";")}\n\n")
         }
-        
-        if (settingsB != null) {
+
+        if (effectiveSettingsB != null) {
             writer.append("$PERSON_B_MARKER\n")
-            writer.append("开学时间,${LocalDate.ofEpochDay(settingsB.semesterStartDate)}\n")
-            writer.append("学期总周数,${settingsB.totalWeeks}\n")
-            writer.append("当前周次,${settingsB.currentWeek}\n")
-            writer.append("每天节数,${settingsB.totalPeriods}\n")
-            writer.append("课程时间,${settingsB.periodTimes.joinToString(";")}\n\n")
+            writer.append("开学时间,${LocalDate.ofEpochDay(effectiveSettingsB.semesterStartDate)}\n")
+            writer.append("学期总周数,${effectiveSettingsB.totalWeeks}\n")
+            writer.append("当前周次,${effectiveSettingsB.currentWeek}\n")
+            writer.append("每天节数,${effectiveSettingsB.totalPeriods}\n")
+            writer.append("课程时间,${effectiveSettingsB.periodTimes.joinToString(";")}\n\n")
         }
-        
+
         writer.append("# 课程数据\n")
         writer.append("$CSV_HEADER\n")
-        
+
         courses.forEach { course ->
             val weekTypeStr = when (course.weekType) {
                 WeekType.ALL -> "每周"
@@ -103,9 +113,13 @@ object CsvExporter {
                 WeekType.EVEN -> "双周"
                 WeekType.CUSTOM -> "自定义"
             }
-            val personStr = if (course.personType == PersonType.PERSON_A) personAName else personBName
+            val personStr = if (swapPersons) {
+                if (course.personType == PersonType.PERSON_A) effectivePersonBName else effectivePersonAName
+            } else {
+                if (course.personType == PersonType.PERSON_A) effectivePersonAName else effectivePersonBName
+            }
             val dayStr = getDayOfWeekString(course.dayOfWeek)
-            
+
             writer.append("${escapeCsvField(course.name)},")
             writer.append("$dayStr,")
             writer.append("${course.getStartTimeString()},")
@@ -116,7 +130,8 @@ object CsvExporter {
             writer.append("${course.startWeek},")
             writer.append("${course.endWeek},")
             writer.append("${escapeCsvField(course.customWeeks)},")
-            writer.append("$personStr\n")
+            writer.append("$personStr,")
+            writer.append("${course.isCustomTime}\n")
         }
     }
 
@@ -128,6 +143,7 @@ object CsvExporter {
         totalWeeks: Int = 16
     ): ImportResult = withContext(Dispatchers.IO) {
         try {
+            Log.d(TAG, "importFromCsv: starting import, targetPerson=$targetPerson, periodTimes=$periodTimes, totalWeeks=$totalWeeks")
             val courses = mutableListOf<CourseImportData>()
             val errors = mutableListOf<String>()
             var lineNumber = 0
@@ -138,6 +154,7 @@ object CsvExporter {
             val settingsBMap = mutableMapOf<String, String>()
             var isTemplateFormat = false
             var isAppExport = false
+            var exportVersion = 0
 
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 val bytes = inputStream.readBytes()
@@ -162,11 +179,27 @@ object CsvExporter {
                     if (lineStr.isEmpty() || lineStr.startsWith("#")) {
                         when {
                             lineStr.contains("双人课程表导出文件") -> isAppExport = true
-                            lineStr.contains("版本:") -> isAppExport = true
-                            lineStr.contains("Ta的课表设置") -> currentSection = "settingsA"
-                            lineStr.contains("我的课表设置") -> currentSection = "settingsB"
-                            lineStr.contains("课程数据") -> currentSection = "courses"
-                            lineStr.contains("用户名称") -> currentSection = "names"
+                            lineStr.contains("版本:") -> {
+                                isAppExport = true
+                                val versionMatch = Regex("""版本:\s*(\d+)""").find(lineStr)
+                                exportVersion = versionMatch?.groupValues?.get(1)?.toIntOrNull() ?: 0
+                            }
+                            else -> {
+                                val isOldFormat = exportVersion < 3
+                                if (isOldFormat) {
+                                    when {
+                                        lineStr.contains("Ta的课表设置") -> currentSection = "settingsB"
+                                        lineStr.contains("我的课表设置") -> currentSection = "settingsA"
+                                    }
+                                } else {
+                                    when {
+                                        lineStr.contains("我的课表设置") -> currentSection = "settingsA"
+                                        lineStr.contains("Ta的课表设置") -> currentSection = "settingsB"
+                                    }
+                                }
+                                if (lineStr.contains("课程数据")) currentSection = "courses"
+                                if (lineStr.contains("用户名称")) currentSection = "names"
+                            }
                         }
                         continue
                     }
@@ -184,9 +217,17 @@ object CsvExporter {
                         "names" -> {
                             val parts = parseCsvLine(lineStr)
                             if (parts.size >= 2) {
-                                when (parts[0]) {
-                                    "Ta的名称" -> personAName = parts[1]
-                                    "我的名称" -> personBName = parts[1]
+                                val isOldFormat = exportVersion < 3
+                                if (isOldFormat) {
+                                    when (parts[0]) {
+                                        "Ta的名称" -> personBName = parts[1]
+                                        "我的名称" -> personAName = parts[1]
+                                    }
+                                } else {
+                                    when (parts[0]) {
+                                        "我的名称" -> personAName = parts[1]
+                                        "Ta的名称" -> personBName = parts[1]
+                                    }
                                 }
                             }
                         }
@@ -201,7 +242,17 @@ object CsvExporter {
                             val result = if (isTemplateFormat) {
                                 parseTemplateLine(lineStr, lineNumber, targetPerson, periodTimes, totalWeeks)
                             } else {
-                                parseCourseLine(lineStr, lineNumber, targetPerson, personAName, personBName)
+                                val periodTimesA = if (isAppExport && settingsAMap["课程时间"] != null) {
+                                    settingsAMap["课程时间"]?.split(";")?.filter { it.isNotBlank() } ?: emptyList()
+                                } else {
+                                    periodTimes
+                                }
+                                val periodTimesB = if (isAppExport && settingsBMap["课程时间"] != null) {
+                                    settingsBMap["课程时间"]?.split(";")?.filter { it.isNotBlank() } ?: emptyList()
+                                } else {
+                                    periodTimes
+                                }
+                                parseCourseLine(lineStr, lineNumber, targetPerson, personAName, personBName, exportVersion, periodTimesA, periodTimesB)
                             }
                             if (result.first != null) {
                                 courses.add(result.first!!)
@@ -225,6 +276,11 @@ object CsvExporter {
                 )
             } else {
                 val fileType = if (isAppExport) CsvFileType.APP_EXPORT else CsvFileType.TEMPLATE
+                
+                val personACount = courses.count { it.personType == PersonType.PERSON_A }
+                val personBCount = courses.count { it.personType == PersonType.PERSON_B }
+                Log.d(TAG, "importFromCsv: parsed ${courses.size} courses (A=$personACount, B=$personBCount), ${errors.size} errors, fileType=$fileType, exportVersion=$exportVersion")
+                Log.d(TAG, "importFromCsv: periodTimesA=${settingsAMap["课程时间"]}, periodTimesB=${settingsBMap["课程时间"]}")
                 
                 val settingsA = if (isAppExport && settingsAMap.isNotEmpty()) {
                     ScheduleSettingsExport(
@@ -260,7 +316,8 @@ object CsvExporter {
                     settingsA = settingsA,
                     settingsB = settingsB,
                     personAName = personAName,
-                    personBName = personBName
+                    personBName = personBName,
+                    exportVersion = exportVersion
                 )
             }
         } catch (e: Exception) {
@@ -329,7 +386,10 @@ object CsvExporter {
         lineNumber: Int,
         targetPerson: PersonType?,
         personAName: String? = null,
-        personBName: String? = null
+        personBName: String? = null,
+        exportVersion: Int = 3,
+        periodTimesA: List<String> = emptyList(),
+        periodTimesB: List<String> = emptyList()
     ): Pair<CourseImportData?, String> {
         return try {
             val parts = parseCsvLine(line)
@@ -360,7 +420,27 @@ object CsvExporter {
             val endWeek = parts[8].toIntOrNull() ?: 16
             val customWeeks = parts[9]
             
-            val personType = targetPerson ?: parsePersonType(parts[10], personAName, personBName)
+            val determinedPersonType = targetPerson ?: parsePersonType(parts[10], personAName, personBName, exportVersion)
+            val effectivePeriodTimes = when (determinedPersonType) {
+                PersonType.PERSON_B -> if (periodTimesB.isNotEmpty()) periodTimesB else periodTimesA
+                else -> if (periodTimesA.isNotEmpty()) periodTimesA else periodTimesB
+            }
+
+            val isCustomTime = parts.size >= 12 && parts[11].trim().equals("true", ignoreCase = true)
+
+            val (startPeriod, endPeriod) = if (isCustomTime) {
+                Pair(0, 0)
+            } else if (effectivePeriodTimes.isNotEmpty()) {
+                Pair(
+                    getPeriodFromTime(startTime.first, startTime.second, effectivePeriodTimes),
+                    getPeriodFromTime(endTime.first, endTime.second, effectivePeriodTimes, isEndTime = true)
+                )
+            } else {
+                Pair(0, 0)
+            }
+
+            val personType = determinedPersonType
+            Log.d(TAG, "parseCourseLine: name=$name, day=$dayOfWeek, ${startTime.first}:${startTime.second}-${endTime.first}:${endTime.second}, person=$personType, period=$startPeriod-$endPeriod, periodTimes=${if (determinedPersonType == PersonType.PERSON_B) "B" else "A"}")
 
             Pair(
                 CourseImportData(
@@ -376,7 +456,10 @@ object CsvExporter {
                     startWeek = startWeek,
                     endWeek = endWeek,
                     customWeeks = customWeeks,
-                    personType = personType
+                    personType = personType,
+                    startPeriod = startPeriod,
+                    endPeriod = endPeriod,
+                    isCustomTime = isCustomTime
                 ),
                 ""
             )
@@ -436,7 +519,7 @@ object CsvExporter {
                     startWeek = startWeek,
                     endWeek = endWeek,
                     customWeeks = customWeeks,
-                    personType = targetPerson ?: PersonType.PERSON_B,
+                    personType = targetPerson ?: PersonType.PERSON_A,
                     startPeriod = startPeriod,
                     endPeriod = endPeriod
                 ),
@@ -651,7 +734,7 @@ object CsvExporter {
         }
     }
 
-    private fun parsePersonType(value: String, personAName: String? = null, personBName: String? = null): PersonType {
+    private fun parsePersonType(value: String, personAName: String? = null, personBName: String? = null, exportVersion: Int = 3): PersonType {
         val trimmed = value.trim()
         if (personAName != null && trimmed == personAName) {
             return PersonType.PERSON_A
@@ -659,9 +742,53 @@ object CsvExporter {
         if (personBName != null && trimmed == personBName) {
             return PersonType.PERSON_B
         }
-        return when (trimmed) {
-            "Ta", "TA", "ta", "A", "a", "人员A" -> PersonType.PERSON_A
-            else -> PersonType.PERSON_B
+        return if (exportVersion < 3) {
+            when (trimmed) {
+                "Ta", "TA", "ta", "A", "a", "人员A" -> PersonType.PERSON_A
+                "我", "B", "b", "人员B" -> PersonType.PERSON_B
+                else -> PersonType.PERSON_A
+            }
+        } else {
+            when (trimmed) {
+                "我", "A", "a", "人员A" -> PersonType.PERSON_A
+                "Ta", "TA", "ta", "B", "b", "人员B" -> PersonType.PERSON_B
+                else -> PersonType.PERSON_A
+            }
+        }
+    }
+
+    private fun getPeriodFromTime(hour: Int, minute: Int, periodTimes: List<String>, isEndTime: Boolean = false): Int {
+        val totalMinutes = hour * 60 + minute
+        val parsedPeriodTimes = parsePeriodTimeRanges(periodTimes)
+        
+        var result = 1
+        parsedPeriodTimes.forEachIndexed { index, range ->
+            if (isEndTime) {
+                if (totalMinutes > range.first) {
+                    result = index + 1
+                }
+            } else {
+                if (totalMinutes >= range.first) {
+                    result = index + 1
+                }
+            }
+        }
+        
+        return result
+    }
+    
+    private fun parsePeriodTimeRanges(periodTimes: List<String>): List<Pair<Int, Int>> {
+        return periodTimes.map { timeRange ->
+            val times = timeRange.split("-")
+            if (times.size == 2) {
+                val startParts = times[0].split(":")
+                val endParts = times[1].split(":")
+                val startMinutes = (startParts.getOrNull(0)?.toIntOrNull() ?: 0) * 60 + (startParts.getOrNull(1)?.toIntOrNull() ?: 0)
+                val endMinutes = (endParts.getOrNull(0)?.toIntOrNull() ?: 0) * 60 + (endParts.getOrNull(1)?.toIntOrNull() ?: 0)
+                Pair(startMinutes, endMinutes)
+            } else {
+                Pair(0, 0)
+            }
         }
     }
 }

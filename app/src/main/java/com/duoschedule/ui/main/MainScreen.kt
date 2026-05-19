@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import com.kyant.capsule.ContinuousRoundedRectangle
@@ -33,14 +34,16 @@ import com.duoschedule.ui.main.components.*
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.theme.LiquidGlassButton
 import com.duoschedule.ui.theme.LiquidGlassButtonStyle
+import com.duoschedule.ui.theme.ScrollTopBlurOverlay
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,36 +52,9 @@ fun MainScreen(
     onNavigateToEdit: (Long?, Int?, Int?, PersonType?) -> Unit,
     viewModel: MainViewModel = hiltViewModel()
 ) {
+    val singleModeEnabled by viewModel.singleModeEnabled.collectAsState()
     val personACurrentCourse by viewModel.personACurrentCourse.collectAsState()
     val personBCurrentCourse by viewModel.personBCurrentCourse.collectAsState()
-    val personATodayCourses by viewModel.personATodayCourses.collectAsState()
-    val personBTodayCourses by viewModel.personBTodayCourses.collectAsState()
-    val freeTimeSlots by viewModel.freeTimeSlots.collectAsState()
-    val personACurrentWeek by viewModel.personACurrentWeek.collectAsState()
-    val personBCurrentWeek by viewModel.personBCurrentWeek.collectAsState()
-    val personAName by viewModel.personAName.collectAsState()
-    val personBName by viewModel.personBName.collectAsState()
-    val displayMode by viewModel.todayCourseDisplayMode.collectAsState()
-    val personAPeriodTimes by viewModel.personAPeriodTimes.collectAsState()
-    val personBPeriodTimes by viewModel.personBPeriodTimes.collectAsState()
-    val singleModeEnabled by viewModel.singleModeEnabled.collectAsState()
-
-    val currentTime = remember { mutableStateOf(LocalTime.now()) }
-    val today = remember { LocalDate.now() }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            try {
-                viewModel.updateTime()
-                currentTime.value = LocalTime.now()
-            } catch (e: Exception) {
-                android.util.Log.e("MainScreen", "Error updating time", e)
-            }
-            kotlinx.coroutines.delay(60000)
-        }
-    }
-    val currentHour = currentTime.value.hour
-    val currentMinute = currentTime.value.minute
 
     var selectedCourse by remember { mutableStateOf<Course?>(null) }
     var selectedCoursePersonType by remember { mutableStateOf<PersonType?>(null) }
@@ -92,57 +68,48 @@ fun MainScreen(
         }
     }
 
-    val labelsPrimary = getLabelsVibrantPrimary()
-    val labelsSecondary = getLabelsVibrantSecondary()
-    val labelsTertiary = getLabelsVibrantTertiary()
+    val scrollBackdrop = rememberLayerBackdrop()
+    val scrollState = rememberScrollState()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .layerBackdrop(scrollBackdrop),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md)
+        ) {
+            Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(bottom = 80.dp),
-        verticalArrangement = Arrangement.spacedBy(Spacing.md)
-    ) {
             HeaderSection(
-                today = today,
-                personAName = personAName,
-                personBName = personBName,
-                personACurrentWeek = personACurrentWeek,
-                personBCurrentWeek = personBCurrentWeek,
+                viewModel = viewModel,
                 singleModeEnabled = singleModeEnabled
             )
 
-            CurrentCourseSection(
+            Spacer(modifier = Modifier.height(Spacing.xl - Spacing.md))
+
+            CurrentCourseCard(
                 personAState = personACurrentCourse,
                 personBState = personBCurrentCourse,
-                singleModeEnabled = singleModeEnabled
+                singleModeEnabled = singleModeEnabled,
+                modifier = Modifier.padding(horizontal = Spacing.lg)
             )
 
-            if (!singleModeEnabled) {
-                FreeTimeSection(
-                    freeTimeSlots = freeTimeSlots
-                )
-            }
+            Spacer(modifier = Modifier.height(Spacing.lg - Spacing.md))
 
             TodayScheduleSection(
-                personATodayCourses = personATodayCourses,
-                personBTodayCourses = personBTodayCourses,
-                displayMode = displayMode,
-                currentHour = currentHour,
-                currentMinute = currentMinute,
-                personAPeriodTimes = personAPeriodTimes,
-                personBPeriodTimes = personBPeriodTimes,
-                personAName = personAName,
-                personBName = personBName,
-                onDisplayModeChange = { viewModel.setTodayCourseDisplayMode(it) },
+                viewModel = viewModel,
+                singleModeEnabled = singleModeEnabled,
                 onCourseClick = { course, personType ->
                     selectedCourse = course
                     selectedCoursePersonType = personType
-                },
-                singleModeEnabled = singleModeEnabled
+                }
             )
+
+            Spacer(modifier = Modifier.height(LiquidBottomTabsSpec.Height + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()))
         }
+
+        ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollState.value)
+    }
 
     if (showPreview && selectedCourse != null) {
         CoursePreviewBottomSheet(
@@ -200,13 +167,15 @@ fun MainScreen(
 
 @Composable
 private fun HeaderSection(
-    today: LocalDate,
-    personAName: String,
-    personBName: String,
-    personACurrentWeek: Int,
-    personBCurrentWeek: Int,
+    viewModel: MainViewModel,
     singleModeEnabled: Boolean = false
 ) {
+    val personAName by viewModel.personAName.collectAsState()
+    val personBName by viewModel.personBName.collectAsState()
+    val personACurrentWeek by viewModel.personACurrentWeek.collectAsState()
+    val personBCurrentWeek by viewModel.personBCurrentWeek.collectAsState()
+
+    val today = remember { LocalDate.now() }
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val labelsTertiary = getLabelsVibrantTertiary()
@@ -214,44 +183,26 @@ private fun HeaderSection(
     
     val dateFormatter = DateTimeFormatter.ofPattern("M月d日 EEEE")
     val dateText = today.format(dateFormatter)
-    
-    val greeting = remember {
-        val hour = LocalTime.now().hour
-        when {
-            hour < 6 -> "夜深了"
-            hour < 12 -> "早上好"
-            hour < 14 -> "中午好"
-            hour < 18 -> "下午好"
-            else -> "晚上好"
-        }
-    }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Spacing.lg)
-            .padding(top = Spacing.md)
+            .padding(top = Spacing.sm)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Top
         ) {
-            Column {
-                Text(
-                    text = greeting,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = labelsSecondary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = dateText,
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = labelsPrimary
-                )
-            }
+            Text(
+                text = dateText,
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = labelsPrimary,
+                maxLines = 1,
+                modifier = Modifier.weight(1f, fill = false)
+            )
             
             Row(
                 modifier = Modifier
@@ -271,20 +222,22 @@ private fun HeaderSection(
                     modifier = Modifier.size(14.dp)
                 )
                 Text(
-                    text = "${personBName}第${personBCurrentWeek}周",
+                    text = "${personAName}第${personACurrentWeek}周",
                     style = MaterialTheme.typography.labelSmall,
-                    color = labelsSecondary
+                    color = labelsSecondary,
+                    maxLines = 1
                 )
                 if (!singleModeEnabled) {
                     Text(
-                        text = "|",
+                        text = "·",
                         style = MaterialTheme.typography.labelSmall,
                         color = labelsTertiary
                     )
                     Text(
-                        text = "${personAName}第${personACurrentWeek}周",
+                        text = "${personBName}第${personBCurrentWeek}周",
                         style = MaterialTheme.typography.labelSmall,
-                        color = labelsSecondary
+                        color = labelsSecondary,
+                        maxLines = 1
                     )
                 }
             }
@@ -292,74 +245,24 @@ private fun HeaderSection(
     }
 }
 
-@Composable
-private fun CurrentCourseSection(
-    personAState: com.duoschedule.ui.model.CurrentCourseState,
-    personBState: com.duoschedule.ui.model.CurrentCourseState,
-    singleModeEnabled: Boolean = false
-) {
-    val labelsPrimary = getLabelsVibrantPrimary()
-    
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Spacing.lg)
-    ) {
-        Text(
-            text = "当前状态",
-            style = MaterialTheme.typography.titleSmall,
-            color = labelsPrimary,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = Spacing.sm)
-        )
-        
-        CurrentCourseCard(
-            personAState = personAState,
-            personBState = personBState,
-            singleModeEnabled = singleModeEnabled
-        )
-    }
-}
-
-@Composable
-private fun FreeTimeSection(
-    freeTimeSlots: List<com.duoschedule.ui.model.FreeTimeSlot>
-) {
-    val labelsPrimary = getLabelsVibrantPrimary()
-    
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Spacing.lg)
-    ) {
-        Text(
-            text = "共同空闲",
-            style = MaterialTheme.typography.titleSmall,
-            color = labelsPrimary,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = Spacing.sm)
-        )
-        
-        FreeTimeCard(freeTimeSlots = freeTimeSlots)
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TodayScheduleSection(
-    personATodayCourses: List<Course>,
-    personBTodayCourses: List<Course>,
-    displayMode: TodayCourseDisplayMode,
-    currentHour: Int,
-    currentMinute: Int,
-    personAPeriodTimes: List<String>,
-    personBPeriodTimes: List<String>,
-    personAName: String,
-    personBName: String,
-    onDisplayModeChange: (TodayCourseDisplayMode) -> Unit,
-    onCourseClick: (Course, PersonType) -> Unit,
-    singleModeEnabled: Boolean = false
+    viewModel: MainViewModel,
+    singleModeEnabled: Boolean = false,
+    onCourseClick: (Course, PersonType) -> Unit
 ) {
+    val personATodayCourses by viewModel.personATodayCourses.collectAsState()
+    val personBTodayCourses by viewModel.personBTodayCourses.collectAsState()
+    val displayMode by viewModel.todayCourseDisplayMode.collectAsState()
+    val currentHour by viewModel.currentHour.collectAsState()
+    val currentMinute by viewModel.currentMinute.collectAsState()
+    val personAPeriodTimes by viewModel.personAPeriodTimes.collectAsState()
+    val personBPeriodTimes by viewModel.personBPeriodTimes.collectAsState()
+    val personAName by viewModel.personAName.collectAsState()
+    val personBName by viewModel.personBName.collectAsState()
+    val freeTimeSlots by viewModel.freeTimeSlots.collectAsState()
+
     val effectiveDisplayMode = if (singleModeEnabled) TodayCourseDisplayMode.SELF_ONLY else displayMode
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
@@ -374,7 +277,7 @@ private fun TodayScheduleSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = Spacing.sm),
+                .padding(bottom = Spacing.xs),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -386,7 +289,7 @@ private fun TodayScheduleSection(
             )
             
             Text(
-                text = if (singleModeEnabled) "${personBTodayCourses.size} 节" else "${personATodayCourses.size + personBTodayCourses.size} 节",
+                text = if (singleModeEnabled) "${personATodayCourses.size} 节" else "${personATodayCourses.size + personBTodayCourses.size} 节",
                 style = MaterialTheme.typography.labelMedium,
                 color = labelsTertiary
             )
@@ -394,20 +297,20 @@ private fun TodayScheduleSection(
 
         if (!singleModeEnabled) {
             val displayModeOptions = listOf(
-                SegmentOption(TodayCourseDisplayMode.SELF_ONLY, personBName.ifEmpty { "我" }),
-                SegmentOption(TodayCourseDisplayMode.TA_ONLY, personAName.ifEmpty { "Ta" }),
+                SegmentOption(TodayCourseDisplayMode.SELF_ONLY, personAName.ifEmpty { "我" }),
+                SegmentOption(TodayCourseDisplayMode.TA_ONLY, personBName.ifEmpty { "Ta" }),
                 SegmentOption(TodayCourseDisplayMode.BOTH, "全部")
             )
 
             SegmentedControl(
                 options = displayModeOptions,
                 selectedOption = displayMode,
-                onOptionSelected = onDisplayModeChange,
+                onOptionSelected = { viewModel.setTodayCourseDisplayMode(it) },
                 modifier = Modifier.padding(bottom = Spacing.sm)
             )
         }
 
-        if (personBTodayCourses.isEmpty() && (singleModeEnabled || personATodayCourses.isEmpty())) {
+        if (personATodayCourses.isEmpty() && (singleModeEnabled || personBTodayCourses.isEmpty())) {
             EmptyScheduleCard()
         } else {
             ScheduleList(
@@ -418,6 +321,9 @@ private fun TodayScheduleSection(
                 currentMinute = currentMinute,
                 periodTimesA = personAPeriodTimes,
                 periodTimesB = personBPeriodTimes,
+                personAName = personAName,
+                personBName = personBName,
+                freeTimeSlots = if (!singleModeEnabled) freeTimeSlots else emptyList(),
                 onCourseClick = onCourseClick,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -430,33 +336,9 @@ private fun EmptyScheduleCard(
     backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
     val darkTheme = LocalDarkTheme.current
-    val density = LocalDensity.current
     val labelsSecondary = getLabelsVibrantSecondary()
     val labelsTertiary = getLabelsVibrantTertiary()
-
-    val layer1Tint = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.Layer1_Tint
-    } else {
-        LiquidGlassColors.BottomSheet.Light.Layer1_Tint
-    }
-
-    val layer1Alpha = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.Layer1_Alpha
-    } else {
-        LiquidGlassColors.BottomSheet.Light.Layer1_Alpha
-    }
-
-    val layer2Base = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.Layer2_Base
-    } else {
-        LiquidGlassColors.BottomSheet.Light.Layer2_Base
-    }
-
-    val glassEffect = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.GlassEffect
-    } else {
-        LiquidGlassColors.BottomSheet.Light.GlassEffect
-    }
+    val density = LocalDensity.current
 
     Column(
         modifier = Modifier
@@ -466,17 +348,27 @@ private fun EmptyScheduleCard(
                 shape = { ContinuousRoundedRectangle(BorderRadius.iOS26.large) },
                 effects = {
                     vibrancy()
-                    blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
+                    blur(with(density) { 4.dp.toPx() })
                     lens(
-                        refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
-                        refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
+                        refractionHeight = with(density) { 8.dp.toPx() },
+                        refractionAmount = with(density) { 16.dp.toPx() },
                         chromaticAberration = true
                     )
                 },
                 onDrawSurface = {
-                    drawRect(layer1Tint.copy(alpha = layer1Alpha))
-                    drawRect(layer2Base, blendMode = BlendMode.ColorDodge)
-                    drawRect(glassEffect)
+                    drawRect(
+                        if (darkTheme) LiquidGlassColors.BottomSheet.Dark.Layer1_Tint.copy(alpha = 0.5f)
+                        else LiquidGlassColors.BottomSheet.Light.Layer1_Tint.copy(alpha = 0.55f)
+                    )
+                    drawRect(
+                        if (darkTheme) LiquidGlassColors.BottomSheet.Dark.Layer2_Base
+                        else LiquidGlassColors.BottomSheet.Light.Layer2_Base,
+                        blendMode = BlendMode.ColorDodge
+                    )
+                    drawRect(
+                        if (darkTheme) LiquidGlassColors.BottomSheet.Dark.GlassEffect
+                        else LiquidGlassColors.BottomSheet.Light.GlassEffect
+                    )
                 }
             )
             .padding(vertical = Spacing.xl),

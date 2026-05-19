@@ -80,7 +80,7 @@ fun ImportPreviewScreen(
         mutableStateListOf<ImportPreviewItem>()
     }
     
-    var selectedTarget by remember { mutableStateOf<PersonType?>(PersonType.PERSON_B) }
+    var selectedTarget by remember { mutableStateOf<PersonType?>(PersonType.PERSON_A) }
     var mergeMode by remember { mutableStateOf(true) }
     var importSettings by remember { mutableStateOf(isAppExport) }
     var showTargetDialog by remember { mutableStateOf(false) }
@@ -89,8 +89,9 @@ fun ImportPreviewScreen(
     var importedCount by remember { mutableIntStateOf(0) }
     var isImporting by remember { mutableStateOf(false) }
     
-    var personATarget by remember { mutableStateOf<PersonType?>(null) }
-    var personBTarget by remember { mutableStateOf<PersonType?>(null) }
+    val isSwappedExport = isAppExport && actualImportData.exportVersion >= 5
+    var personATarget by remember { mutableStateOf(if (isSwappedExport) PersonType.PERSON_A else PersonType.PERSON_B) }
+    var personBTarget by remember { mutableStateOf(if (isSwappedExport) PersonType.PERSON_B else PersonType.PERSON_A) }
     
     val scope = rememberCoroutineScope()
     
@@ -119,7 +120,7 @@ fun ImportPreviewScreen(
             val targetPersonType = if (isAppExport) {
                 importData.personType
             } else {
-                selectedTarget ?: PersonType.PERSON_B
+                selectedTarget ?: PersonType.PERSON_A
             }
             
             val existingCourses = if (targetPersonType == PersonType.PERSON_A) {
@@ -151,6 +152,7 @@ fun ImportPreviewScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { 
@@ -190,7 +192,7 @@ fun ImportPreviewScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(top = paddingValues.calculateTopPadding())
         ) {
             if (isAppExport) {
                 AppExportPreviewContent(
@@ -215,6 +217,8 @@ fun ImportPreviewScreen(
                     conflictCount = conflictCount
                 )
             }
+
+            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
     }
 
@@ -262,7 +266,7 @@ fun ImportPreviewScreen(
                         
                         if (result.success) {
                             importedCount = result.importedCount
-                            importedTarget = PersonType.PERSON_B
+                            importedTarget = personATarget
                             showTargetDialog = false
                             showSuccessDialog = true
                             onConfirm(selectedCourses, PersonType.PERSON_A, mergeMode)
@@ -440,14 +444,17 @@ private fun AppExportPreviewContent(
         if (coursesForPersonA.isNotEmpty()) {
             item {
                 Text(
-                    text = "${personAName ?: "Ta"}的课程 (${coursesForPersonA.size}门)",
+                    text = "${personAName ?: "我"}的课程 (${coursesForPersonA.size}门)",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
             
-            items(coursesForPersonA) { item ->
+            items(
+                items = coursesForPersonA,
+                key = { item -> "A_${item.data.name}_${item.data.dayOfWeek}_${item.data.startHour}_${item.data.startMinute}_${item.data.endHour}_${item.data.endMinute}_${item.data.startWeek}_${item.data.endWeek}_${item.data.weekType}" }
+            ) { item ->
                 ImportPreviewItemCard(
                     item = item,
                     onToggleSelection = {
@@ -463,14 +470,17 @@ private fun AppExportPreviewContent(
         if (coursesForPersonB.isNotEmpty()) {
             item {
                 Text(
-                    text = "${personBName ?: "我"}的课程 (${coursesForPersonB.size}门)",
+                    text = "${personBName ?: "Ta"}的课程 (${coursesForPersonB.size}门)",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
             
-            items(coursesForPersonB) { item ->
+            items(
+                items = coursesForPersonB,
+                key = { item -> "B_${item.data.name}_${item.data.dayOfWeek}_${item.data.startHour}_${item.data.startMinute}_${item.data.endHour}_${item.data.endMinute}_${item.data.startWeek}_${item.data.endWeek}_${item.data.weekType}" }
+            ) { item ->
                 ImportPreviewItemCard(
                     item = item,
                     onToggleSelection = {
@@ -555,14 +565,14 @@ private fun SettingsPreviewCard(
         
         if (settingsA != null) {
             SettingsItemPreview(
-                name = personAName ?: "Ta",
+                name = personAName ?: "我",
                 settings = settingsA
             )
         }
         
         if (settingsB != null) {
             SettingsItemPreview(
-                name = personBName ?: "我",
+                name = personBName ?: "Ta",
                 settings = settingsB
             )
         }
@@ -770,8 +780,8 @@ private fun AppExportConfirmDialog(
     )
     
     val targetOptions = listOf(
-        SegmentOption(PersonType.PERSON_A, "Ta的课表"),
-        SegmentOption(PersonType.PERSON_B, "我的课表")
+        SegmentOption(PersonType.PERSON_A, "我的课表"),
+        SegmentOption(PersonType.PERSON_B, "Ta的课表")
     )
     
     val isAssignmentValid = personATarget != null && personBTarget != null && personATarget != personBTarget
@@ -802,7 +812,7 @@ private fun AppExportConfirmDialog(
                 ) {
                     Column {
                         Text(
-                            text = "${personAName ?: "Ta"}的课表",
+                            text = "${personAName ?: "我"}的课表",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF2196F3),
                             fontWeight = FontWeight.Medium
@@ -830,7 +840,7 @@ private fun AppExportConfirmDialog(
                 ) {
                     Column {
                         Text(
-                            text = "${personBName ?: "我"}的课表",
+                            text = "${personBName ?: "Ta"}的课表",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFFFFC107),
                             fontWeight = FontWeight.Medium
@@ -912,8 +922,8 @@ private fun TemplateConfirmDialog(
     val darkTheme = LocalDarkTheme.current
     
     val targetOptions = listOf(
-        SegmentOption(PersonType.PERSON_A, "Ta的课表"),
-        SegmentOption(PersonType.PERSON_B, "我的课表")
+        SegmentOption(PersonType.PERSON_A, "我的课表"),
+        SegmentOption(PersonType.PERSON_B, "Ta的课表")
     )
     
     val mergeOptions = listOf(
@@ -940,7 +950,7 @@ private fun TemplateConfirmDialog(
             
             SegmentedControl(
                 options = targetOptions,
-                selectedOption = selectedTarget ?: PersonType.PERSON_B,
+                selectedOption = selectedTarget ?: PersonType.PERSON_A,
                 onOptionSelected = onTargetChange,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -972,9 +982,9 @@ private fun SuccessDialog(
     onNavigateToHome: () -> Unit
 ) {
     val message = if (isAppExport) {
-        "成功导入 $importedCount 门课程"
+        "成功导入 $importedCount 门课程\n已自动备份原有数据"
     } else {
-        "成功导入 $importedCount 门课程到${if (importedTarget == PersonType.PERSON_A) "Ta的课表" else "我的课表"}"
+        "成功导入 $importedCount 门课程到${if (importedTarget == PersonType.PERSON_A) "我的课表" else "Ta的课表"}\n已自动备份原有数据"
     }
     
     IOSSuccessDialog(

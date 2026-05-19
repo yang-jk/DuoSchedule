@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.duoschedule.ui.theme.BackgroundsDark
@@ -70,24 +72,26 @@ fun glassmorphismBorderColor(darkTheme: Boolean = LocalDarkTheme.current): Color
 
 @Composable
 fun glassmorphismGradientBrush(darkTheme: Boolean = LocalDarkTheme.current): Brush {
-    return if (darkTheme) {
-        Brush.linearGradient(
-            colors = listOf(
-                GlassmorphismColors.DarkGradientStart.copy(alpha = 0.3f),
-                GlassmorphismColors.DarkGradientEnd.copy(alpha = 0.1f)
-            ),
-            start = Offset(0f, 0f),
-            end = Offset(0f, Float.POSITIVE_INFINITY)
-        )
-    } else {
-        Brush.linearGradient(
-            colors = listOf(
-                GlassmorphismColors.LightGradientStart.copy(alpha = 0.6f),
-                GlassmorphismColors.LightGradientEnd.copy(alpha = 0.3f)
-            ),
-            start = Offset(0f, 0f),
-            end = Offset(0f, Float.POSITIVE_INFINITY)
-        )
+    return remember(darkTheme) {
+        if (darkTheme) {
+            Brush.linearGradient(
+                colors = listOf(
+                    GlassmorphismColors.DarkGradientStart.copy(alpha = 0.3f),
+                    GlassmorphismColors.DarkGradientEnd.copy(alpha = 0.1f)
+                ),
+                start = Offset(0f, 0f),
+                end = Offset(0f, Float.POSITIVE_INFINITY)
+            )
+        } else {
+            Brush.linearGradient(
+                colors = listOf(
+                    GlassmorphismColors.LightGradientStart.copy(alpha = 0.6f),
+                    GlassmorphismColors.LightGradientEnd.copy(alpha = 0.3f)
+                ),
+                start = Offset(0f, 0f),
+                end = Offset(0f, Float.POSITIVE_INFINITY)
+            )
+        }
     }
 }
 
@@ -348,15 +352,17 @@ fun SmartRecommendationCard(
     }
 }
 
+@Composable
 fun Modifier.glowEffect(
     color: Color = Color(0xFF4789FE),
     intensity: Float = 0.3f
-): Modifier = this.drawBehind {
-    val glowRadius = 20.dp.toPx()
-    
-    drawCircle(
-        color = color.copy(alpha = intensity * 0.5f),
-        radius = glowRadius,
-        center = Offset(size.width / 2, size.height / 2)
-    )
+): Modifier {
+    val glowRadiusPx = with(LocalDensity.current) { 20.dp.toPx() }
+    return this.drawBehind {
+        drawCircle(
+            color = color.copy(alpha = intensity * 0.5f),
+            radius = glowRadiusPx,
+            center = Offset(size.width / 2, size.height / 2)
+        )
+    }
 }

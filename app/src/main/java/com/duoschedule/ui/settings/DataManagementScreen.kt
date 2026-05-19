@@ -24,10 +24,15 @@ import com.duoschedule.data.importexport.ImportPreviewData
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
+import com.duoschedule.ui.theme.ScrollTopBlurOverlay
 import com.duoschedule.ui.theme.LocalBackdrop
 import com.duoschedule.ui.theme.LiquidGlassColors
+import com.duoschedule.ui.theme.LiquidGlassButton
+import com.duoschedule.ui.theme.LiquidGlassButtonStyle
 import com.duoschedule.ui.theme.GlassBottomSheetDefaults
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -50,12 +55,18 @@ fun DataManagementScreen(
 ) {
     val context = LocalContext.current
     val labelsPrimary = getLabelsVibrantPrimary()
+    val labelsSecondary = getLabelsVibrantSecondary()
     val scope = rememberCoroutineScope()
     
     var isLoading by remember { mutableStateOf(false) }
     var loadingMessage by remember { mutableStateOf("") }
     var showImportResultDialog by remember { mutableStateOf(false) }
     var importResult by remember { mutableStateOf<ImportResult?>(null) }
+    var backupFiles by remember { mutableStateOf<List<File>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        backupFiles = viewModel.getBackupFiles()
+    }
 
     val csvImportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -75,7 +86,8 @@ fun DataManagementScreen(
                         settingsA = result.settingsA,
                         settingsB = result.settingsB,
                         personAName = result.personAName,
-                        personBName = result.personBName
+                        personBName = result.personBName,
+                        exportVersion = result.exportVersion
                     ))
                 } else {
                     showImportResultDialog = true
@@ -107,6 +119,7 @@ fun DataManagementScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { 
@@ -140,12 +153,19 @@ fun DataManagementScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         val deviceInfo = remember { FilePickerUtils.getDeviceInfo() }
-        
+
+        val scrollBackdrop = rememberLayerBackdrop()
+        val scrollState = rememberScrollState()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = paddingValues.calculateTopPadding())
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState)
+                .layerBackdrop(scrollBackdrop),
             verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
         ) {
             Spacer(modifier = Modifier.height(Spacing.sm))
@@ -154,8 +174,6 @@ fun DataManagementScreen(
                 val backdrop = LocalBackdrop.current ?: emptyBackdrop()
                 val darkTheme = LocalDarkTheme.current
                 val density = LocalDensity.current
-                val labelsPrimary = getLabelsVibrantPrimary()
-                val labelsSecondary = getLabelsVibrantSecondary()
 
                 val layer1Tint = if (darkTheme) {
                     LiquidGlassColors.BottomSheet.Dark.Layer1_Tint
@@ -371,11 +389,106 @@ fun DataManagementScreen(
                 )
             }
 
+            SettingsSection(title = "备份管理") {
+                if (backupFiles.isEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.lg, vertical = Spacing.sm)
+                    ) {
+                        Text(
+                            text = "暂无备份（导入课程时自动创建）",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = labelsSecondary
+                        )
+                    }
+                } else {
+                    backupFiles.forEach { file ->
+                        val displayName = try {
+                            val regex = Regex("backup_pre_import_(\\d{4})(\\d{2})(\\d{2})_(\\d{2})(\\d{2})(\\d{2})\\.csv")
+                            val match = regex.find(file.name)
+                            if (match != null) {
+                                "${match.groupValues[1]}-${match.groupValues[2]}-${match.groupValues[3]} ${match.groupValues[4]}:${match.groupValues[5]}:${match.groupValues[6]}"
+                            } else file.name
+                        } catch (e: Exception) { file.name }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = Spacing.lg, vertical = Spacing.xs),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = displayName,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = labelsPrimary
+                                )
+                                Text(
+                                    text = "${file.length() / 1024}KB",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = labelsSecondary
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                                LiquidGlassButton(
+                                    text = "恢复",
+                                    onClick = {
+                                        scope.launch {
+                                            isLoading = true
+                                            loadingMessage = "正在读取备份..."
+                                            val uri = FileProvider.getUriForFile(
+                                                context,
+                                                "${context.packageName}.fileprovider",
+                                                file
+                                            )
+                                            val result = viewModel.importFromCsv(context, uri)
+                                            isLoading = false
+                                            if (result.success && result.courses.isNotEmpty()) {
+                                                onNavigateToImportPreview(ImportPreviewData(
+                                                    courses = result.courses,
+                                                    fileType = result.fileType,
+                                                    settingsA = result.settingsA,
+                                                    settingsB = result.settingsB,
+                                                    personAName = result.personAName,
+                                                    personBName = result.personBName,
+                                                    exportVersion = result.exportVersion
+                                                ))
+                                            } else {
+                                                showImportResultDialog = true
+                                                importResult = result
+                                            }
+                                        }
+                                    },
+                                    style = LiquidGlassButtonStyle.Tinted
+                                )
+                                LiquidGlassButton(
+                                    text = "删除",
+                                    onClick = {
+                                        viewModel.deleteBackupFile(file.name)
+                                        backupFiles = viewModel.getBackupFiles()
+                                    },
+                                    style = LiquidGlassButtonStyle.NonTinted
+                                )
+                            }
+                        }
+                        if (file != backupFiles.last()) {
+                            Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
+                        }
+                    }
+                }
+            }
+
             SettingsFooter(
                 text = "导出的 CSV 文件可用于备份或迁移数据。导入时请确保文件格式正确。"
             )
 
+            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             Spacer(modifier = Modifier.weight(1f))
+        }
+
+        ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollState.value)
         }
     }
 

@@ -13,18 +13,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material.icons.outlined.LocalCafe
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -100,22 +96,33 @@ fun CurrentCourseCard(
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
     ) {
         PersonCourseColumn(
-            state = personBState,
-            personColor = personBColor,
+            state = personAState,
+            personColor = personAColor,
             modifier = if (singleModeEnabled) Modifier.fillMaxWidth() else Modifier.weight(1f),
             backdrop = backdrop
         )
 
         if (!singleModeEnabled) {
-            VerticalDivider(
-                color = if (darkTheme) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f),
-                thickness = 1.dp,
-                modifier = Modifier.height(100.dp)
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(100.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                if (darkTheme) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f),
+                                Color.Transparent
+                            ),
+                            startY = 0f,
+                            endY = with(LocalDensity.current) { 100.dp.toPx() }
+                        )
+                    )
             )
 
             PersonCourseColumn(
-                state = personAState,
-                personColor = personAColor,
+                state = personBState,
+                personColor = personBColor,
                 modifier = Modifier.weight(1f),
                 backdrop = backdrop
             )
@@ -190,133 +197,50 @@ private fun PersonCourseColumn(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (state.periodText.isNotEmpty()) {
-                    Text(
-                        text = state.periodText,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = labelsTertiary
-                    )
-                }
-                
-                if (state.remainingMinutes > 0) {
-                    RemainingTimeBadge(
-                        remainingMinutes = state.remainingMinutes,
-                        personColor = personColor,
-                        backdrop = backdrop
-                    )
-                }
+            if (state.hasNextCourse) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "↗ 下节: ${state.nextCourseDisplayText} · ${state.nextCourseStartTime}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = labelsTertiary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         } else {
+            val darkTheme = LocalDarkTheme.current
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.LocalCafe,
-                    contentDescription = "空闲中",
-                    tint = labelsSecondary,
-                    modifier = Modifier.size(24.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(personColor.copy(alpha = if (darkTheme) 0.12f else 0.15f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.LocalCafe,
+                        contentDescription = "空闲中",
+                        tint = labelsSecondary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "空闲中",
                     style = MaterialTheme.typography.bodyMedium,
                     color = labelsSecondary
                 )
-                if (state.nextCourseStartTime.isNotEmpty()) {
+                if (state.hasNextCourse) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "下节 ${state.nextCourseStartTime}",
+                        text = "↗ 下节: ${state.nextCourseDisplayText} · ${state.nextCourseStartTime}",
                         style = MaterialTheme.typography.labelSmall,
                         color = labelsTertiary
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun RemainingTimeBadge(
-    remainingMinutes: Int,
-    personColor: Color,
-    modifier: Modifier = Modifier,
-    backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
-) {
-    val darkTheme = LocalDarkTheme.current
-    val density = LocalDensity.current
-    val text = formatRemainingTime(remainingMinutes)
-
-    val layer1Tint = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.Layer1_Tint
-    } else {
-        LiquidGlassColors.BottomSheet.Light.Layer1_Tint
-    }
-
-    val layer1Alpha = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.Layer1_Alpha
-    } else {
-        LiquidGlassColors.BottomSheet.Light.Layer1_Alpha
-    }
-
-    val layer2Base = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.Layer2_Base
-    } else {
-        LiquidGlassColors.BottomSheet.Light.Layer2_Base
-    }
-
-    val glassEffect = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.GlassEffect
-    } else {
-        LiquidGlassColors.BottomSheet.Light.GlassEffect
-    }
-
-    Box(
-        modifier = modifier
-            .drawBackdrop(
-                backdrop = backdrop,
-                shape = { ContinuousRoundedRectangle(BorderRadius.iOS26.small) },
-                effects = {
-                    vibrancy()
-                    blur(with(density) { 2.dp.toPx() })
-                    lens(
-                        refractionHeight = with(density) { 4.dp.toPx() },
-                        refractionAmount = with(density) { 8.dp.toPx() },
-                        chromaticAberration = false
-                    )
-                },
-                onDrawSurface = {
-                    drawRect(personColor, blendMode = BlendMode.Hue)
-                    drawRect(personColor.copy(alpha = 0.3f))
-                }
-            )
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-private fun formatRemainingTime(remainingMinutes: Int): String {
-    return when {
-        remainingMinutes >= 60 -> {
-            val hours = remainingMinutes / 60
-            val minutes = remainingMinutes % 60
-            if (minutes > 0) "${hours}小时${minutes}分" else "${hours}小时"
-        }
-        remainingMinutes >= 5 -> "${remainingMinutes}分"
-        remainingMinutes > 0 -> "即将结束"
-        else -> ""
     }
 }

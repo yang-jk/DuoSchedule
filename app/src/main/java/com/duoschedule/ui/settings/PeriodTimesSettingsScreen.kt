@@ -2,6 +2,7 @@ package com.duoschedule.ui.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -16,6 +17,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
+import com.duoschedule.ui.theme.ScrollTopBlurOverlay
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +62,7 @@ fun PeriodTimesSettingsScreen(
     }
     
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { 
@@ -93,6 +98,7 @@ fun PeriodTimesSettingsScreen(
             if (hasChanges) {
                 BottomAppBar(
                     containerColor = MaterialTheme.colorScheme.background,
+                    modifier = Modifier.navigationBarsPadding()
                 ) {
                     Spacer(modifier = Modifier.weight(1f))
                     LiquidGlassButton(
@@ -108,10 +114,26 @@ fun PeriodTimesSettingsScreen(
             }
         }
     ) { paddingValues ->
+        val scrollBackdrop = rememberLayerBackdrop()
+        val lazyListState = rememberLazyListState()
+        val scrollOffset by remember {
+            derivedStateOf {
+                if (lazyListState.firstVisibleItemIndex > 0) {
+                    lazyListState.firstVisibleItemScrollOffset + 1
+                } else {
+                    lazyListState.firstVisibleItemScrollOffset
+                }
+            }
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = paddingValues.calculateTopPadding())
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
+                .layerBackdrop(scrollBackdrop),
             verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
         ) {
             Spacer(modifier = Modifier.height(Spacing.sm))
@@ -123,6 +145,7 @@ fun PeriodTimesSettingsScreen(
             SettingsCard {
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
+                    state = lazyListState,
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
                     itemsIndexed(editedTimes) { index, time ->
@@ -141,7 +164,11 @@ fun PeriodTimesSettingsScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             Spacer(modifier = Modifier.weight(1f))
+        }
+
+        ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollOffset)
         }
     }
     

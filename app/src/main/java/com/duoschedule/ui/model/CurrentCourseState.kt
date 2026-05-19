@@ -1,8 +1,10 @@
 package com.duoschedule.ui.model
 
+import androidx.compose.runtime.Immutable
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 
+@Immutable
 data class CurrentCourseState(
     val personType: PersonType,
     val personName: String,

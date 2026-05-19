@@ -16,6 +16,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.*
@@ -30,7 +32,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.notification.SilentModeType
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
+import com.duoschedule.ui.theme.ScrollTopBlurOverlay
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +53,7 @@ fun NotificationSettingsScreen(
     val autoSilentEnabled by viewModel.autoSilentEnabled.collectAsState()
     val autoSilentModeType by viewModel.autoSilentModeType.collectAsState()
     val autoSilentAdvanceTime by viewModel.autoSilentAdvanceTime.collectAsState()
+    val hasAnyCourses by viewModel.hasAnyCourses.collectAsState()
 
     var showReminderDialog by remember { mutableStateOf(false) }
     var showSilentModeDialog by remember { mutableStateOf(false) }
@@ -58,6 +63,11 @@ fun NotificationSettingsScreen(
     var hasNotificationPolicyAccess by remember { mutableStateOf(false) }
     var hasNotificationPermission by remember { mutableStateOf(true) }
     var previousPolicyAccess by remember { mutableStateOf(false) }
+    var showDebugLogDialog by remember { mutableStateOf(false) }
+    var showScheduledAlarmsDialog by remember { mutableStateOf(false) }
+    var showDurationPickerDialog by remember { mutableStateOf(false) }
+    var debugLogs by remember { mutableStateOf(com.duoschedule.notification.NotificationDebugLogger.logs) }
+    var scheduledAlarms by remember { mutableStateOf(emptyList<com.duoschedule.notification.AlarmScheduler.AlarmInfo>()) }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -157,7 +167,17 @@ fun NotificationSettingsScreen(
         }
     }
 
+    LaunchedEffect(showDebugLogDialog) {
+        if (showDebugLogDialog) {
+            while (showDebugLogDialog) {
+                debugLogs = com.duoschedule.notification.NotificationDebugLogger.logs
+                delay(1000)
+            }
+        }
+    }
+
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { 
@@ -190,11 +210,18 @@ fun NotificationSettingsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
+        val scrollBackdrop = rememberLayerBackdrop()
+        val scrollState = rememberScrollState()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = paddingValues.calculateTopPadding())
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState)
+                .layerBackdrop(scrollBackdrop),
             verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
         ) {
             Spacer(modifier = Modifier.height(Spacing.sm))
@@ -337,33 +364,43 @@ fun NotificationSettingsScreen(
                     val isXiaomiDevice = Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true) ||
                                          Build.MANUFACTURER.equals("Redmi", ignoreCase = true)
                     if (isXiaomiDevice) {
-                        SettingsNavigationRow(
-                            title = "自启动权限（小米）",
-                            subtitle = "⚠️ 必须开启才能收到通知",
-                            icon = Icons.Outlined.Start,
-                            iconBackgroundColor = IOSColors.Red,
-                            onClick = {
-                                try {
-                                    val intent = Intent().apply {
-                                        action = "miui.intent.action.OP_AUTO_START"
-                                        addCategory(Intent.CATEGORY_DEFAULT)
-                                    }
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
+                        if (hasAnyCourses) {
+                            SettingsNavigationRow(
+                                title = "自启动权限（小米）",
+                                subtitle = "⚠️ 必须开启才能收到通知",
+                                icon = Icons.Outlined.Start,
+                                iconBackgroundColor = IOSColors.Red,
+                                onClick = {
                                     try {
-                                        val intent = Intent("android.settings.APPLICATION_DETAILS_SETTINGS").apply {
-                                            data = "package:${context.packageName}".toUri()
+                                        val intent = Intent().apply {
+                                            action = "miui.intent.action.OP_AUTO_START"
+                                            addCategory(Intent.CATEGORY_DEFAULT)
                                         }
                                         context.startActivity(intent)
                                     } catch (e: Exception) {
-                                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                            data = "package:${context.packageName}".toUri()
+                                        try {
+                                            val intent = Intent("android.settings.APPLICATION_DETAILS_SETTINGS").apply {
+                                                data = "package:${context.packageName}".toUri()
+                                            }
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {
+                                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                data = "package:${context.packageName}".toUri()
+                                            }
+                                            context.startActivity(intent)
                                         }
-                                        context.startActivity(intent)
                                     }
                                 }
-                            }
-                        )
+                            )
+                        } else {
+                            SettingsNavigationRow(
+                                title = "自启动权限（小米）",
+                                subtitle = "当前无课程，无需开启",
+                                icon = Icons.Outlined.Start,
+                                iconBackgroundColor = IOSColors.Gray,
+                                onClick = {}
+                            )
+                        }
                         
                         SettingsNavigationRow(
                             title = "后台运行权限（小米）",
@@ -440,7 +477,7 @@ fun NotificationSettingsScreen(
                                 color = IOSColors.Orange
                             )
                         }
-                        if (isXiaomiDevice) {
+                        if (isXiaomiDevice && hasAnyCourses) {
                             Text(
                                 text = "• ⚠️ 小米设备必须开启自启动权限",
                                 style = MaterialTheme.typography.bodySmall,
@@ -483,29 +520,75 @@ fun NotificationSettingsScreen(
                     }
                 }
 
-                SettingsSection(title = "调试") {
+                SettingsSection(title = "调试与测试") {
                     SettingsNavigationRow(
-                        title = "测试通知",
-                        subtitle = "立即发送一条测试通知",
+                        title = "测试课前提醒",
+                        subtitle = "立即发送一条课前提醒通知",
                         icon = Icons.Outlined.NotificationsActive,
-                        iconBackgroundColor = IOSColors.Gray,
+                        iconBackgroundColor = IOSColors.Orange,
                         onClick = { viewModel.testNotification() }
                     )
                     
                     SettingsNavigationRow(
-                        title = "测试上课中通知",
-                        subtitle = "立即启动上课中实况通知",
+                        title = "测试上课中通知（45分钟）",
+                        subtitle = "启动标准时长的上课中通知",
                         icon = Icons.Outlined.PlayCircle,
-                        iconBackgroundColor = IOSColors.Gray,
+                        iconBackgroundColor = IOSColors.Blue,
                         onClick = { viewModel.testOngoingNotification(context) }
+                    )
+                    
+                    SettingsNavigationRow(
+                        title = "快速测试上课中通知",
+                        subtitle = "选择自定义时长进行测试",
+                        icon = Icons.Outlined.Timer,
+                        iconBackgroundColor = IOSColors.Purple,
+                        onClick = { showDurationPickerDialog = true }
+                    )
+                    
+                    SettingsNavigationRow(
+                        title = "测试自动静音",
+                        subtitle = "立即触发一次静音（1分钟后恢复）",
+                        icon = Icons.Outlined.VolumeOff,
+                        iconBackgroundColor = IOSColors.Teal,
+                        onClick = { viewModel.testAutoSilent(context) }
+                    )
+                    
+                    SettingsNavigationRow(
+                        title = "清除所有测试通知",
+                        subtitle = "取消所有提醒和上课中通知",
+                        icon = Icons.Outlined.ClearAll,
+                        iconBackgroundColor = IOSColors.Gray,
+                        onClick = { viewModel.cancelAllTestNotifications() }
                     )
                     
                     SettingsNavigationRow(
                         title = "重新调度通知",
                         subtitle = "手动触发通知调度",
                         icon = Icons.Outlined.Refresh,
-                        iconBackgroundColor = IOSColors.Gray,
+                        iconBackgroundColor = IOSColors.Green,
                         onClick = { viewModel.rescheduleNotifications() }
+                    )
+                    
+                    SettingsNavigationRow(
+                        title = "查看调度日志",
+                        subtitle = "查看通知调度和触发记录",
+                        icon = Icons.Outlined.Terminal,
+                        iconBackgroundColor = IOSColors.Gray,
+                        onClick = {
+                        debugLogs = com.duoschedule.notification.NotificationDebugLogger.logs
+                        showDebugLogDialog = true
+                        }
+                    )
+                    
+                    SettingsNavigationRow(
+                        title = "查看已调度闹钟",
+                        subtitle = "查看当前排队的闹钟列表",
+                        icon = Icons.Outlined.Alarm,
+                        iconBackgroundColor = IOSColors.Gray,
+                        onClick = {
+                        scheduledAlarms = viewModel.getScheduledAlarms()
+                        showScheduledAlarmsDialog = true
+                        }
                     )
                 }
 
@@ -518,7 +601,11 @@ fun NotificationSettingsScreen(
                 )
             }
 
+            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             Spacer(modifier = Modifier.weight(1f))
+        }
+
+        ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollState.value)
         }
     }
 
@@ -572,6 +659,146 @@ fun NotificationSettingsScreen(
             onConfirm = { minutes ->
                 viewModel.setAutoSilentAdvanceTime(minutes)
                 showSilentAdvanceDialog = false
+            }
+        )
+    }
+
+    if (showDebugLogDialog) {
+        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        AlertDialog(
+            onDismissRequest = { showDebugLogDialog = false },
+            title = { Text("调度日志") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    if (debugLogs.isEmpty()) {
+                        Text(
+                            text = "暂无日志记录\n\n提示：点击测试按钮后，调度和触发事件会记录在这里",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        debugLogs.forEach { log ->
+                            Column(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    text = "[${log.formattedTime}] ${log.type.name}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (log.result == com.duoschedule.notification.NotificationDebugLog.LogResult.SUCCESS) IOSColors.Green else IOSColors.Red
+                                )
+                                Text(
+                                    text = log.message,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                if (log.params.isNotEmpty()) {
+                                    Text(
+                                        text = log.params.entries.joinToString(", ") { "${it.key}=${it.value}" },
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = {
+                        viewModel.clearDebugLogs()
+                        debugLogs = emptyList()
+                    }) {
+                        Text("清空")
+                    }
+                    TextButton(onClick = {
+                        val clipboardManager = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        clipboardManager.setPrimaryClip(android.content.ClipData.newPlainText("调度日志", viewModel.getDebugLogsText()))
+                        Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
+                    }) {
+                        Text("复制")
+                    }
+                    TextButton(onClick = { showDebugLogDialog = false }) {
+                        Text("关闭")
+                    }
+                }
+            }
+        )
+    }
+
+    if (showScheduledAlarmsDialog) {
+        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        AlertDialog(
+            onDismissRequest = { showScheduledAlarmsDialog = false },
+            title = { Text("已调度闹钟") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    if (scheduledAlarms.isEmpty()) {
+                        Text(
+                            text = "当前没有已调度的闹钟\n\n提示：点击\"重新调度通知\"来调度闹钟",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        scheduledAlarms.forEach { alarm ->
+                            Column(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(
+                                    text = alarm.type,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "课程: ${alarm.courseName}",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Text(
+                                    text = "触发时间: ${java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(alarm.triggerTime))}",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Text(
+                                    text = "精确: ${if (alarm.isExact) "是" else "否"} | 请求码: ${alarm.requestCode}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            HorizontalDivider()
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showScheduledAlarmsDialog = false }) {
+                    Text("关闭")
+                }
+            }
+        )
+    }
+
+    if (showDurationPickerDialog) {
+        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        SettingsOptionDialog(
+            title = "选择测试时长",
+            options = listOf(1, 2, 3, 5, 10, 45),
+            selectedOption = 5,
+            backdrop = backdrop,
+            optionLabel = { "${it} 分钟" },
+            onDismiss = { showDurationPickerDialog = false },
+            onConfirm = { minutes ->
+                viewModel.testOngoingNotificationWithDuration(context, minutes)
+                showDurationPickerDialog = false
             }
         )
     }

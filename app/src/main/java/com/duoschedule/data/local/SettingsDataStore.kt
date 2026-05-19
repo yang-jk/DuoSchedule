@@ -43,6 +43,9 @@ class SettingsDataStore @Inject constructor(
         private val PERSON_A_CURRENT_WEEK = intPreferencesKey("person_a_current_week")
         private val PERSON_B_CURRENT_WEEK = intPreferencesKey("person_b_current_week")
         
+        private val PERSON_A_MANUAL_WEEK_OVERRIDE = booleanPreferencesKey("person_a_manual_week_override")
+        private val PERSON_B_MANUAL_WEEK_OVERRIDE = booleanPreferencesKey("person_b_manual_week_override")
+        
         private val PERSON_A_TOTAL_PERIODS = intPreferencesKey("person_a_total_periods")
         private val PERSON_B_TOTAL_PERIODS = intPreferencesKey("person_b_total_periods")
         
@@ -70,6 +73,7 @@ class SettingsDataStore @Inject constructor(
         private val PREDICTIVE_BACK_ENABLED = booleanPreferencesKey("predictive_back_enabled")
         private val SINGLE_MODE_ENABLED = booleanPreferencesKey("single_mode_enabled")
         private val SKIPPED_VERSION_CODE = intPreferencesKey("skipped_version_code")
+        private val PERSON_TYPE_MIGRATION_DONE = booleanPreferencesKey("person_type_migration_done")
 
         private val DEFAULT_PERIOD_TIMES = listOf(
             "08:00-08:45",
@@ -86,11 +90,11 @@ class SettingsDataStore @Inject constructor(
     }
 
     val personAName: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[PERSON_A_NAME] ?: "Ta"
+        preferences[PERSON_A_NAME] ?: "我"
     }
 
     val personBName: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[PERSON_B_NAME] ?: "我"
+        preferences[PERSON_B_NAME] ?: "Ta"
     }
 
     fun getSemesterStartDate(personType: PersonType): Flow<LocalDate> = context.dataStore.data.map { preferences ->
@@ -106,6 +110,11 @@ class SettingsDataStore @Inject constructor(
     fun getCurrentWeek(personType: PersonType): Flow<Int> = context.dataStore.data.map { preferences ->
         val key = if (personType == PersonType.PERSON_A) PERSON_A_CURRENT_WEEK else PERSON_B_CURRENT_WEEK
         preferences[key] ?: 1
+    }
+
+    fun getManualWeekOverride(personType: PersonType): Flow<Boolean> = context.dataStore.data.map { preferences ->
+        val key = if (personType == PersonType.PERSON_A) PERSON_A_MANUAL_WEEK_OVERRIDE else PERSON_B_MANUAL_WEEK_OVERRIDE
+        preferences[key] ?: false
     }
 
     fun getTotalPeriods(personType: PersonType): Flow<Int> = context.dataStore.data.map { preferences ->
@@ -189,7 +198,7 @@ class SettingsDataStore @Inject constructor(
     }
 
     val predictiveBackEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[PREDICTIVE_BACK_ENABLED] ?: true
+        preferences[PREDICTIVE_BACK_ENABLED] ?: false
     }
 
     val singleModeEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
@@ -243,6 +252,13 @@ class SettingsDataStore @Inject constructor(
         context.dataStore.edit { preferences ->
             val key = if (personType == PersonType.PERSON_A) PERSON_A_CURRENT_WEEK else PERSON_B_CURRENT_WEEK
             preferences[key] = week
+        }
+    }
+
+    suspend fun setManualWeekOverride(personType: PersonType, override: Boolean) {
+        context.dataStore.edit { preferences ->
+            val key = if (personType == PersonType.PERSON_A) PERSON_A_MANUAL_WEEK_OVERRIDE else PERSON_B_MANUAL_WEEK_OVERRIDE
+            preferences[key] = override
         }
     }
 
@@ -388,6 +404,44 @@ class SettingsDataStore @Inject constructor(
     suspend fun setSkippedVersionCode(code: Int) {
         context.dataStore.edit { preferences ->
             preferences[SKIPPED_VERSION_CODE] = code
+        }
+    }
+
+    suspend fun migratePersonTypeIfNeeded() {
+        context.dataStore.edit { preferences ->
+            if (preferences[PERSON_TYPE_MIGRATION_DONE] == true) return@edit
+
+            val aName = preferences[PERSON_A_NAME]
+            val bName = preferences[PERSON_B_NAME]
+            if (aName != null) preferences[PERSON_B_NAME] = aName
+            if (bName != null) preferences[PERSON_A_NAME] = bName
+
+            val aStartDate = preferences[PERSON_A_SEMESTER_START_DATE]
+            val bStartDate = preferences[PERSON_B_SEMESTER_START_DATE]
+            if (aStartDate != null) preferences[PERSON_B_SEMESTER_START_DATE] = aStartDate
+            if (bStartDate != null) preferences[PERSON_A_SEMESTER_START_DATE] = bStartDate
+
+            val aTotalWeeks = preferences[PERSON_A_TOTAL_WEEKS]
+            val bTotalWeeks = preferences[PERSON_B_TOTAL_WEEKS]
+            if (aTotalWeeks != null) preferences[PERSON_B_TOTAL_WEEKS] = aTotalWeeks
+            if (bTotalWeeks != null) preferences[PERSON_A_TOTAL_WEEKS] = bTotalWeeks
+
+            val aCurrentWeek = preferences[PERSON_A_CURRENT_WEEK]
+            val bCurrentWeek = preferences[PERSON_B_CURRENT_WEEK]
+            if (aCurrentWeek != null) preferences[PERSON_B_CURRENT_WEEK] = aCurrentWeek
+            if (bCurrentWeek != null) preferences[PERSON_A_CURRENT_WEEK] = bCurrentWeek
+
+            val aTotalPeriods = preferences[PERSON_A_TOTAL_PERIODS]
+            val bTotalPeriods = preferences[PERSON_B_TOTAL_PERIODS]
+            if (aTotalPeriods != null) preferences[PERSON_B_TOTAL_PERIODS] = aTotalPeriods
+            if (bTotalPeriods != null) preferences[PERSON_A_TOTAL_PERIODS] = bTotalPeriods
+
+            val aPeriodTimes = preferences[PERSON_A_PERIOD_TIMES]
+            val bPeriodTimes = preferences[PERSON_B_PERIOD_TIMES]
+            if (aPeriodTimes != null) preferences[PERSON_B_PERIOD_TIMES] = aPeriodTimes
+            if (bPeriodTimes != null) preferences[PERSON_A_PERIOD_TIMES] = bPeriodTimes
+
+            preferences[PERSON_TYPE_MIGRATION_DONE] = true
         }
     }
 

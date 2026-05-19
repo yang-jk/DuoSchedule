@@ -72,11 +72,11 @@ class TaCoursesWidgetReceiver : AppWidgetProvider() {
                 val courseDao = dependencies.database.courseDao()
                 val settingsDataStore = dependencies.settingsDataStore
                 
-                val personType = PersonType.PERSON_A
-                val personColor = R.color.person_a_color
+                val personType = PersonType.PERSON_B
+                val personColor = R.color.person_b_color
                 
                 val currentWeek = settingsDataStore.getCurrentWeek(personType).first()
-                val personName = settingsDataStore.personAName.first()
+                val personName = settingsDataStore.personBName.first()
                 
                 val dayOfWeek = LocalDate.now().dayOfWeek.value
                 val currentTime = LocalTime.now()
@@ -112,7 +112,9 @@ class TaCoursesWidgetReceiver : AppWidgetProvider() {
                         
                         val courseView = RemoteViews(context.packageName, R.layout.widget_course_item)
                         
-                        val periodText = if (course.startPeriod == course.endPeriod) {
+                        val periodText = if (course.isCustomTime) {
+                            course.getTimeString()
+                        } else if (course.startPeriod == course.endPeriod) {
                             "第${course.startPeriod}节"
                         } else {
                             "第${course.startPeriod}-${course.endPeriod}节"
@@ -135,7 +137,7 @@ class TaCoursesWidgetReceiver : AppWidgetProvider() {
                 }
                 
                 val intent = Intent(context, MainActivity::class.java).apply {
-                    putExtra("target_route", "schedule_a")
+                    putExtra("target_route", "schedule_b")
                 }
                 
                 val pendingIntent = PendingIntent.getActivity(

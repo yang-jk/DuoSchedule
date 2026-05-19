@@ -36,7 +36,8 @@ class CourseNotificationManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val courseDao: CourseDao,
     private val settingsDataStore: SettingsDataStore,
-    private val ringerModeManager: RingerModeManager
+    private val ringerModeManager: RingerModeManager,
+    private val alarmScheduler: AlarmScheduler
 ) {
     companion object {
         private const val TAG = "CourseNotification"
@@ -46,9 +47,9 @@ class CourseNotificationManager @Inject constructor(
         
         const val NOTIFICATION_ID_REMINDER = 1001
         const val NOTIFICATION_ID_ONGOING = 1002
+        const val REMINDER_NOTIFICATION_ID_BASE = 2000
         
         const val WORK_NAME_REMINDER = "course_reminder_work"
-        const val WORK_NAME_ONGOING = "course_ongoing_work"
         
         const val ACTION_REMINDER_ALARM = "com.duoschedule.action.REMINDER_ALARM"
         const val ACTION_DAILY_RESCHEDULE = "com.duoschedule.action.DAILY_RESCHEDULE"
@@ -56,19 +57,13 @@ class CourseNotificationManager @Inject constructor(
     }
 
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    private val activeReminderNotificationIds = mutableSetOf<Int>()
 
     fun canPostPromotedNotifications(): Boolean {
         return PromotedNotificationBuilder.canPostPromotedNotifications(context)
     }
 
-    fun canScheduleExactAlarms(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            alarmManager.canScheduleExactAlarms()
-        } else {
-            true
-        }
-    }
+    fun canScheduleExactAlarms(): Boolean = alarmScheduler.canScheduleExactAlarms()
 
     fun hasNotificationPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -96,7 +91,7 @@ class CourseNotificationManager @Inject constructor(
         
         if (!isEnabled) {
             cancelReminderNotifications()
-            cancelOngoingNotifications()
+            cancelOngoingNotification()
             Log.i(TAG, "通知已禁用，取消所有通知")
             return
         }
@@ -104,7 +99,7 @@ class CourseNotificationManager @Inject constructor(
         if (!hasNotificationPermission()) {
             Log.w(TAG, "没有通知权限，无法调度通知")
             cancelReminderNotifications()
-            cancelOngoingNotifications()
+            cancelOngoingNotification()
             return
         }
 
@@ -115,20 +110,20 @@ class CourseNotificationManager @Inject constructor(
         Log.d(TAG, "精确闹钟权限: $canScheduleExact")
         
         val today = LocalDate.now()
-        val currentWeekB = settingsDataStore.getCurrentWeek(PersonType.PERSON_B).first()
-        Log.d(TAG, "当前周(PersonB): $currentWeekB")
+        val currentWeekA = settingsDataStore.getCurrentWeek(PersonType.PERSON_A).first()
+        Log.d(TAG, "当前周(PersonA): $currentWeekA")
 
-        val personBCourses = courseDao.getCoursesForDaySync(
+        val personACourses = courseDao.getCoursesForDaySync(
             dayOfWeek = today.dayOfWeek.value,
-            personType = PersonType.PERSON_B
+            personType = PersonType.PERSON_A
         )
         
-        Log.d(TAG, "今日PersonB课程总数: ${personBCourses.size}")
-        personBCourses.forEach { course ->
-            Log.d(TAG, "  - ${course.name}: 周${course.dayOfWeek}, ${course.startHour}:${course.startMinute}, 周次${course.startWeek}-${course.endWeek}, isInWeek=${course.isInWeek(currentWeekB)}")
+        Log.d(TAG, "今日PersonA课程总数: ${personACourses.size}")
+        personACourses.forEach { course ->
+            Log.d(TAG, "  - ${course.name}: 周${course.dayOfWeek}, ${course.startHour}:${course.startMinute}, 周次${course.startWeek}-${course.endWeek}, isInWeek=${course.isInWeek(currentWeekA)}")
         }
         
-        val filteredCourses = personBCourses.filter { it.isInWeek(currentWeekB) }
+        val filteredCourses = personACourses.filter { it.isInWeek(currentWeekA) }
         Log.d(TAG, "本周有效课程数: ${filteredCourses.size}")
 
         val currentTime = LocalTime.now()
@@ -145,6 +140,7 @@ class CourseNotificationManager @Inject constructor(
         }
 
         for (course in upcomingCourses) {
+            if (course.duration <= 0) continue
             val courseStartTime = LocalTime.of(course.startHour, course.startMinute)
             val reminderTime = courseStartTime.minusMinutes(advanceMinutes.toLong())
             
@@ -183,166 +179,22 @@ class CourseNotificationManager @Inject constructor(
     }
     
     private fun scheduleOngoingCourseAlarm(course: Course) {
-        val courseStartTime = LocalTime.of(course.startHour, course.startMinute)
-        val courseStartDateTime = LocalDateTime.of(LocalDate.now(), courseStartTime)
-        val triggerTime = courseStartDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
-
-        Log.d(TAG, "scheduleOngoingCourseAlarm: ${course.name}")
-        Log.d(TAG, "  courseStartTime: $courseStartTime")
-        Log.d(TAG, "  triggerTime(ms): $triggerTime")
-        Log.d(TAG, "  currentTime(ms): ${System.currentTimeMillis()}")
-
-        if (triggerTime <= System.currentTimeMillis()) {
-            Log.d(TAG, "  触发时间已过，跳过")
-            return
-        }
-
-        val intent = Intent(context, OngoingCourseReceiver::class.java).apply {
-            action = OngoingCourseReceiver.ACTION_COURSE_START
-            putExtra(OngoingCourseReceiver.EXTRA_COURSE_NAME, course.name)
-            putExtra(OngoingCourseReceiver.EXTRA_COURSE_LOCATION, course.location ?: "")
-            putExtra(OngoingCourseReceiver.EXTRA_DURATION, course.duration)
-            putExtra(OngoingCourseReceiver.EXTRA_END_HOUR, course.endHour)
-            putExtra(OngoingCourseReceiver.EXTRA_END_MINUTE, course.endMinute)
-        }
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            course.id.hashCode() + 10000,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (canScheduleExactAlarms()) {
-                    scheduleAlarmClock(
-                        triggerTime = triggerTime,
-                        pendingIntent = pendingIntent,
-                        label = "课程开始: ${course.name}"
-                    )
-                    Log.d(TAG, "  课程开始AlarmClock已设置: ${course.name} at $courseStartTime")
-                } else {
-                    alarmManager.setAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerTime,
-                        pendingIntent
-                    )
-                    Log.d(TAG, "  课程开始闹钟已设置(非精确-无权限): ${course.name} at $courseStartTime")
-                }
-            } else {
-                scheduleAlarmClock(
-                    triggerTime = triggerTime,
-                    pendingIntent = pendingIntent,
-                    label = "课程开始: ${course.name}"
-                )
-                Log.d(TAG, "  课程开始AlarmClock已设置: ${course.name} at $courseStartTime")
-            }
-        } catch (e: SecurityException) {
-            Log.e(TAG, "  无法设置课程开始闹钟: ${e.message}")
-        }
+        alarmScheduler.scheduleOngoingCourseAlarm(course)
     }
     
     private fun schedulePreStartServiceAlarm(course: Course, preStartTime: LocalTime) {
-        val preStartDateTime = LocalDateTime.of(LocalDate.now(), preStartTime)
-        val triggerTime = preStartDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
-
-        Log.d(TAG, "schedulePreStartServiceAlarm: ${course.name}")
-        Log.d(TAG, "  preStartTime: $preStartTime")
-        Log.d(TAG, "  triggerTime(ms): $triggerTime")
-
-        if (triggerTime <= System.currentTimeMillis()) {
-            Log.d(TAG, "  触发时间已过，跳过")
-            return
-        }
-
-        val intent = Intent(context, PreStartServiceReceiver::class.java).apply {
-            action = PreStartServiceReceiver.ACTION_PRE_START
-        }
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            course.id.hashCode() + 60000,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (canScheduleExactAlarms()) {
-                    alarmManager.setExactAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerTime,
-                        pendingIntent
-                    )
-                    Log.i(TAG, "  预启动服务闹钟已设置(精确): ${course.name} at $preStartTime")
-                } else {
-                    alarmManager.setAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerTime,
-                        pendingIntent
-                    )
-                    Log.i(TAG, "  预启动服务闹钟已设置(非精确): ${course.name} at $preStartTime")
-                }
-            } else {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerTime,
-                    pendingIntent
-                )
-                Log.i(TAG, "  预启动服务闹钟已设置: ${course.name} at $preStartTime")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "  无法设置预启动服务闹钟: ${e.message}")
-        }
-    }
-    
-    private fun cancelOngoingNotifications() {
-        notificationManager.cancel(NOTIFICATION_ID_ONGOING)
-        LiveUpdateService.stop(context)
-        Log.d(TAG, "已取消上课中通知")
+        alarmScheduler.schedulePreStartServiceAlarm(course, preStartTime)
     }
     
     private fun schedulePreCheckAlarm(course: Course, preCheckTime: LocalTime) {
-        val preCheckDateTime = LocalDateTime.of(LocalDate.now(), preCheckTime)
-        val triggerTime = preCheckDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
-
-        Log.d(TAG, "schedulePreCheckAlarm: ${course.name}")
-        Log.d(TAG, "  preCheckTime: $preCheckTime")
-        Log.d(TAG, "  triggerTime(ms): $triggerTime")
-        Log.d(TAG, "  currentTime(ms): ${System.currentTimeMillis()}")
-
-        if (triggerTime <= System.currentTimeMillis()) {
-            Log.d(TAG, "  触发时间已过，跳过")
-            return
-        }
-
-        val intent = Intent(context, DailyRescheduleReceiver::class.java).apply {
-            action = ACTION_DAILY_RESCHEDULE
-        }
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            course.id.hashCode() + 50000,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        try {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerTime,
-                pendingIntent
-            )
-            Log.i(TAG, "  课前检查闹钟已设置：${course.name} at $preCheckTime")
-        } catch (e: Exception) {
-            Log.e(TAG, "  无法设置课前检查闹钟：${e.message}")
-        }
+        alarmScheduler.schedulePreCheckAlarm(course, preCheckTime)
     }
 
     suspend fun scheduleAutoSilentTasks() {
         Log.i(TAG, "========== 开始调度自动静音任务 ==========")
         
+        alarmScheduler.cancelAllSilentAlarms()
+
         val autoSilentEnabled = settingsDataStore.getAutoSilentEnabled()
         Log.d(TAG, "自动静音开关: $autoSilentEnabled")
         
@@ -360,21 +212,21 @@ class CourseNotificationManager @Inject constructor(
         Log.d(TAG, "静音提前时间: $advanceTime 分钟")
 
         val today = LocalDate.now()
-        val currentWeekB = settingsDataStore.getCurrentWeek(PersonType.PERSON_B).first()
+        val currentWeekA = settingsDataStore.getCurrentWeek(PersonType.PERSON_A).first()
         Log.d(TAG, "当前日期: $today, 星期${today.dayOfWeek.value}")
-        Log.d(TAG, "当前周(PersonB): $currentWeekB")
+        Log.d(TAG, "当前周(PersonA): $currentWeekA")
 
-        val personBCourses = courseDao.getCoursesForDaySync(
+        val personACourses = courseDao.getCoursesForDaySync(
             dayOfWeek = today.dayOfWeek.value,
-            personType = PersonType.PERSON_B
-        ).filter { it.isInWeek(currentWeekB) }
+            personType = PersonType.PERSON_A
+        ).filter { it.isInWeek(currentWeekA) }
         
-        Log.d(TAG, "今日课程数: ${personBCourses.size}")
+        Log.d(TAG, "今日课程数: ${personACourses.size}")
 
         val currentTime = LocalTime.now()
         Log.d(TAG, "当前时间: $currentTime")
         
-        val activeAndUpcomingCourses = personBCourses
+        val activeAndUpcomingCourses = personACourses
             .filter { course ->
                 val courseEndTime = LocalTime.of(course.endHour, course.endMinute)
                 courseEndTime.isAfter(currentTime)
@@ -388,301 +240,63 @@ class CourseNotificationManager @Inject constructor(
         }
 
         for (course in activeAndUpcomingCourses) {
+            if (course.duration <= 0) continue
             val courseStartTime = LocalTime.of(course.startHour, course.startMinute)
             val courseEndTime = LocalTime.of(course.endHour, course.endMinute)
             val silentStartTime = courseStartTime.minusMinutes(advanceTime.toLong())
             
-            val delayToSilentStart = java.time.Duration.between(currentTime, silentStartTime).toMinutes()
-            val delayToCourseStart = java.time.Duration.between(currentTime, courseStartTime).toMinutes()
-            val delayToEnd = java.time.Duration.between(currentTime, courseEndTime).toMinutes()
-            
+            val silentStartDateTime = LocalDateTime.of(today, silentStartTime)
             val courseEndDateTime = LocalDateTime.of(today, courseEndTime)
             val endTimeMillis = courseEndDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
+            
+            val delayToSilentStart = java.time.Duration.between(currentTime, silentStartTime).toMinutes()
+            val delayToEnd = java.time.Duration.between(currentTime, courseEndTime).toMinutes()
             
             Log.d(TAG, "----------")
             Log.d(TAG, "课程: ${course.name}")
             Log.d(TAG, "  课程开始时间: $courseStartTime")
             Log.d(TAG, "  静音开始时间: $silentStartTime (提前 ${advanceTime} 分钟)")
             Log.d(TAG, "  延迟到静音开始: $delayToSilentStart 分钟")
-            Log.d(TAG, "  延迟到课程开始: $delayToCourseStart 分钟")
             Log.d(TAG, "  课程结束时间: $courseEndTime, 延迟: $delayToEnd 分钟")
             Log.d(TAG, "  结束时间戳: $endTimeMillis")
             
-            if (delayToEnd <= 0) {
-                Log.d(TAG, "  课程已结束，跳过")
+            if (delayToSilentStart <= 0 && delayToEnd <= 0) {
+                Log.d(TAG, "  静音开始时间和课程结束时间都已过，跳过")
                 continue
             }
             
             if (delayToSilentStart > 0) {
-                scheduleSilentStartAlarm(course, delayToSilentStart, endTimeMillis)
-                scheduleSilentEndAlarm(course, delayToEnd)
+                scheduleSilentStartAlarm(course, silentStartDateTime, endTimeMillis)
+                scheduleSilentEndAlarm(course, courseEndDateTime)
                 Log.d(TAG, "  静音开始闹钟已调度，${delayToSilentStart}分钟后触发")
             } else {
                 Log.d(TAG, "  静音开始时间已过，立即触发静音")
-                scheduleSilentStartAlarm(course, 0, endTimeMillis)
-                scheduleSilentEndAlarm(course, delayToEnd)
+                scheduleSilentStartAlarm(course, silentStartDateTime, endTimeMillis)
+                scheduleSilentEndAlarm(course, courseEndDateTime)
             }
         }
         
         Log.i(TAG, "========== 自动静音任务调度完成 ==========")
     }
     
-    private fun scheduleSilentStartAlarm(course: Course, delayMinutes: Long, endTimeMillis: Long = 0L) {
-        if (delayMinutes < 0) {
-            Log.w(TAG, "scheduleSilentStartAlarm: delayMinutes < 0, 跳过")
-            return
-        }
-        
-        if (delayMinutes == 0L) {
-            Log.i(TAG, "scheduleSilentStartAlarm: 立即触发静音 - ${course.name}")
-            val intent = Intent(context, SilentModeReceiver::class.java).apply {
-                action = SilentModeReceiver.ACTION_SILENT_START
-                putExtra(SilentModeReceiver.EXTRA_COURSE_ID, course.id)
-                putExtra(SilentModeReceiver.EXTRA_COURSE_NAME, course.name)
-                putExtra(SilentModeReceiver.EXTRA_END_TIME, endTimeMillis)
-            }
-            context.sendBroadcast(intent)
-            return
-        }
-        
-        val triggerTime = System.currentTimeMillis() + delayMinutes * 60 * 1000
-        
-        Log.d(TAG, "scheduleSilentStartAlarm: ${course.name}")
-        Log.d(TAG, "  delayMinutes: $delayMinutes")
-        Log.d(TAG, "  triggerTime: $triggerTime")
-        Log.d(TAG, "  currentTime: ${System.currentTimeMillis()}")
-        Log.d(TAG, "  endTimeMillis: $endTimeMillis")
-
-        val intent = Intent(context, SilentModeReceiver::class.java).apply {
-            action = SilentModeReceiver.ACTION_SILENT_START
-            putExtra(SilentModeReceiver.EXTRA_COURSE_ID, course.id)
-            putExtra(SilentModeReceiver.EXTRA_COURSE_NAME, course.name)
-            putExtra(SilentModeReceiver.EXTRA_END_TIME, endTimeMillis)
-        }
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            course.id.hashCode() + 20000,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (canScheduleExactAlarms()) {
-                    alarmManager.setExactAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerTime,
-                        pendingIntent
-                    )
-                    Log.i(TAG, "  静音开始闹钟已设置(精确): ${course.name}")
-                } else {
-                    alarmManager.setAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerTime,
-                        pendingIntent
-                    )
-                    Log.i(TAG, "  静音开始闹钟已设置(非精确): ${course.name}")
-                }
-            } else {
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerTime,
-                    pendingIntent
-                )
-                Log.i(TAG, "  静音开始闹钟已设置: ${course.name}")
-            }
-        } catch (e: SecurityException) {
-            Log.e(TAG, "  无法设置静音开始闹钟: ${e.message}")
-        }
+    private fun scheduleSilentStartAlarm(course: Course, triggerDateTime: LocalDateTime, endTimeMillis: Long = 0L) {
+        alarmScheduler.scheduleSilentStartAlarm(course, triggerDateTime, endTimeMillis)
     }
     
-    private fun scheduleSilentEndAlarm(course: Course, delayMinutes: Long) {
-        val triggerTime = System.currentTimeMillis() + delayMinutes * 60 * 1000
-        
-        Log.d(TAG, "scheduleSilentEndAlarm: ${course.name}")
-        Log.d(TAG, "  delayMinutes: $delayMinutes")
-        Log.d(TAG, "  triggerTime: $triggerTime")
-
-        val intent = Intent(context, SilentModeReceiver::class.java).apply {
-            action = SilentModeReceiver.ACTION_SILENT_END
-            putExtra(SilentModeReceiver.EXTRA_COURSE_ID, course.id)
-            putExtra(SilentModeReceiver.EXTRA_COURSE_NAME, course.name)
-        }
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            course.id.hashCode() + 30000,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (canScheduleExactAlarms()) {
-                    alarmManager.setExactAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerTime,
-                        pendingIntent
-                    )
-                    Log.i(TAG, "  静音结束闹钟已设置(精确): ${course.name}")
-                } else {
-                    alarmManager.setAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerTime,
-                        pendingIntent
-                    )
-                    Log.i(TAG, "  静音结束闹钟已设置(非精确): ${course.name}")
-                }
-            } else {
-                alarmManager.setAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerTime,
-                    pendingIntent
-                )
-                Log.i(TAG, "  静音结束闹钟已设置: ${course.name}")
-            }
-        } catch (e: SecurityException) {
-            Log.e(TAG, "  无法设置静音结束闹钟: ${e.message}")
-        }
+    private fun scheduleSilentEndAlarm(course: Course, triggerDateTime: LocalDateTime) {
+        alarmScheduler.scheduleSilentEndAlarm(course, triggerDateTime)
     }
 
     private fun scheduleReminderWithAlarm(course: Course, reminderTime: LocalTime, advanceMinutes: Int) {
-        val reminderDateTime = LocalDateTime.of(LocalDate.now(), reminderTime)
-        val triggerTime = reminderDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
-
-        Log.d(TAG, "scheduleReminderWithAlarm: ${course.name}")
-        Log.d(TAG, "  reminderDateTime: $reminderDateTime")
-        Log.d(TAG, "  triggerTime(ms): $triggerTime")
-        Log.d(TAG, "  currentTime(ms): ${System.currentTimeMillis()}")
-
-        if (triggerTime <= System.currentTimeMillis()) {
-            Log.d(TAG, "  触发时间已过，跳过")
-            return
-        }
-
-        val intent = Intent(context, ReminderAlarmReceiver::class.java).apply {
-            action = ACTION_REMINDER_ALARM
-            putExtra(EXTRA_COURSE_ID, course.id)
-            putExtra("course_name", course.name)
-            putExtra("course_location", course.location ?: "")
-            putExtra("start_hour", course.startHour)
-            putExtra("start_minute", course.startMinute)
-            putExtra("advance_minutes", advanceMinutes)
-        }
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            course.id.hashCode(),
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (canScheduleExactAlarms()) {
-                    scheduleAlarmClock(
-                        triggerTime = triggerTime,
-                        pendingIntent = pendingIntent,
-                        label = "课前提醒: ${course.name}"
-                    )
-                    Log.d(TAG, "  AlarmClock已设置: ${course.name} at $reminderTime")
-                } else {
-                    alarmManager.setAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP,
-                        triggerTime,
-                        pendingIntent
-                    )
-                    Log.d(TAG, "  非精确闹钟已设置(无精确闹钟权限): ${course.name} at $reminderTime")
-                }
-            } else {
-                scheduleAlarmClock(
-                    triggerTime = triggerTime,
-                    pendingIntent = pendingIntent,
-                    label = "课前提醒: ${course.name}"
-                )
-                Log.d(TAG, "  AlarmClock已设置: ${course.name} at $reminderTime")
-            }
-        } catch (e: SecurityException) {
-            Log.e(TAG, "  无法设置闹钟: ${e.message}")
-            scheduleReminderWork(course, reminderTime, advanceMinutes)
-        }
-    }
-    
-    private fun scheduleAlarmClock(triggerTime: Long, pendingIntent: PendingIntent, label: String) {
-        val showIntent = Intent(context, MainActivity::class.java)
-        val showPendingIntent = PendingIntent.getActivity(
-            context, 0, showIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-        
-        val alarmClockInfo = AlarmManager.AlarmClockInfo(
-            triggerTime,
-            showPendingIntent
-        )
-        
-        alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
-        Log.d(TAG, "AlarmClock scheduled: $label at $triggerTime")
-    }
-
-    private fun scheduleReminderWork(course: Course, reminderTime: LocalTime, advanceMinutes: Int) {
-        val currentTime = LocalTime.now()
-        val delayMinutes = java.time.Duration.between(currentTime, reminderTime).toMinutes()
-        
-        if (delayMinutes <= 0) return
-
-        val workData = workDataOf(
-            "course_id" to course.id,
-            "course_name" to course.name,
-            "course_location" to (course.location ?: ""),
-            "person_type" to PersonType.PERSON_B.name,
-            "start_hour" to course.startHour,
-            "start_minute" to course.startMinute,
-            "advance_minutes" to advanceMinutes
-        )
-
-        val workRequest = OneTimeWorkRequestBuilder<ReminderWorker>()
-            .setInitialDelay(delayMinutes, TimeUnit.MINUTES)
-            .setInputData(workData)
-            .build()
-
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            "${WORK_NAME_REMINDER}_${course.id}",
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
-        Log.d(TAG, "  WorkManager任务已设置: ${course.name}, delay=$delayMinutes 分钟")
+        alarmScheduler.scheduleReminderWithAlarm(course, reminderTime, advanceMinutes)
     }
 
     private fun scheduleDailyReschedule() {
-        val tomorrow = LocalDate.now().plusDays(1)
-        val midnight = LocalDateTime.of(tomorrow, LocalTime.MIDNIGHT)
-        val triggerTime = midnight.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
-
-        val intent = Intent(context, DailyRescheduleReceiver::class.java).apply {
-            action = ACTION_DAILY_RESCHEDULE
-        }
-
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            9999,
-            intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        try {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerTime,
-                pendingIntent
-            )
-            Log.d(TAG, "每日重新调度任务已设置: $midnight")
-        } catch (e: Exception) {
-            Log.e(TAG, "设置每日重新调度任务失败", e)
-        }
+        alarmScheduler.scheduleDailyReschedule()
     }
 
     suspend fun showReminderNotification(
+        courseId: Long,
         courseName: String,
         courseLocation: String,
         startHour: Int,
@@ -690,6 +304,7 @@ class CourseNotificationManager @Inject constructor(
         advanceMinutes: Int
     ) {
         Log.d(TAG, "=== showReminderNotification ===")
+        Log.d(TAG, "courseId: $courseId")
         Log.d(TAG, "courseName: $courseName")
         Log.d(TAG, "courseLocation: $courseLocation")
         Log.d(TAG, "startHour: $startHour, startMinute: $startMinute")
@@ -718,14 +333,23 @@ class CourseNotificationManager @Inject constructor(
             pendingIntent = pendingIntent
         )
 
-        notificationManager.notify(NOTIFICATION_ID_REMINDER, notification)
-        Log.d(TAG, "Reminder notification sent: $courseName, id=$NOTIFICATION_ID_REMINDER")
+        val notificationId = REMINDER_NOTIFICATION_ID_BASE + courseId.toInt()
+        activeReminderNotificationIds.add(notificationId)
+        notificationManager.notify(notificationId, notification)
+        Log.d(TAG, "Reminder notification sent: $courseName, id=$notificationId")
+        NotificationDebugLogger.log(NotificationDebugLog(
+            type = NotificationDebugLog.LogType.REMINDER,
+            result = NotificationDebugLog.LogResult.SUCCESS,
+            message = "课前提醒通知已发送",
+            params = mapOf("courseName" to courseName, "startHour" to startHour.toString(), "startMinute" to startMinute.toString())
+        ))
     }
 
     suspend fun showOngoingNotification(
         courseName: String,
         courseLocation: String,
-        remainingMinutes: Int
+        remainingMinutes: Int,
+        totalMinutes: Int
     ) {
         val liveNotificationEnabled = settingsDataStore.getLiveNotificationEnabled()
         val canPostPromoted = canPostPromotedNotifications()
@@ -759,18 +383,32 @@ class CourseNotificationManager @Inject constructor(
             courseName = courseName,
             location = courseLocation,
             remainingMinutes = remainingMinutes,
-            totalMinutes = 45,
+            totalMinutes = totalMinutes,
             pendingIntent = pendingIntent,
             liveNotificationEnabled = liveNotificationEnabled
         )
 
         notificationManager.notify(NOTIFICATION_ID_ONGOING, notification)
         Log.d(TAG, "通知已发送: $courseName, notificationId=$NOTIFICATION_ID_ONGOING")
+        NotificationDebugLogger.log(NotificationDebugLog(
+            type = NotificationDebugLog.LogType.ONGOING,
+            result = NotificationDebugLog.LogResult.SUCCESS,
+            message = "上课中通知已发送",
+            params = mapOf("courseName" to courseName, "remainingMinutes" to remainingMinutes.toString())
+        ))
     }
 
     fun cancelReminderNotifications() {
         WorkManager.getInstance(context).cancelAllWorkByTag(WORK_NAME_REMINDER)
-        notificationManager.cancel(NOTIFICATION_ID_REMINDER)
+        for (id in activeReminderNotificationIds) {
+            notificationManager.cancel(id)
+        }
+        activeReminderNotificationIds.clear()
+        NotificationDebugLogger.log(NotificationDebugLog(
+            type = NotificationDebugLog.LogType.CANCEL_ALL,
+            result = NotificationDebugLog.LogResult.SUCCESS,
+            message = "已取消所有提醒通知"
+        ))
     }
 
     fun cancelOngoingNotification() {
@@ -779,7 +417,7 @@ class CourseNotificationManager @Inject constructor(
     }
     
     fun startLiveUpdateService() {
-        if (!LiveUpdateService.isServiceRunning()) {
+        if (!LiveUpdateService.isServiceRunning(context)) {
             LiveUpdateService.start(context)
         }
     }
@@ -800,20 +438,20 @@ class CourseNotificationManager @Inject constructor(
         }
         
         val today = LocalDate.now()
-        val currentWeekB = settingsDataStore.getCurrentWeek(PersonType.PERSON_B).first()
+        val currentWeekA = settingsDataStore.getCurrentWeek(PersonType.PERSON_A).first()
         val currentTime = LocalTime.now()
         
         Log.d(TAG, "当前日期: $today, 星期${today.dayOfWeek.value}")
-        Log.d(TAG, "当前周(PersonB): $currentWeekB")
+        Log.d(TAG, "当前周(PersonA): $currentWeekA")
         
-        val personBCourses = courseDao.getCoursesForDaySync(
+        val personACourses = courseDao.getCoursesForDaySync(
             dayOfWeek = today.dayOfWeek.value,
-            personType = PersonType.PERSON_B
-        ).filter { it.isInWeek(currentWeekB) }
+            personType = PersonType.PERSON_A
+        ).filter { it.isInWeek(currentWeekA) }
         
-        Log.d(TAG, "今日课程数: ${personBCourses.size}")
+        Log.d(TAG, "今日课程数: ${personACourses.size}")
         
-        for (course in personBCourses) {
+        for (course in personACourses) {
             val courseStartTime = LocalTime.of(course.startHour, course.startMinute)
             val courseEndTime = LocalTime.of(course.endHour, course.endMinute)
             
@@ -833,7 +471,8 @@ class CourseNotificationManager @Inject constructor(
                     courseLocation = course.location ?: "",
                     remainingMinutes = remainingMinutes,
                     endHour = course.endHour,
-                    endMinute = course.endMinute
+                    endMinute = course.endMinute,
+                    totalMinutes = course.duration
                 )
                 
                 Log.i(TAG, "LiveUpdateService 已启动")

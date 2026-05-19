@@ -2,9 +2,14 @@ package com.duoschedule.ui.edit
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.TweenSpec
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -16,6 +21,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -30,6 +37,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.PersonType
@@ -38,13 +46,19 @@ import com.duoschedule.ui.settings.components.SettingsDefaults
 import com.duoschedule.ui.settings.components.SettingsSection
 import com.duoschedule.ui.theme.Separator
 import com.duoschedule.ui.theme.*
+import com.duoschedule.ui.edit.CustomTimePickerBottomSheet
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.platform.LocalDensity
+
+private val ContainerTransformSpring: SpringSpec<Dp> = spring(dampingRatio = 0.9f, stiffness = 600f)
+private val MicroTween: TweenSpec<Float> = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,8 +80,10 @@ fun CourseEditScreen(
 
     val weekPickerState = rememberModalBottomSheetState()
     val periodPickerState = rememberModalBottomSheetState()
+    val customTimePickerState = rememberModalBottomSheetState()
     var showWeekPicker by remember { mutableStateOf(false) }
     var showPeriodPicker by remember { mutableStateOf(false) }
+    var showCustomTimePicker by remember { mutableStateOf(false) }
 
     val darkTheme = LocalDarkTheme.current
     val labelsPrimary = getLabelsVibrantPrimary()
@@ -99,6 +115,7 @@ fun CourseEditScreen(
     var showTeacherSuggestions by remember { mutableStateOf(false) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             CourseEditTopBar(
                 isEditing = state.isEditing,
@@ -109,11 +126,24 @@ fun CourseEditScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
+    val scrollBackdrop = rememberLayerBackdrop()
+    val lazyListState = rememberLazyListState()
+    val scrollOffset by remember {
+        derivedStateOf {
+            if (lazyListState.firstVisibleItemIndex > 0) {
+                lazyListState.firstVisibleItemScrollOffset + 1
+            } else {
+                lazyListState.firstVisibleItemScrollOffset
+            }
+        }
+    }
+    Box(modifier = Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding())) {
         LazyColumn(
+            state = lazyListState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(top = Spacing.md, bottom = Spacing.iOS26.groupSpacing),
+                .layerBackdrop(scrollBackdrop),
+            contentPadding = PaddingValues(top = Spacing.md, bottom = Spacing.iOS26.groupSpacing + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
             verticalArrangement = Arrangement.spacedBy(Spacing.lg)
         ) {
             item {
@@ -166,7 +196,19 @@ fun CourseEditScreen(
                     teacher = state.teacher,
                     teacherHistory = teacherHistory,
                     showTeacherSuggestions = showTeacherSuggestions,
-                    onPeriodClick = { showPeriodPicker = true },
+                    isCustomTime = state.isCustomTime,
+                    customStartHour = state.customStartHour,
+                    customStartMinute = state.customStartMinute,
+                    customEndHour = state.customEndHour,
+                    customEndMinute = state.customEndMinute,
+                    onTimeModeChange = viewModel::setTimeMode,
+                    onPeriodClick = {
+                        if (state.isCustomTime) {
+                            showCustomTimePicker = true
+                        } else {
+                            showPeriodPicker = true
+                        }
+                    },
                     onWeekClick = { showWeekPicker = true },
                     onLocationChange = viewModel::setLocation,
                     onTeacherChange = { 
@@ -184,6 +226,8 @@ fun CourseEditScreen(
                 Spacer(modifier = Modifier.height(Spacing.xxl))
             }
         }
+        ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollOffset)
+    }
     }
 
     if (showWeekPicker) {
@@ -208,6 +252,22 @@ fun CourseEditScreen(
             },
             onDismiss = { showPeriodPicker = false },
             sheetState = periodPickerState
+        )
+    }
+
+    if (showCustomTimePicker) {
+        CustomTimePickerBottomSheet(
+            selectedDayOfWeek = state.dayOfWeek,
+            startHour = state.customStartHour,
+            startMinute = state.customStartMinute,
+            endHour = state.customEndHour,
+            endMinute = state.customEndMinute,
+            onSelectionChange = { dayOfWeek, startHour, startMinute, endHour, endMinute ->
+                viewModel.setDayOfWeek(dayOfWeek)
+                viewModel.setCustomTime(startHour, startMinute, endHour, endMinute)
+            },
+            onDismiss = { showCustomTimePicker = false },
+            sheetState = customTimePickerState
         )
     }
 
@@ -362,9 +422,13 @@ private fun CourseNameSection(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            val filteredHistory = courseHistory.filter {
-                it.name.contains(name, ignoreCase = true) && it.name != name
-            }.take(3)
+            val filteredHistory by remember {
+                derivedStateOf {
+                    courseHistory.filter {
+                        it.name.contains(name, ignoreCase = true) && it.name != name
+                    }.take(3)
+                }
+            }
 
             if (filteredHistory.isNotEmpty()) {
                 Column(modifier = Modifier.padding(top = Spacing.md)) {
@@ -400,8 +464,8 @@ private fun PersonTypeSection(
         modifier = modifier
     ) {
         val personTypeOptions = listOf(
-            SegmentOption(PersonType.PERSON_B, "我的课表"),
-            SegmentOption(PersonType.PERSON_A, "Ta 的课表")
+            SegmentOption(PersonType.PERSON_A, "我的课表"),
+            SegmentOption(PersonType.PERSON_B, "Ta的课表")
         )
 
         SegmentedControl(
@@ -423,6 +487,12 @@ private fun CourseDetailsSection(
     teacher: String,
     teacherHistory: List<String>,
     showTeacherSuggestions: Boolean,
+    isCustomTime: Boolean,
+    customStartHour: Int,
+    customStartMinute: Int,
+    customEndHour: Int,
+    customEndMinute: Int,
+    onTimeModeChange: (Boolean) -> Unit,
     onPeriodClick: () -> Unit,
     onWeekClick: () -> Unit,
     onLocationChange: (String) -> Unit,
@@ -434,10 +504,25 @@ private fun CourseDetailsSection(
         title = "课程详情",
         modifier = modifier
     ) {
+        SegmentedControl(
+            options = listOf(
+                SegmentOption(false, "按课节"),
+                SegmentOption(true, "自定义时间")
+            ),
+            selectedOption = isCustomTime,
+            onOptionSelected = onTimeModeChange
+        )
+
+        Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
+
         CourseEditNavigationRow(
             icon = Icons.Default.Schedule,
             title = "上课时间",
-            value = getPeriodDisplayText(dayOfWeek, startPeriod, endPeriod),
+            value = if (isCustomTime) {
+                getCustomTimeDisplayText(dayOfWeek, customStartHour, customStartMinute, customEndHour, customEndMinute)
+            } else {
+                getPeriodDisplayText(dayOfWeek, startPeriod, endPeriod)
+            },
             iconBackgroundColor = IOSColors.Blue,
             onClick = onPeriodClick
         )
@@ -487,7 +572,7 @@ private fun CourseEditNavigationRow(
     
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing),
+        animationSpec = MicroTween,
         label = "row_scale"
     )
     
@@ -666,9 +751,13 @@ private fun TeacherInputRow(
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            val filteredTeachers = teacherHistory.filter {
-                it.contains(teacher, ignoreCase = true) && it != teacher
-            }.take(3)
+            val filteredTeachers by remember {
+                derivedStateOf {
+                    teacherHistory.filter {
+                        it.contains(teacher, ignoreCase = true) && it != teacher
+                    }.take(3)
+                }
+            }
 
             if (filteredTeachers.isNotEmpty()) {
                 Row(
@@ -703,7 +792,7 @@ private fun SuggestionItem(
     
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing),
+        animationSpec = MicroTween,
         label = "suggestion_scale"
     )
     
@@ -738,7 +827,7 @@ private fun SuggestionChip(
     
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing),
+        animationSpec = MicroTween,
         label = "chip_scale"
     )
     
@@ -766,6 +855,14 @@ private fun getPeriodDisplayText(dayOfWeek: Int, startPeriod: Int, endPeriod: In
     } else {
         "$dayText 第${startPeriod}-${endPeriod}节"
     }
+}
+
+private fun getCustomTimeDisplayText(dayOfWeek: Int, startHour: Int, startMinute: Int, endHour: Int, endMinute: Int): String {
+    val days = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
+    val dayText = days.getOrNull(dayOfWeek - 1) ?: "周一"
+    val startTime = String.format("%02d:%02d", startHour, startMinute)
+    val endTime = String.format("%02d:%02d", endHour, endMinute)
+    return "$dayText $startTime-$endTime"
 }
 
 private fun getWeekDisplayText(selectedWeeks: Set<Int>, totalWeeks: Int): String {
@@ -839,8 +936,10 @@ fun CourseEditContent(
 
     val weekPickerState = rememberModalBottomSheetState()
     val periodPickerState = rememberModalBottomSheetState()
+    val customTimePickerState = rememberModalBottomSheetState()
     var showWeekPicker by remember { mutableStateOf(false) }
     var showPeriodPicker by remember { mutableStateOf(false) }
+    var showCustomTimePicker by remember { mutableStateOf(false) }
 
     val darkTheme = LocalDarkTheme.current
     val labelsPrimary = getLabelsVibrantPrimary()
@@ -873,6 +972,21 @@ fun CourseEditContent(
 
     val sharedTransitionScope = LocalSharedTransitionScope.current
 
+    val targetCornerRadius = if (sharedElementSourceKey.isNotEmpty()) {
+        when (animatedVisibilityScope.transition.targetState) {
+            EnterExitState.PreEnter -> BorderRadius.iOS26.xxlarge
+            EnterExitState.Visible -> BorderRadius.none
+            EnterExitState.PostExit -> BorderRadius.iOS26.xxlarge
+        }
+    } else {
+        BorderRadius.none
+    }
+    val cornerRadius by animateDpAsState(
+        targetValue = targetCornerRadius,
+        animationSpec = ContainerTransformSpring,
+        label = "edit_corner"
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -881,15 +995,22 @@ fun CourseEditContent(
                     sharedTransitionScope?.let { scope ->
                         with(scope) {
                             Modifier.sharedElement(
-                                rememberSharedContentState(key = sharedElementSourceKey),
-                                animatedVisibilityScope = animatedVisibilityScope
+                            rememberSharedContentState(key = sharedElementSourceKey),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ -> spring(dampingRatio = 0.9f, stiffness = 600f) },
+                            renderInOverlayDuringTransition = true,
+                            clipInOverlayDuringTransition = OverlayClip(
+                                ContinuousRoundedRectangle(0.dp)
                             )
+                        )
                         }
                     } ?: Modifier
                 } else Modifier
             )
+            .clip(ContinuousRoundedRectangle(cornerRadius.coerceAtLeast(0.dp)))
     ) {
         Scaffold(
+            contentWindowInsets = WindowInsets(0),
             topBar = {
                 CourseEditTopBar(
                     isEditing = state.isEditing,
@@ -900,11 +1021,24 @@ fun CourseEditContent(
             },
             containerColor = MaterialTheme.colorScheme.background
         ) { paddingValues ->
+        val scrollBackdrop = rememberLayerBackdrop()
+        val lazyListState = rememberLazyListState()
+        val scrollOffset by remember {
+            derivedStateOf {
+                if (lazyListState.firstVisibleItemIndex > 0) {
+                    lazyListState.firstVisibleItemScrollOffset + 1
+                } else {
+                    lazyListState.firstVisibleItemScrollOffset
+                }
+            }
+        }
+        Box(modifier = Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding())) {
             LazyColumn(
+                state = lazyListState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(top = Spacing.md, bottom = Spacing.iOS26.groupSpacing),
+                    .layerBackdrop(scrollBackdrop),
+                contentPadding = PaddingValues(top = Spacing.md, bottom = Spacing.iOS26.groupSpacing + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg)
             ) {
                 item {
@@ -957,7 +1091,19 @@ fun CourseEditContent(
                         teacher = state.teacher,
                         teacherHistory = teacherHistory,
                         showTeacherSuggestions = showTeacherSuggestions,
-                        onPeriodClick = { showPeriodPicker = true },
+                        isCustomTime = state.isCustomTime,
+                        customStartHour = state.customStartHour,
+                        customStartMinute = state.customStartMinute,
+                        customEndHour = state.customEndHour,
+                        customEndMinute = state.customEndMinute,
+                        onTimeModeChange = viewModel::setTimeMode,
+                        onPeriodClick = {
+                            if (state.isCustomTime) {
+                                showCustomTimePicker = true
+                            } else {
+                                showPeriodPicker = true
+                            }
+                        },
                         onWeekClick = { showWeekPicker = true },
                         onLocationChange = viewModel::setLocation,
                         onTeacherChange = { 
@@ -975,6 +1121,8 @@ fun CourseEditContent(
                     Spacer(modifier = Modifier.height(Spacing.xxl))
                 }
             }
+            ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollOffset)
+        }
         }
     }
 
@@ -1000,6 +1148,22 @@ fun CourseEditContent(
             },
             onDismiss = { showPeriodPicker = false },
             sheetState = periodPickerState
+        )
+    }
+
+    if (showCustomTimePicker) {
+        CustomTimePickerBottomSheet(
+            selectedDayOfWeek = state.dayOfWeek,
+            startHour = state.customStartHour,
+            startMinute = state.customStartMinute,
+            endHour = state.customEndHour,
+            endMinute = state.customEndMinute,
+            onSelectionChange = { dayOfWeek, startHour, startMinute, endHour, endMinute ->
+                viewModel.setDayOfWeek(dayOfWeek)
+                viewModel.setCustomTime(startHour, startMinute, endHour, endMinute)
+            },
+            onDismiss = { showCustomTimePicker = false },
+            sheetState = customTimePickerState
         )
     }
 

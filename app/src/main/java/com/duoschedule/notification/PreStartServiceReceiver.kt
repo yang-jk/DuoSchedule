@@ -14,7 +14,7 @@ class PreStartServiceReceiver : BroadcastReceiver() {
         if (intent.action == ACTION_PRE_START) {
             Log.i(TAG, "预启动前台服务，确保课程开始时服务已就绪")
             
-            if (!LiveUpdateService.isServiceRunning()) {
+            if (!LiveUpdateService.isServiceRunning(context)) {
                 LiveUpdateService.preStart(context)
                 Log.i(TAG, "LiveUpdateService 预启动成功")
             } else {

@@ -43,8 +43,6 @@ import com.kyant.backdrop.shadow.Shadow
 import com.kyant.shapes.Capsule
 import kotlinx.coroutines.flow.collectLatest
 
-internal val LocalToggleShouldAnimate = androidx.compose.runtime.compositionLocalOf { false }
-
 @Composable
 fun LiquidToggle(
     checked: Boolean,
@@ -110,7 +108,7 @@ fun LiquidToggle(
                 val target = if (isChecked) 1f else 0f
                 if (target != fraction) {
                     fraction = target
-                    dampedDragAnimation.animateToValue(target)
+                    dampedDragAnimation.snapToValue(target)
                 }
             }
     }

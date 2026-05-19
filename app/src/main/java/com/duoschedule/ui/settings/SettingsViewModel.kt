@@ -1,16 +1,23 @@
 package com.duoschedule.ui.settings
 
+import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import java.io.File
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.duoschedule.data.importexport.*
+import com.duoschedule.data.local.CourseDao
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.ThemeMode
 import com.duoschedule.data.model.TodayCourseDisplayMode
 import com.duoschedule.data.repository.CourseRepository
+import com.duoschedule.notification.AlarmScheduler
+import com.duoschedule.notification.BootReceiverManager
 import com.duoschedule.notification.CourseNotificationManager
+import com.duoschedule.notification.RingerModeManager
 import com.duoschedule.notification.SilentModeType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -21,14 +28,18 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val repository: CourseRepository,
-    private val notificationManager: CourseNotificationManager
+    private val notificationManager: CourseNotificationManager,
+    private val alarmScheduler: AlarmScheduler,
+    private val ringerModeManager: RingerModeManager,
+    private val courseDao: CourseDao,
+    private val application: Application
 ) : ViewModel() {
 
     val personAName: StateFlow<String> = repository.getPersonAName()
-        .stateIn(viewModelScope, SharingStarted.Lazily, "Ta")
+        .stateIn(viewModelScope, SharingStarted.Lazily, "我")
 
     val personBName: StateFlow<String> = repository.getPersonBName()
-        .stateIn(viewModelScope, SharingStarted.Lazily, "我")
+        .stateIn(viewModelScope, SharingStarted.Lazily, "Ta")
 
     val personASemesterStart: StateFlow<LocalDate> = repository.getSemesterStartDate(PersonType.PERSON_A)
         .stateIn(viewModelScope, SharingStarted.Lazily, LocalDate.now())
@@ -124,9 +135,13 @@ class SettingsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Lazily, 11)
 
     val predictiveBackEnabled: StateFlow<Boolean> = repository.getPredictiveBackEnabled()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val singleModeEnabled: StateFlow<Boolean> = repository.getSingleModeEnabled()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val hasAnyCourses: StateFlow<Boolean> = repository.getAllCourses()
+        .map { it.isNotEmpty() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun setSemesterStartDate(personType: PersonType, date: LocalDate) {
@@ -193,18 +208,26 @@ class SettingsViewModel @Inject constructor(
     fun setNotificationEnabled(enabled: Boolean) {
         viewModelScope.launch {
             repository.setNotificationEnabled(enabled)
+            if (enabled) {
+                notificationManager.scheduleReminderNotifications()
+            } else {
+                notificationManager.cancelReminderNotifications()
+                notificationManager.cancelOngoingNotification()
+            }
         }
     }
 
     fun setNotificationAdvanceTime(minutes: Int) {
         viewModelScope.launch {
             repository.setNotificationAdvanceTime(minutes)
+            notificationManager.scheduleReminderNotifications()
         }
     }
 
     fun setLiveNotificationEnabled(enabled: Boolean) {
         viewModelScope.launch {
             repository.setLiveNotificationEnabled(enabled)
+            notificationManager.scheduleReminderNotifications()
         }
     }
 
@@ -229,6 +252,14 @@ class SettingsViewModel @Inject constructor(
     fun setAutoSilentEnabled(enabled: Boolean) {
         viewModelScope.launch {
             repository.setAutoSilentEnabled(enabled)
+            if (!enabled) {
+                alarmScheduler.cancelAllSilentAlarms()
+                if (ringerModeManager.isAutoSilentActive()) {
+                    ringerModeManager.restoreRingerMode()
+                    ringerModeManager.clearAutoSilentState()
+                }
+            }
+            notificationManager.scheduleAutoSilentTasks()
         }
     }
 
@@ -241,6 +272,7 @@ class SettingsViewModel @Inject constructor(
     fun setAutoSilentAdvanceTime(minutes: Int) {
         viewModelScope.launch {
             repository.setAutoSilentAdvanceTime(minutes)
+            notificationManager.scheduleAutoSilentTasks()
         }
     }
 
@@ -271,6 +303,7 @@ class SettingsViewModel @Inject constructor(
     fun setPersonSemesterStart(personType: PersonType, date: LocalDate) {
         viewModelScope.launch {
             repository.setSemesterStartDate(personType, date)
+            repository.setManualWeekOverride(personType, false)
             val totalWeeks = repository.getTotalWeeks(personType).first()
             val calculatedWeek = repository.calculateCurrentWeek(date, totalWeeks)
             repository.setCurrentWeek(personType, calculatedWeek)
@@ -280,6 +313,7 @@ class SettingsViewModel @Inject constructor(
     fun setPersonTotalWeeks(personType: PersonType, weeks: Int) {
         viewModelScope.launch {
             repository.setTotalWeeks(personType, weeks)
+            repository.setManualWeekOverride(personType, false)
             val startDate = repository.getSemesterStartDate(personType).first()
             val calculatedWeek = repository.calculateCurrentWeek(startDate, weeks)
             repository.setCurrentWeek(personType, calculatedWeek)
@@ -288,6 +322,7 @@ class SettingsViewModel @Inject constructor(
 
     fun setPersonCurrentWeek(personType: PersonType, week: Int) {
         viewModelScope.launch {
+            repository.setManualWeekOverride(personType, true)
             repository.setCurrentWeek(personType, week)
         }
     }
@@ -301,6 +336,7 @@ class SettingsViewModel @Inject constructor(
     fun setReminderMinutesBefore(minutes: Int) {
         viewModelScope.launch {
             repository.setNotificationAdvanceTime(minutes)
+            notificationManager.scheduleReminderNotifications()
         }
     }
 
@@ -361,7 +397,8 @@ class SettingsViewModel @Inject constructor(
                 settingsA = settingsA,
                 settingsB = settingsB,
                 personAName = personANameValue,
-                personBName = personBNameValue
+                personBName = personBNameValue,
+                swapPersons = true
             )
             
             Result.success(file)
@@ -413,7 +450,8 @@ class SettingsViewModel @Inject constructor(
                 settingsA = settingsA,
                 settingsB = settingsB,
                 personAName = personANameValue,
-                personBName = personBNameValue
+                personBName = personBNameValue,
+                swapPersons = true
             )
         } catch (e: Exception) {
             Result.failure(e)
@@ -425,7 +463,7 @@ class SettingsViewModel @Inject constructor(
         uri: Uri,
         targetPerson: PersonType? = null
     ): ImportResult {
-        val effectivePerson = targetPerson ?: PersonType.PERSON_B
+        val effectivePerson = targetPerson ?: PersonType.PERSON_A
         val periodTimes = getPeriodTimes(effectivePerson).first()
         val totalWeeks = getTotalWeeks(effectivePerson).first()
         return CsvExporter.importFromCsv(context, uri, targetPerson, periodTimes, totalWeeks)
@@ -446,12 +484,85 @@ class SettingsViewModel @Inject constructor(
         return EducationSystemImporter.loginAndGetCourses(credentials, targetPerson)
     }
 
+    private suspend fun createPreImportBackup(): File? {
+        return try {
+            val allCourses = repository.getAllCourses().first()
+            if (allCourses.isEmpty()) return null
+
+            val settingsA = ScheduleSettingsExport(
+                semesterStartDate = repository.getSemesterStartDate(PersonType.PERSON_A).first().toEpochDay(),
+                totalWeeks = repository.getTotalWeeks(PersonType.PERSON_A).first(),
+                currentWeek = repository.getCurrentWeek(PersonType.PERSON_A).first(),
+                totalPeriods = repository.getTotalPeriods(PersonType.PERSON_A).first(),
+                periodTimes = repository.getPeriodTimes(PersonType.PERSON_A).first()
+            )
+            val settingsB = ScheduleSettingsExport(
+                semesterStartDate = repository.getSemesterStartDate(PersonType.PERSON_B).first().toEpochDay(),
+                totalWeeks = repository.getTotalWeeks(PersonType.PERSON_B).first(),
+                currentWeek = repository.getCurrentWeek(PersonType.PERSON_B).first(),
+                totalPeriods = repository.getTotalPeriods(PersonType.PERSON_B).first(),
+                periodTimes = repository.getPeriodTimes(PersonType.PERSON_B).first()
+            )
+            val personANameValue = repository.getPersonAName().first()
+            val personBNameValue = repository.getPersonBName().first()
+
+            val backupDir = File(application.filesDir, "backups")
+            if (!backupDir.exists()) backupDir.mkdirs()
+
+            val timestamp = java.time.LocalDateTime.now().format(
+                java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
+            )
+            val backupFile = File(backupDir, "backup_pre_import_$timestamp.csv")
+
+            CsvExporter.exportToFile(
+                file = backupFile,
+                courses = allCourses,
+                settingsA = settingsA,
+                settingsB = settingsB,
+                personAName = personANameValue,
+                personBName = personBNameValue
+            )
+
+            cleanupOldBackups(backupDir)
+            backupFile
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun cleanupOldBackups(backupDir: File) {
+        val backupFiles = backupDir.listFiles()?.filter {
+            it.name.startsWith("backup_pre_import_") && it.name.endsWith(".csv")
+        }?.sortedBy { it.name }?.toMutableList() ?: return
+
+        while (backupFiles.size > 5) {
+            backupFiles.first().delete()
+            backupFiles.removeAt(0)
+        }
+    }
+
+    fun getBackupFiles(): List<File> {
+        val backupDir = File(application.filesDir, "backups")
+        if (!backupDir.exists()) return emptyList()
+        return backupDir.listFiles()
+            ?.filter { it.name.startsWith("backup_pre_import_") && it.name.endsWith(".csv") }
+            ?.sortedByDescending { it.name }
+            ?: emptyList()
+    }
+
+    fun deleteBackupFile(fileName: String): Boolean {
+        val backupDir = File(application.filesDir, "backups")
+        val file = File(backupDir, fileName)
+        return file.exists() && file.delete()
+    }
+
     suspend fun saveImportedCourses(
         courses: List<CourseImportData>,
         targetPerson: PersonType,
         mergeMode: Boolean
     ): ImportResult {
         return try {
+            createPreImportBackup()
             if (!mergeMode) {
                 repository.deleteCoursesByPerson(targetPerson)
             }
@@ -491,7 +602,9 @@ class SettingsViewModel @Inject constructor(
                 importedCount = importedCount,
                 conflictCount = conflictCount,
                 errors = errors
-            )
+            ).also {
+                BootReceiverManager.updateBootReceiverEnabled(application, courseDao)
+            }
         } catch (e: Exception) {
             ImportResult(
                 success = false,
@@ -510,6 +623,7 @@ class SettingsViewModel @Inject constructor(
         personBName: String?
     ): ImportResult {
         return try {
+            createPreImportBackup()
             if (!mergeMode) {
                 repository.deleteCoursesByPerson(PersonType.PERSON_A)
                 repository.deleteCoursesByPerson(PersonType.PERSON_B)
@@ -595,7 +709,9 @@ class SettingsViewModel @Inject constructor(
                 importedCount = importedCount,
                 conflictCount = conflictCount,
                 errors = errors
-            )
+            ).also {
+                BootReceiverManager.updateBootReceiverEnabled(application, courseDao)
+            }
         } catch (e: Exception) {
             ImportResult(
                 success = false,
@@ -609,6 +725,7 @@ class SettingsViewModel @Inject constructor(
             android.util.Log.i("SettingsViewModel", "=== 测试通知按钮被点击 ===")
             val now = java.time.LocalTime.now()
             notificationManager.showReminderNotification(
+                courseId = 0L,
                 courseName = "测试课程",
                 courseLocation = "测试教室",
                 startHour = now.hour,
@@ -653,14 +770,77 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             android.util.Log.i("SettingsViewModel", "=== 测试上课中通知按钮被点击 ===")
             notificationManager.createNotificationChannels()
+            val now = java.time.LocalTime.now()
+            val endTime = now.plusMinutes(45L)
             com.duoschedule.notification.LiveUpdateService.start(
                 context = context,
                 courseName = "测试课程 - 上课中",
                 courseLocation = "测试教室 -101",
-                remainingMinutes = 45
+                remainingMinutes = 45,
+                endHour = endTime.hour,
+                endMinute = endTime.minute
             )
             android.util.Log.i("SettingsViewModel", "上课中通知服务已启动")
         }
+    }
+
+    fun testOngoingNotificationWithDuration(context: Context, durationMinutes: Int) {
+        viewModelScope.launch {
+            android.util.Log.i("SettingsViewModel", "=== 测试上课中通知（${durationMinutes}分钟） ===")
+            notificationManager.createNotificationChannels()
+            val now = java.time.LocalTime.now()
+            val endTime = now.plusMinutes(durationMinutes.toLong())
+            com.duoschedule.notification.LiveUpdateService.start(
+                context = context,
+                courseName = "测试课程 - ${durationMinutes}分钟",
+                courseLocation = "测试教室",
+                remainingMinutes = durationMinutes,
+                endHour = endTime.hour,
+                endMinute = endTime.minute
+            )
+        }
+    }
+
+    fun testAutoSilent(context: Context) {
+        viewModelScope.launch {
+            android.util.Log.i("SettingsViewModel", "=== 测试自动静音 ===")
+            val testCourseId = 999999L
+            val endTime = System.currentTimeMillis() + 60_000L
+            val startIntent = Intent(context, com.duoschedule.notification.SilentModeReceiver::class.java).apply {
+                action = com.duoschedule.notification.SilentModeReceiver.ACTION_SILENT_START
+                putExtra(com.duoschedule.notification.SilentModeReceiver.EXTRA_COURSE_ID, testCourseId)
+                putExtra(com.duoschedule.notification.SilentModeReceiver.EXTRA_COURSE_NAME, "测试课程")
+                putExtra(com.duoschedule.notification.SilentModeReceiver.EXTRA_END_TIME, endTime)
+            }
+            context.sendBroadcast(startIntent)
+
+            alarmScheduler.scheduleSilentEndAlarmForTest(
+                courseId = testCourseId,
+                courseName = "测试课程",
+                triggerTimeMillis = endTime
+            )
+        }
+    }
+
+    fun cancelAllTestNotifications() {
+        notificationManager.cancelReminderNotifications()
+        notificationManager.cancelOngoingNotification()
+    }
+
+    fun getScheduledAlarms(): List<com.duoschedule.notification.AlarmScheduler.AlarmInfo> {
+        return alarmScheduler.getScheduledAlarms()
+    }
+
+    fun getDebugLogs(): List<com.duoschedule.notification.NotificationDebugLog> {
+        return com.duoschedule.notification.NotificationDebugLogger.logs
+    }
+
+    fun clearDebugLogs() {
+        com.duoschedule.notification.NotificationDebugLogger.clear()
+    }
+
+    fun getDebugLogsText(): String {
+        return com.duoschedule.notification.NotificationDebugLogger.getLogsText()
     }
     
     suspend fun getExistingCourses(personType: PersonType) = repository.getCoursesByPerson(personType).first()

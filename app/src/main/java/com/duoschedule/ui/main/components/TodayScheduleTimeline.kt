@@ -1,34 +1,52 @@
 package com.duoschedule.ui.main.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import com.kyant.capsule.ContinuousRoundedRectangle
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalDensity
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.TodayCourseDisplayMode
+import com.duoschedule.ui.model.FreeTimeSlot
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
@@ -36,19 +54,9 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 
 private val CARD_MIN_HEIGHT = 72.dp
 private val CARD_SPACING = Spacing.sm
-private val TIMELINE_WIDTH = 48.dp
-
-data class TimeSlot(
-    val time: LocalTime,
-    val coursesA: List<CourseInfo>,
-    val coursesB: List<CourseInfo>,
-    val isCurrentHour: Boolean
-)
 
 data class CourseInfo(
     val course: Course,
@@ -59,6 +67,7 @@ data class CourseInfo(
     val periodText: String = ""
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleList(
     personACourses: List<Course>,
@@ -68,12 +77,15 @@ fun ScheduleList(
     currentMinute: Int,
     periodTimesA: List<String>,
     periodTimesB: List<String>,
+    personAName: String,
+    personBName: String,
+    freeTimeSlots: List<FreeTimeSlot> = emptyList(),
     onCourseClick: (Course, PersonType) -> Unit,
     modifier: Modifier = Modifier,
     backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
-    val allTimeSlots = remember(personACourses, personBCourses, displayMode, currentHour, currentMinute) {
-        calculateTimeSlots(
+    val courseInfos = remember(personACourses, personBCourses, displayMode, currentHour, currentMinute) {
+        calculateCourseInfos(
             personACourses = personACourses,
             personBCourses = personBCourses,
             displayMode = displayMode,
@@ -84,163 +96,146 @@ fun ScheduleList(
         )
     }
 
-    val timeSlots = remember(allTimeSlots, displayMode) {
-        allTimeSlots.filter { slot ->
-            val hasCoursesA = slot.coursesA.isNotEmpty()
-            val hasCoursesB = slot.coursesB.isNotEmpty()
-            when (displayMode) {
-                TodayCourseDisplayMode.BOTH -> hasCoursesA || hasCoursesB
-                TodayCourseDisplayMode.TA_ONLY -> hasCoursesA
-                TodayCourseDisplayMode.SELF_ONLY -> hasCoursesB
-            }
-        }
-    }
+    var showAllSlotsSheet by remember { mutableStateOf(false) }
+    var selectedSlot by remember { mutableStateOf<FreeTimeSlot?>(null) }
+    var showDetailSheet by remember { mutableStateOf(false) }
+    val allSlotsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val detailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(CARD_SPACING)
     ) {
-        timeSlots.forEach { slot ->
-            if (displayMode == TodayCourseDisplayMode.BOTH) {
-                DualColumnTimeSlotRow(
-                    timeSlot = slot,
-                    onCourseClick = onCourseClick,
-                    backdrop = backdrop
-                )
-            } else {
-                SingleColumnTimeSlotRow(
-                    timeSlot = slot,
-                    displayMode = displayMode,
-                    onCourseClick = onCourseClick,
-                    backdrop = backdrop
-                )
-            }
+        if (freeTimeSlots.isNotEmpty()) {
+            FreeTimeSummaryChip(
+                freeTimeSlots = freeTimeSlots,
+                onClick = { showAllSlotsSheet = true },
+                backdrop = backdrop
+            )
         }
+
+        courseInfos.forEach { courseInfo ->
+            val personColor = if (courseInfo.isPersonA) getPersonAColor() else getPersonBColor()
+            val personName = if (courseInfo.isPersonA) personAName.ifEmpty { "我" } else personBName.ifEmpty { "Ta" }
+            TodayCourseCardItem(
+                courseInfo = courseInfo,
+                personColor = personColor,
+                personName = personName,
+                onClick = { onCourseClick(courseInfo.course, courseInfo.course.personType) },
+                modifier = Modifier.fillMaxWidth(),
+                backdrop = backdrop
+            )
+        }
+    }
+
+    if (showAllSlotsSheet && freeTimeSlots.isNotEmpty()) {
+        AllFreeTimeSlotsSheet(
+            slots = freeTimeSlots,
+            sheetState = allSlotsSheetState,
+            onSlotClick = { slot ->
+                showAllSlotsSheet = false
+                selectedSlot = slot
+                showDetailSheet = true
+            },
+            onDismiss = {
+                showAllSlotsSheet = false
+            },
+            backdrop = backdrop
+        )
+    }
+
+    if (showDetailSheet && selectedSlot != null) {
+        FreeTimeDetailSheet(
+            slot = selectedSlot!!,
+            sheetState = detailSheetState,
+            onDismiss = {
+                showDetailSheet = false
+                selectedSlot = null
+            },
+            backdrop = backdrop
+        )
     }
 }
 
 @Composable
-private fun DualColumnTimeSlotRow(
-    timeSlot: TimeSlot,
-    onCourseClick: (Course, PersonType) -> Unit,
+private fun FreeTimeSummaryChip(
+    freeTimeSlots: List<FreeTimeSlot>,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
-    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-    val timeText = timeSlot.time.format(timeFormatter)
-    val labelsTertiary = getLabelsVibrantTertiary()
     val darkTheme = LocalDarkTheme.current
+    val density = LocalDensity.current
+    val selectedColor = getPersonAColor()
+    val labelsSecondary = getLabelsVibrantSecondary()
+    val nearestSlot = freeTimeSlots.first()
+
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = tween(durationMillis = AnimationDuration.Micro, easing = FastOutSlowInEasing),
+        label = "scale"
+    )
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
-    ) {
-        Box(
-            modifier = Modifier.width(TIMELINE_WIDTH),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            Text(
-                text = timeText,
-                style = MaterialTheme.typography.labelSmall,
-                color = labelsTertiary,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-        }
-        
-        Row(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(CARD_SPACING)
-            ) {
-                timeSlot.coursesB.forEach { courseInfo ->
-                    TodayCourseCardItem(
-                        courseInfo = courseInfo,
-                        personColor = getPersonBColor(),
-                        onClick = { onCourseClick(courseInfo.course, PersonType.PERSON_B) },
-                        modifier = Modifier.fillMaxWidth(),
-                        backdrop = backdrop
+        modifier = modifier
+            .fillMaxWidth()
+            .scale(pressScale)
+            .drawBackdrop(
+                backdrop = backdrop,
+                shape = { ContinuousRoundedRectangle(BorderRadius.iOS26.small) },
+                effects = {
+                    vibrancy()
+                    blur(with(density) { 4.dp.toPx() })
+                    lens(
+                        refractionHeight = with(density) { 8.dp.toPx() },
+                        refractionAmount = with(density) { 16.dp.toPx() },
+                        chromaticAberration = true
+                    )
+                },
+                onDrawSurface = {
+                    drawRect(
+                        if (darkTheme) LiquidGlassColors.BottomSheet.Dark.Layer1_Tint.copy(alpha = 0.5f)
+                        else LiquidGlassColors.BottomSheet.Light.Layer1_Tint.copy(alpha = 0.55f)
+                    )
+                    drawRect(
+                        if (darkTheme) LiquidGlassColors.BottomSheet.Dark.Layer2_Base
+                        else LiquidGlassColors.BottomSheet.Light.Layer2_Base,
+                        blendMode = BlendMode.ColorDodge
+                    )
+                    drawRect(
+                        if (darkTheme) LiquidGlassColors.BottomSheet.Dark.GlassEffect
+                        else LiquidGlassColors.BottomSheet.Light.GlassEffect
                     )
                 }
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(CARD_SPACING)
-            ) {
-                timeSlot.coursesA.forEach { courseInfo ->
-                    TodayCourseCardItem(
-                        courseInfo = courseInfo,
-                        personColor = getPersonAColor(),
-                        onClick = { onCourseClick(courseInfo.course, PersonType.PERSON_A) },
-                        modifier = Modifier.fillMaxWidth(),
-                        backdrop = backdrop
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SingleColumnTimeSlotRow(
-    timeSlot: TimeSlot,
-    displayMode: TodayCourseDisplayMode,
-    onCourseClick: (Course, PersonType) -> Unit,
-    backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
-) {
-    val courses = when (displayMode) {
-        TodayCourseDisplayMode.TA_ONLY -> timeSlot.coursesA
-        TodayCourseDisplayMode.SELF_ONLY -> timeSlot.coursesB
-        TodayCourseDisplayMode.BOTH -> emptyList()
-    }
-    
-    val personColor = when (displayMode) {
-        TodayCourseDisplayMode.TA_ONLY -> getPersonAColor()
-        TodayCourseDisplayMode.SELF_ONLY -> getPersonBColor()
-        TodayCourseDisplayMode.BOTH -> Color.Transparent
-    }
-    
-    val personType = when (displayMode) {
-        TodayCourseDisplayMode.TA_ONLY -> PersonType.PERSON_A
-        TodayCourseDisplayMode.SELF_ONLY -> PersonType.PERSON_B
-        TodayCourseDisplayMode.BOTH -> PersonType.PERSON_A
-    }
-
-    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-    val timeText = timeSlot.time.format(timeFormatter)
-    val labelsTertiary = getLabelsVibrantTertiary()
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Box(
-            modifier = Modifier.width(TIMELINE_WIDTH),
-            contentAlignment = Alignment.TopCenter
+            modifier = Modifier
+                .size(20.dp)
+                .background(selectedColor.copy(alpha = if (darkTheme) 0.2f else 0.12f), CircleShape),
+            contentAlignment = Alignment.Center
         ) {
             Text(
-                text = timeText,
-                style = MaterialTheme.typography.labelSmall,
-                color = labelsTertiary,
-                modifier = Modifier.padding(top = 8.dp)
+                text = "🕐",
+                style = MaterialTheme.typography.labelSmall
             )
         }
-        
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(CARD_SPACING)
-        ) {
-            courses.forEach { courseInfo ->
-                TodayCourseCardItem(
-                    courseInfo = courseInfo,
-                    personColor = personColor,
-                    onClick = { onCourseClick(courseInfo.course, personType) },
-                    modifier = Modifier.fillMaxWidth(),
-                    backdrop = backdrop
-                )
-            }
-        }
+        Text(
+            text = "${freeTimeSlots.size}个空闲时段 · 最近 ${nearestSlot.getTimeString()}",
+            style = MaterialTheme.typography.bodySmall,
+            color = labelsSecondary,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -248,6 +243,7 @@ private fun SingleColumnTimeSlotRow(
 private fun TodayCourseCardItem(
     courseInfo: CourseInfo,
     personColor: Color,
+    personName: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
@@ -257,14 +253,27 @@ private fun TodayCourseCardItem(
     val labelsSecondary = getLabelsVibrantSecondary()
     val labelsTertiary = getLabelsVibrantTertiary()
     val density = LocalDensity.current
-    
-    val alpha = if (courseInfo.hasEnded) 0.5f else 1f
+
+    val textPrimaryColor = if (courseInfo.hasEnded) labelsTertiary else labelsPrimary
+    val textSecondaryColor = if (courseInfo.hasEnded) labelsTertiary else labelsSecondary
+
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
+    val pressScale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
         animationSpec = tween(durationMillis = AnimationDuration.Micro, easing = FastOutSlowInEasing),
         label = "scale"
+    )
+
+    val infiniteTransition = rememberInfiniteTransition()
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
     )
 
     val shape = ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
@@ -272,8 +281,7 @@ private fun TodayCourseCardItem(
     Box(
         modifier = modifier
             .heightIn(min = CARD_MIN_HEIGHT)
-            .alpha(alpha)
-            .scale(scale)
+            .scale(pressScale)
             .drawBackdrop(
                 backdrop = backdrop,
                 shape = { shape },
@@ -287,7 +295,22 @@ private fun TodayCourseCardItem(
                     )
                 },
                 onDrawSurface = {
-                    drawRect(if (darkTheme) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.03f))
+                    drawRect(
+                        if (darkTheme) LiquidGlassColors.BottomSheet.Dark.Layer1_Tint.copy(alpha = 0.5f)
+                        else LiquidGlassColors.BottomSheet.Light.Layer1_Tint.copy(alpha = 0.55f)
+                    )
+                    drawRect(
+                        if (darkTheme) LiquidGlassColors.BottomSheet.Dark.Layer2_Base
+                        else LiquidGlassColors.BottomSheet.Light.Layer2_Base,
+                        blendMode = BlendMode.ColorDodge
+                    )
+                    drawRect(
+                        if (darkTheme) LiquidGlassColors.BottomSheet.Dark.GlassEffect
+                        else LiquidGlassColors.BottomSheet.Light.GlassEffect
+                    )
+                    if (courseInfo.isOngoing) {
+                        drawRect(personColor.copy(alpha = 0.04f))
+                    }
                 }
             )
             .clickable(
@@ -296,107 +319,123 @@ private fun TodayCourseCardItem(
                 onClick = onClick
             )
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.md, vertical = Spacing.sm)
         ) {
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .fillMaxHeight()
-                    .background(personColor)
-            )
-            
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = Spacing.md, vertical = Spacing.sm)
-                    .padding(start = 4.dp),
-                verticalArrangement = Arrangement.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(personColor, CircleShape)
+                )
+                Text(
+                    text = personName,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = textSecondaryColor,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = courseInfo.course.name,
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontWeight = FontWeight.SemiBold
                     ),
-                    color = labelsPrimary,
+                    color = textPrimaryColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Text(
+                    text = courseInfo.course.getTimeString(),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = textSecondaryColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    val locationText = courseInfo.course.location
+                    val teacherText = courseInfo.course.teacher
+
+                    if (locationText.isNotBlank() && teacherText.isNotBlank()) {
                         Text(
-                            text = courseInfo.course.location,
+                            text = "$locationText · $teacherText",
                             style = MaterialTheme.typography.bodySmall,
-                            color = labelsSecondary,
+                            color = textSecondaryColor,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
+                            overflow = TextOverflow.Ellipsis
                         )
-                        
+                    } else if (locationText.isNotBlank()) {
                         Text(
-                            text = "·",
+                            text = locationText,
                             style = MaterialTheme.typography.bodySmall,
-                            color = labelsTertiary
+                            color = textSecondaryColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
-                        
+                    } else if (teacherText.isNotBlank()) {
                         Text(
-                            text = courseInfo.course.getEndTimeString(),
+                            text = teacherText,
                             style = MaterialTheme.typography.bodySmall,
-                            color = labelsTertiary,
+                            color = textSecondaryColor,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    
-                    if (courseInfo.periodText.isNotEmpty()) {
-                        Text(
-                            text = courseInfo.periodText,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = labelsTertiary
-                        )
-                    }
                 }
-                
-                if (courseInfo.isOngoing && courseInfo.progress > 0) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        progress = { courseInfo.progress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .clip(ContinuousRoundedRectangle(1.5.dp)),
-                        color = personColor,
-                        trackColor = if (darkTheme) Color.White.copy(alpha = 0.1f) else Color.Black.copy(alpha = 0.06f),
-                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+
+                if (courseInfo.periodText.isNotEmpty()) {
+                    Text(
+                        text = courseInfo.periodText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = labelsTertiary
                     )
                 }
             }
         }
-        
+
         if (courseInfo.isOngoing) {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(6.dp)
                     .size(6.dp)
+                    .scale(pulseScale)
                     .background(personColor, CircleShape)
             )
         }
     }
 }
 
-private fun calculateTimeSlots(
+private fun calculateCourseInfos(
     personACourses: List<Course>,
     personBCourses: List<Course>,
     displayMode: TodayCourseDisplayMode,
@@ -404,34 +443,39 @@ private fun calculateTimeSlots(
     currentMinute: Int,
     periodTimesA: List<String>,
     periodTimesB: List<String>
-): List<TimeSlot> {
-    val currentTime = LocalTime.of(currentHour, currentMinute)
+): List<CourseInfo> {
     val currentMinutes = currentHour * 60 + currentMinute
-    
+
     val allCourses = mutableListOf<Pair<Course, Boolean>>()
-    personACourses.forEach { allCourses.add(it to true) }
-    personBCourses.forEach { allCourses.add(it to false) }
-    
-    val timeMap = mutableMapOf<LocalTime, MutableList<CourseInfo>>()
-    
-    allCourses.forEach { (course, isPersonA) ->
-        val courseStartTime = LocalTime.of(course.startHour, course.startMinute)
-        val courseEndTime = LocalTime.of(course.endHour, course.endMinute)
-        
+
+    when (displayMode) {
+        TodayCourseDisplayMode.SELF_ONLY -> {
+            personACourses.forEach { allCourses.add(it to true) }
+        }
+        TodayCourseDisplayMode.TA_ONLY -> {
+            personBCourses.forEach { allCourses.add(it to false) }
+        }
+        TodayCourseDisplayMode.BOTH -> {
+            personACourses.forEach { allCourses.add(it to true) }
+            personBCourses.forEach { allCourses.add(it to false) }
+        }
+    }
+
+    return allCourses.map { (course, isPersonA) ->
         val courseStartMinutes = course.startHour * 60 + course.startMinute
         val courseEndMinutes = course.endHour * 60 + course.endMinute
-        
+
         val hasEnded = currentMinutes > courseEndMinutes
         val isOngoing = currentMinutes in courseStartMinutes until courseEndMinutes
-        
+
         val progress = if (isOngoing) {
             (currentMinutes - courseStartMinutes).toFloat() / (courseEndMinutes - courseStartMinutes)
         } else 0f
-        
+
         val periodTimes = if (isPersonA) periodTimesA else periodTimesB
         val periodText = getPeriodText(course, periodTimes)
-        
-        val courseInfo = CourseInfo(
+
+        CourseInfo(
             course = course,
             isPersonA = isPersonA,
             hasEnded = hasEnded,
@@ -439,22 +483,13 @@ private fun calculateTimeSlots(
             progress = progress,
             periodText = periodText
         )
-        
-        timeMap.getOrPut(courseStartTime) { mutableListOf() }.add(courseInfo)
-    }
-    
-    return timeMap.keys.sorted().map { time ->
-        val courses = timeMap[time] ?: emptyList()
-        TimeSlot(
-            time = time,
-            coursesA = courses.filter { it.isPersonA },
-            coursesB = courses.filter { !it.isPersonA },
-            isCurrentHour = time.hour == currentHour
-        )
-    }
+    }.sortedBy { it.course.startHour * 60 + it.course.startMinute }
 }
 
 private fun getPeriodText(course: Course, periodTimes: List<String>): String {
+    if (course.isCustomTime) {
+        return ""
+    }
     if (course.startPeriod > 0 && course.endPeriod > 0) {
         return if (course.startPeriod == course.endPeriod) {
             "第${course.startPeriod}节"
@@ -462,15 +497,15 @@ private fun getPeriodText(course: Course, periodTimes: List<String>): String {
             "第${course.startPeriod}-${course.endPeriod}节"
         }
     }
-    
+
     if (periodTimes.isEmpty()) return ""
-    
+
     val courseStartMinutes = course.startHour * 60 + course.startMinute
     val courseEndMinutes = course.endHour * 60 + course.endMinute
-    
+
     var startPeriod = -1
     var endPeriod = -1
-    
+
     for ((index, periodTime) in periodTimes.withIndex()) {
         val parts = periodTime.split("-")
         if (parts.size == 2) {
@@ -481,7 +516,7 @@ private fun getPeriodText(course: Course, periodTimes: List<String>): String {
                     (startParts[1].toIntOrNull() ?: 0)
                 val periodEndMinutes = (endParts[0].toIntOrNull() ?: 0) * 60 +
                     (endParts[1].toIntOrNull() ?: 0)
-                
+
                 if (startPeriod == -1 && courseStartMinutes >= periodStartMinutes && courseStartMinutes < periodEndMinutes) {
                     startPeriod = index + 1
                 }
@@ -491,7 +526,7 @@ private fun getPeriodText(course: Course, periodTimes: List<String>): String {
             }
         }
     }
-    
+
     return if (startPeriod > 0 && endPeriod > 0) {
         if (startPeriod == endPeriod) {
             "第${startPeriod}节"

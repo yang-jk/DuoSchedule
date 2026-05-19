@@ -3,6 +3,7 @@ package com.duoschedule.notification
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.CopyOnWriteArrayList
 
 data class NotificationDebugLog(
     val timestamp: Long = System.currentTimeMillis(),
@@ -15,7 +16,11 @@ data class NotificationDebugLog(
         REMINDER,
         ONGOING,
         SHORT_ONGOING,
-        CANCEL_ALL
+        CANCEL_ALL,
+        ALARM_SCHEDULED,
+        ALARM_TRIGGERED,
+        ALARM_CANCELLED,
+        AUTO_SILENT
     }
     
     enum class LogResult {
@@ -50,10 +55,10 @@ data class NotificationDebugLog(
 
 object NotificationDebugLogger {
     private const val MAX_LOG_SIZE = 50
-    private val _logs = mutableListOf<NotificationDebugLog>()
+    private val _logs = CopyOnWriteArrayList<NotificationDebugLog>()
     val logs: List<NotificationDebugLog> get() = _logs.toList()
     
-    private val listeners = mutableListOf<() -> Unit>()
+    private val listeners = CopyOnWriteArrayList<() -> Unit>()
     
     fun addListener(listener: () -> Unit) {
         listeners.add(listener)
@@ -67,7 +72,6 @@ object NotificationDebugLogger {
         listeners.forEach { it.invoke() }
     }
     
-    @Synchronized
     fun log(log: NotificationDebugLog) {
         _logs.add(0, log)
         if (_logs.size > MAX_LOG_SIZE) {
@@ -76,7 +80,6 @@ object NotificationDebugLogger {
         notifyListeners()
     }
     
-    @Synchronized
     fun clear() {
         _logs.clear()
         notifyListeners()

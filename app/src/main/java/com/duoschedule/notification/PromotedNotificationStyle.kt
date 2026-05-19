@@ -1,7 +1,5 @@
 package com.duoschedule.notification
 
-import org.json.JSONObject
-
 data class PromotedNotificationStyle(
     val collapsedState: CollapsedState,
     val expandedState: ExpandedState
@@ -74,76 +72,12 @@ data class PromotedNotificationStyle(
         val picDark: String = ""
     )
 
-    fun toJson(): String {
-        return JSONObject().apply {
-            put("collapsedState", JSONObject().apply {
-                put("leftIcon", JSONObject().apply {
-                    put("type", collapsedState.leftIcon.type)
-                    put("pic", collapsedState.leftIcon.pic)
-                })
-                put("rightProgress", JSONObject().apply {
-                    put("textInfo", JSONObject().apply {
-                        put("frontTitle", collapsedState.rightProgress.textInfo.frontTitle)
-                        put("title", collapsedState.rightProgress.textInfo.title)
-                        put("content", collapsedState.rightProgress.textInfo.content)
-                        put("showHighlightColor", collapsedState.rightProgress.textInfo.showHighlightColor)
-                        put("narrowFont", collapsedState.rightProgress.textInfo.narrowFont)
-                    })
-                    put("progressInfo", JSONObject().apply {
-                        put("progress", collapsedState.rightProgress.progressInfo.progress)
-                        put("colorReach", collapsedState.rightProgress.progressInfo.colorReach)
-                        put("colorUnReach", collapsedState.rightProgress.progressInfo.colorUnReach)
-                        put("isCCW", collapsedState.rightProgress.progressInfo.isCCW)
-                    })
-                    collapsedState.rightProgress.picInfo?.let {
-                        put("picInfo", JSONObject().apply {
-                            put("type", it.type)
-                            put("pic", it.pic)
-                        })
-                    }
-                })
-            })
-            put("expandedState", JSONObject().apply {
-                put("baseInfo", JSONObject().apply {
-                    put("type", expandedState.baseInfo.type)
-                    put("title", expandedState.baseInfo.title)
-                    put("subTitle", expandedState.baseInfo.subTitle)
-                    put("extraTitle", expandedState.baseInfo.extraTitle)
-                    put("specialTitle", expandedState.baseInfo.specialTitle)
-                    put("content", expandedState.baseInfo.content)
-                    put("subContent", expandedState.baseInfo.subContent)
-                    put("picFunction", expandedState.baseInfo.picFunction)
-                    put("colorTitle", expandedState.baseInfo.colorTitle)
-                    put("colorTitleDark", expandedState.baseInfo.colorTitleDark)
-                    put("colorSubTitle", expandedState.baseInfo.colorSubTitle)
-                    put("colorSubTitleDark", expandedState.baseInfo.colorSubTitleDark)
-                    put("colorExtraTitle", expandedState.baseInfo.colorExtraTitle)
-                    put("colorExtraTitleDark", expandedState.baseInfo.colorExtraTitleDark)
-                    put("colorSpecialTitle", expandedState.baseInfo.colorSpecialTitle)
-                    put("colorSpecialTitleDark", expandedState.baseInfo.colorSpecialTitleDark)
-                    put("colorSpecialBg", expandedState.baseInfo.colorSpecialBg)
-                    put("colorContent", expandedState.baseInfo.colorContent)
-                    put("colorContentDark", expandedState.baseInfo.colorContentDark)
-                    put("colorSubContent", expandedState.baseInfo.colorSubContent)
-                    put("colorSubContentDark", expandedState.baseInfo.colorSubContentDark)
-                    put("showDivider", expandedState.baseInfo.showDivider)
-                    put("showContentDivider", expandedState.baseInfo.showContentDivider)
-                })
-                put("picInfo", JSONObject().apply {
-                    put("type", expandedState.picInfo.type)
-                    put("pic", expandedState.picInfo.pic)
-                    put("picDark", expandedState.picInfo.picDark)
-                })
-            })
-        }.toString()
-    }
-
     companion object {
         fun createOngoingStyle(
             courseName: String,
             location: String,
             remainingMinutes: Int,
-            totalMinutes: Int = 45
+            totalMinutes: Int
         ): PromotedNotificationStyle {
             val progress = if (totalMinutes > 0) {
                 ((totalMinutes - remainingMinutes) * 100 / totalMinutes).coerceIn(0, 100)

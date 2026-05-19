@@ -4,29 +4,39 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.duoschedule.DuoScheduleApp
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class DailyRescheduleReceiver : BroadcastReceiver() {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    @Inject
+    lateinit var notificationManager: CourseNotificationManager
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == CourseNotificationManager.ACTION_DAILY_RESCHEDULE) {
             Log.d(TAG, "Daily reschedule triggered")
 
-            val app = context.applicationContext as DuoScheduleApp
-            val notificationManager = app.notificationManager
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_TRIGGERED,
+                result = NotificationDebugLog.LogResult.SUCCESS,
+                message = "每日重新调度闹钟触发"
+            ))
 
-            scope.launch {
+            val pendingResult = goAsync()
+
+            CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
                 try {
                     notificationManager.scheduleReminderNotifications()
                     Log.d(TAG, "Daily reschedule completed")
                 } catch (e: Exception) {
                     Log.e(TAG, "Daily reschedule failed", e)
+                } finally {
+                    pendingResult.finish()
                 }
             }
         }

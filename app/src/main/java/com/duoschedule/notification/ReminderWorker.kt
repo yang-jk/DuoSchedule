@@ -17,12 +17,14 @@ class ReminderWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val courseName = inputData.getString("course_name") ?: return Result.failure()
+        val courseId = inputData.getLong("course_id", 0L)
         val courseLocation = inputData.getString("course_location") ?: ""
         val startHour = inputData.getInt("start_hour", 0)
         val startMinute = inputData.getInt("start_minute", 0)
         val advanceMinutes = settingsDataStore.getNotificationAdvanceTime()
 
         notificationManager.showReminderNotification(
+            courseId = courseId,
             courseName = courseName,
             courseLocation = courseLocation,
             startHour = startHour,

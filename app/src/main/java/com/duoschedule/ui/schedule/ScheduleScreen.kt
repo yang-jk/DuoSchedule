@@ -3,12 +3,19 @@ package com.duoschedule.ui.schedule
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.TweenSpec
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -20,11 +27,13 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import com.kyant.capsule.ContinuousRoundedRectangle
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
@@ -32,6 +41,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.Snapshot
 import kotlin.math.abs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
@@ -86,7 +97,6 @@ import com.duoschedule.ui.theme.getScheduleGridSeparatorColor
 import com.duoschedule.ui.theme.getWeekChipSelectedColor
 import com.duoschedule.ui.theme.getWeekChipUnselectedColor
 import com.kyant.backdrop.backdrops.emptyBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.colorControls
@@ -96,6 +106,16 @@ import com.kyant.backdrop.highlight.Highlight
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+private val EaseInOutCubic = CubicBezierEasing(0.645f, 0.045f, 0.355f, 1.0f)
+
+private val ContainerTransformSpring: SpringSpec<Dp> = spring(dampingRatio = 0.9f, stiffness = 600f)
+private val MicroTween: TweenSpec<Float> = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing)
+
+private val EmptyCourseAction: (Course) -> Unit = { }
+private val EmptyBiAction: (Int, Int) -> Unit = { _, _ -> }
+private val EmptyTriAction: (Int, Int, CellBounds) -> Unit = { _, _, _ -> }
+
+@Immutable
 data class EditTarget(
     val courseId: Long?,
     val dayOfWeek: Int?,
@@ -131,8 +151,6 @@ fun ScheduleScreen(
     var selectedWeek by remember(currentWeek) { mutableIntStateOf(currentWeek) }
     var showWeekSelector by remember { mutableStateOf(false) }
     var isDataLoaded by remember { mutableStateOf(false) }
-    
-    val EaseInOutCubic = CubicBezierEasing(0.645f, 0.045f, 0.355f, 1.0f)
     
     LaunchedEffect(totalPeriods, currentWeek, totalWeeks) {
         if (totalPeriods > 0 && currentWeek > 0 && totalWeeks > 0) {
@@ -222,6 +240,8 @@ fun ScheduleScreen(
     
     val hasClipboardContent by CourseClipboard.clippedCourse.collectAsState()
 
+    val handleCourseClick: (Course) -> Unit = remember { { selectedCourse = it } }
+
     LaunchedEffect(selectedCourse) {
         if (selectedCourse != null) {
             showPreview = true
@@ -238,8 +258,15 @@ fun ScheduleScreen(
     AnimatedContent(
         targetState = editTarget,
         transitionSpec = {
-            fadeIn(animationSpec = appleSpring(AppleSpring.Gentle)) togetherWith
-            fadeOut(animationSpec = appleSpring(AppleSpring.Gentle))
+            val isSharedElement = targetState?.sourceKey?.isNotEmpty() == true ||
+                    initialState?.sourceKey?.isNotEmpty() == true
+            if (isSharedElement) {
+                EnterTransition.None togetherWith
+                fadeOut(animationSpec = tween(200, easing = FastOutLinearInEasing))
+            } else {
+                fadeIn(animationSpec = tween(250, delayMillis = 50, easing = FastOutSlowInEasing)) togetherWith
+                fadeOut(animationSpec = tween(200, easing = FastOutLinearInEasing))
+            }
         },
         label = "schedule_edit_transition"
     ) { target ->
@@ -247,12 +274,11 @@ fun ScheduleScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
     ) {
+        Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
                 .height(56.dp)
                 .padding(horizontal = Spacing.sm),
             verticalAlignment = Alignment.CenterVertically
@@ -284,7 +310,12 @@ fun ScheduleScreen(
                         with(scope) {
                             Modifier.sharedElement(
                                 rememberSharedContentState(key = "addButton_${personType.name}"),
-                                animatedVisibilityScope = this@AnimatedContent
+                                animatedVisibilityScope = this@AnimatedContent,
+                                boundsTransform = { _, _ -> spring(dampingRatio = 0.9f, stiffness = 600f) },
+                                renderInOverlayDuringTransition = true,
+                                clipInOverlayDuringTransition = OverlayClip(
+                                    ContinuousRoundedRectangle(BorderRadius.iOS26.large)
+                                )
                             )
                         }
                     } ?: Modifier
@@ -327,6 +358,9 @@ fun ScheduleScreen(
                         detectHorizontalDragGestures(
                             onDragStart = {
                                 isDragging = true
+                                scope.launch {
+                                    swipeOffset.snapTo(swipeOffset.value)
+                                }
                             },
                             onDragEnd = {
                                 isDragging = false
@@ -335,23 +369,27 @@ fun ScheduleScreen(
                                         swipeOffset.value > threshold && selectedWeek > 1 -> {
                                             swipeOffset.animateTo(
                                                 targetValue = screenWidth,
-                                                animationSpec = tween(250, easing = FastOutSlowInEasing)
+                                                animationSpec = spring(dampingRatio = 1.0f, stiffness = 500f)
                                             )
-                                            selectedWeek--
-                                            swipeOffset.snapTo(0f)
+                                            Snapshot.withMutableSnapshot {
+                                                selectedWeek--
+                                                swipeOffset.snapTo(0f)
+                                            }
                                         }
                                         swipeOffset.value < -threshold && selectedWeek < totalWeeks -> {
                                             swipeOffset.animateTo(
                                                 targetValue = -screenWidth,
-                                                animationSpec = tween(250, easing = FastOutSlowInEasing)
+                                                animationSpec = spring(dampingRatio = 1.0f, stiffness = 500f)
                                             )
-                                            selectedWeek++
-                                            swipeOffset.snapTo(0f)
+                                            Snapshot.withMutableSnapshot {
+                                                selectedWeek++
+                                                swipeOffset.snapTo(0f)
+                                            }
                                         }
                                         else -> {
                                             swipeOffset.animateTo(
                                                 targetValue = 0f,
-                                                animationSpec = tween(200, easing = FastOutSlowInEasing)
+                                                animationSpec = spring(dampingRatio = 1.0f, stiffness = 500f)
                                             )
                                         }
                                     }
@@ -362,18 +400,18 @@ fun ScheduleScreen(
                                 scope.launch {
                                     swipeOffset.animateTo(
                                         targetValue = 0f,
-                                        animationSpec = tween(200, easing = FastOutSlowInEasing)
+                                        animationSpec = spring(dampingRatio = 1.0f, stiffness = 500f)
                                     )
                                 }
                             },
                             onHorizontalDrag = { change, dragAmount ->
+                                val newOffset = swipeOffset.value + dragAmount
+                                val targetOffset = when {
+                                    selectedWeek == 1 && newOffset > 0 -> newOffset * 0.3f
+                                    selectedWeek == totalWeeks && newOffset < 0 -> newOffset * 0.3f
+                                    else -> newOffset
+                                }
                                 scope.launch {
-                                    val newOffset = swipeOffset.value + dragAmount
-                                    val targetOffset = when {
-                                        selectedWeek == 1 && newOffset > 0 -> newOffset * 0.3f
-                                        selectedWeek == totalWeeks && newOffset < 0 -> newOffset * 0.3f
-                                        else -> newOffset
-                                    }
                                     swipeOffset.snapTo(targetOffset)
                                 }
                             }
@@ -393,6 +431,7 @@ fun ScheduleScreen(
                             weekDates = currentWeekDates,
                             totalPeriods = totalPeriods,
                             periodTimes = displayPeriodTimes,
+                            parsedPeriodTimes = parsedPeriodTimes,
                             showNonCurrentWeekCourses = showNonCurrentWeekCourses,
                             showSaturday = showSaturday,
                             showSunday = showSunday,
@@ -401,15 +440,18 @@ fun ScheduleScreen(
                             courseNameFontSize = courseNameFontSize,
                             courseLocationFontSize = courseLocationFontSize,
                             selectedContextMenuSlot = selectedContextMenuSlot,
-                            onCourseClick = { course ->
-                                selectedCourse = course
-                            },
+                            onCourseClick = handleCourseClick,
                             onEmptySlotClick = { dayOfWeek, periodIndex ->
                                 editTarget = EditTarget(null, dayOfWeek, periodIndex, "addButton_${personType.name}")
                             },
                             onCourseLongPress = { course, cellBounds ->
                                 contextMenuCellBounds = cellBounds
-                                selectedContextMenuSlot = EmptySlotPosition(course.dayOfWeek, course.startPeriod)
+                                val contextPeriod = if (course.isCustomTime) {
+                                    getPeriodFromTimeFast(course.startHour, course.startMinute, parsedPeriodTimes)
+                                } else {
+                                    course.startPeriod
+                                }
+                                selectedContextMenuSlot = EmptySlotPosition(course.dayOfWeek, contextPeriod)
                                 contextMenuItems = listOf(
                                     ContextMenuItem(
                                         label = "复制"
@@ -484,7 +526,7 @@ fun ScheduleScreen(
                         )
                     }
                     
-                    if (selectedWeek > 1 && prevCourseSlotMap.isNotEmpty()) {
+                    if (selectedWeek > 1) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -497,6 +539,7 @@ fun ScheduleScreen(
                                 weekDates = prevWeekDates,
                                 totalPeriods = totalPeriods,
                                 periodTimes = displayPeriodTimes,
+                                parsedPeriodTimes = parsedPeriodTimes,
                                 showNonCurrentWeekCourses = showNonCurrentWeekCourses,
                                 showSaturday = showSaturday,
                                 showSunday = showSunday,
@@ -505,17 +548,17 @@ fun ScheduleScreen(
                                 courseNameFontSize = courseNameFontSize,
                                 courseLocationFontSize = courseLocationFontSize,
                                 selectedContextMenuSlot = null,
-                                onCourseClick = { },
-                                onEmptySlotClick = { _, _ -> },
+                                onCourseClick = EmptyCourseAction,
+                                onEmptySlotClick = EmptyBiAction,
                                 onCourseLongPress = { _, _ -> },
-                                onEmptySlotLongPress = { _, _, _ -> },
+                                onEmptySlotLongPress = EmptyTriAction,
                                 sharedTransitionScope = null,
                                 animatedVisibilityScope = null
                             )
                         }
                     }
                     
-                    if (selectedWeek < totalWeeks && nextCourseSlotMap.isNotEmpty()) {
+                    if (selectedWeek < totalWeeks) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -528,6 +571,7 @@ fun ScheduleScreen(
                                 weekDates = nextWeekDates,
                                 totalPeriods = totalPeriods,
                                 periodTimes = displayPeriodTimes,
+                                parsedPeriodTimes = parsedPeriodTimes,
                                 showNonCurrentWeekCourses = showNonCurrentWeekCourses,
                                 showSaturday = showSaturday,
                                 showSunday = showSunday,
@@ -536,10 +580,10 @@ fun ScheduleScreen(
                                 courseNameFontSize = courseNameFontSize,
                                 courseLocationFontSize = courseLocationFontSize,
                                 selectedContextMenuSlot = null,
-                                onCourseClick = { },
-                                onEmptySlotClick = { _, _ -> },
+                                onCourseClick = EmptyCourseAction,
+                                onEmptySlotClick = EmptyBiAction,
                                 onCourseLongPress = { _, _ -> },
-                                onEmptySlotLongPress = { _, _, _ -> },
+                                onEmptySlotLongPress = EmptyTriAction,
                                 sharedTransitionScope = null,
                                 animatedVisibilityScope = null
                             )
@@ -709,7 +753,10 @@ private fun WeekSelectorDropdown(
                     modifier = Modifier.height(300.dp),
                     verticalArrangement = Arrangement.spacedBy(Spacing.xs)
                 ) {
-                    items((1..totalWeeks).toList()) { week ->
+                    items(
+                        items = (1..totalWeeks).toList(),
+                        key = { week -> week }
+                    ) { week ->
                         val isSelected = week == selectedWeek
                         val isCurrent = week == currentWeek
                         
@@ -749,7 +796,7 @@ private fun WeekSelectorDropdown(
     }
 }
 
-private data class PeriodTimeRange(
+data class PeriodTimeRange(
     val startMinutes: Int,
     val endMinutes: Int
 )
@@ -777,6 +824,40 @@ private fun parsePeriodTimes(periodTimes: List<String>): List<PeriodTimeRange> {
     }
 }
 
+private fun calculateCustomTimePosition(
+    startHour: Int, startMinute: Int,
+    endHour: Int, endMinute: Int,
+    parsedPeriodTimes: List<PeriodTimeRange>,
+    totalPeriods: Int
+): Pair<Float, Float> {
+    val startTotalMinutes = startHour * 60 + startMinute
+    val endTotalMinutes = endHour * 60 + endMinute
+
+    if (parsedPeriodTimes.isEmpty()) {
+        return Pair(1f, 1f)
+    }
+
+    val gridStartMinutes = parsedPeriodTimes.first().startMinutes
+    val gridEndMinutes = parsedPeriodTimes.last().endMinutes
+    val gridTotalMinutes = gridEndMinutes - gridStartMinutes
+
+    if (gridTotalMinutes <= 0) {
+        return Pair(1f, 1f)
+    }
+
+    val clampedStart = startTotalMinutes.coerceIn(gridStartMinutes, gridEndMinutes)
+    val clampedEnd = endTotalMinutes.coerceIn(gridStartMinutes, gridEndMinutes)
+
+    val startFraction = (clampedStart - gridStartMinutes).toFloat() / gridTotalMinutes
+    val endFraction = (clampedEnd - gridStartMinutes).toFloat() / gridTotalMinutes
+
+    val fractionalStartPeriod = startFraction * totalPeriods + 1
+    val fractionalSpan = (endFraction - startFraction) * totalPeriods
+
+    return Pair(fractionalStartPeriod, fractionalSpan.coerceAtLeast(0.3f))
+}
+
+@Immutable
 data class CourseSlotInfo(
     val course: Course,
     val isStart: Boolean,
@@ -790,21 +871,26 @@ private fun buildCourseSlotMap(
     val map = mutableMapOf<Pair<Int, Int>, CourseSlotInfo>()
 
     for (course in courses) {
-        val startPeriod = if (course.startPeriod > 0) {
+        val startPeriod = if (course.isCustomTime) {
+            getPeriodFromTimeFast(course.startHour, course.startMinute, parsedPeriodTimes)
+        } else if (course.startPeriod > 0) {
             course.startPeriod
         } else {
             getPeriodFromTimeFast(course.startHour, course.startMinute, parsedPeriodTimes)
         }
-        
-        val endPeriod = if (course.endPeriod > 0) {
+
+        val endPeriod = if (course.isCustomTime) {
+            getPeriodFromTimeFast(course.endHour, course.endMinute, parsedPeriodTimes)
+        } else if (course.endPeriod > 0) {
             course.endPeriod
         } else {
             getPeriodFromTimeFast(course.endHour, course.endMinute, parsedPeriodTimes)
         }
-        
-        val span = (endPeriod - startPeriod + 1).coerceAtLeast(1)
-        
-        for (period in startPeriod..endPeriod) {
+
+        val clampedEndPeriod = endPeriod.coerceAtLeast(startPeriod)
+        val span = (clampedEndPeriod - startPeriod + 1).coerceAtLeast(1)
+
+        for (period in startPeriod..clampedEndPeriod) {
             val key = Pair(course.dayOfWeek, period)
             if (!map.containsKey(key)) {
                 map[key] = CourseSlotInfo(
@@ -822,25 +908,29 @@ private fun buildCourseSlotMap(
 private fun getPeriodFromTimeFast(hour: Int, minute: Int, parsedPeriodTimes: List<PeriodTimeRange>): Int {
     val totalMinutes = hour * 60 + minute
 
+    var result = 1
     parsedPeriodTimes.forEachIndexed { index, range ->
-        if (totalMinutes in range.startMinutes until range.endMinutes) {
-            return index + 1
+        if (totalMinutes >= range.startMinutes) {
+            result = index + 1
         }
     }
 
-    return 1
+    return result
 }
 
+@Immutable
 data class EmptySlotPosition(
     val dayOfWeek: Int,
     val period: Int
 )
 
+@Immutable
 private data class CourseLayoutInfo(
     val course: Course,
     val dayIndex: Int,
-    val startPeriod: Int,
-    val span: Int
+    val startPeriod: Float,
+    val span: Float,
+    val isCustomTime: Boolean = false
 )
 
 @Composable
@@ -851,6 +941,7 @@ fun WeeklyScheduleGrid(
     weekDates: List<LocalDate>,
     totalPeriods: Int,
     periodTimes: List<String>,
+    parsedPeriodTimes: List<PeriodTimeRange>,
     showNonCurrentWeekCourses: Boolean,
     showSaturday: Boolean,
     showSunday: Boolean,
@@ -888,18 +979,35 @@ fun WeeklyScheduleGrid(
     val fixedCellHeight = 100
     val cellSpacingPx = with(androidx.compose.ui.platform.LocalDensity.current) { Spacing.xxs.toPx().toInt() }
     
-    val uniqueCourses = remember(courseSlotMap) {
+    val uniqueCourses = remember(courseSlotMap, parsedPeriodTimes, totalPeriods) {
         val seen = mutableSetOf<Long>()
         courseSlotMap.entries
             .filter { it.value.isStart }
             .map { entry ->
                 val dayOfWeek = entry.key.first
-                CourseLayoutInfo(
-                    course = entry.value.course,
-                    dayIndex = dayOfWeek - 1,
-                    startPeriod = entry.value.course.startPeriod,
-                    span = entry.value.span
-                )
+                val course = entry.value.course
+                if (course.isCustomTime) {
+                    val (fractionalStart, fractionalSpan) = calculateCustomTimePosition(
+                        course.startHour, course.startMinute,
+                        course.endHour, course.endMinute,
+                        parsedPeriodTimes,
+                        totalPeriods
+                    )
+                    CourseLayoutInfo(
+                        course = course,
+                        dayIndex = dayOfWeek - 1,
+                        startPeriod = fractionalStart,
+                        span = fractionalSpan,
+                        isCustomTime = true
+                    )
+                } else {
+                    CourseLayoutInfo(
+                        course = course,
+                        dayIndex = dayOfWeek - 1,
+                        startPeriod = course.startPeriod.toFloat(),
+                        span = entry.value.span.toFloat()
+                    )
+                }
             }
             .filter { seen.add(it.course.id) }
     }
@@ -908,7 +1016,8 @@ fun WeeklyScheduleGrid(
     var gridOffsetY by remember { mutableStateOf(0) }
 
     val scrollState = rememberScrollState()
-    
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1009,7 +1118,7 @@ fun WeeklyScheduleGrid(
                         selectedEmptySlot = selectedEmptySlot,
                         selectedContextMenuSlot = selectedContextMenuSlot,
                         cellHeight = fixedCellHeight,
-                        onEmptySlotFirstClick = { dayOfWeek, periodIndex ->
+                        onEmptySlotFirstClick = { dayOfWeek: Int, periodIndex: Int ->
                             selectedEmptySlot = EmptySlotPosition(dayOfWeek, periodIndex)
                         },
                         onEmptySlotSecondClick = onEmptySlotClick,
@@ -1028,6 +1137,7 @@ fun WeeklyScheduleGrid(
                                 dayIndex = dayIndex,
                                 startPeriod = layoutInfo.startPeriod,
                                 span = layoutInfo.span,
+                                isCustomTime = layoutInfo.isCustomTime,
                                 currentWeek = currentWeek,
                                 columnWidth = columnWidth,
                                 cellHeight = fixedCellHeight,
@@ -1049,6 +1159,9 @@ fun WeeklyScheduleGrid(
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(LiquidBottomTabsSpec.Height + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()))
+    }
     }
 }
 
@@ -1231,8 +1344,9 @@ private fun RowScope.EmptySlot(
 private fun CourseOverlayCard(
     course: Course,
     dayIndex: Int,
-    startPeriod: Int,
-    span: Int,
+    startPeriod: Float,
+    span: Float,
+    isCustomTime: Boolean,
     currentWeek: Int,
     columnWidth: Int,
     cellHeight: Int,
@@ -1252,7 +1366,18 @@ private fun CourseOverlayCard(
     
     val fillShadow = getLiquidGlassFillShadow()
     val shadowColor = getLiquidGlassShadowColor()
-    val shape = ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
+    val targetCornerRadius = when (animatedVisibilityScope?.transition?.targetState) {
+        EnterExitState.PreEnter -> BorderRadius.iOS26.xxlarge
+        EnterExitState.Visible -> BorderRadius.iOS26.medium
+        EnterExitState.PostExit -> BorderRadius.iOS26.xxlarge
+        else -> BorderRadius.iOS26.medium
+    }
+    val cornerRadius by animateDpAsState(
+        targetValue = targetCornerRadius,
+        animationSpec = ContainerTransformSpring,
+        label = "card_corner"
+    )
+    val shape = ContinuousRoundedRectangle(cornerRadius.coerceAtLeast(0.dp))
     
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
@@ -1261,7 +1386,7 @@ private fun CourseOverlayCard(
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.97f else 1f,
-        animationSpec = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing),
+        animationSpec = MicroTween,
         label = "card_scale"
     )
     
@@ -1270,12 +1395,29 @@ private fun CourseOverlayCard(
     
     val cardWidth = columnWidth - cellPaddingPx * 2
     val singleCellHeightPx = with(density) { cellHeight.dp.toPx().toInt() }
-    val totalHeightPx = singleCellHeightPx * span + cellSpacing * (span - 1)
-    
+    val totalHeightPx = (singleCellHeightPx * span + cellSpacing * (span - 1)).roundToInt()
+
     val offsetX = timeColumnWidth + dayIndex * columnWidth + cellPaddingPx
-    val offsetY = (startPeriod - 1) * (singleCellHeightPx + cellSpacing) + cellPaddingPx
+    val offsetY = ((startPeriod - 1) * (singleCellHeightPx + cellSpacing) + cellPaddingPx).roundToInt()
     
     var cardBounds by remember { mutableStateOf(CellBounds(0, 0, 0, 0)) }
+
+    val courseColor = remember(course.name, darkTheme) { getCourseColor(course.name, darkTheme) }
+    val baseAlpha = if (showNonCurrentWeekCourses && !isCurrentWeekCourse) {
+        if (darkTheme) 0.35f else 0.30f
+    } else {
+        if (darkTheme) 0.92f else 0.82f
+    }
+    val gradientBrush = remember(courseColor, baseAlpha) {
+        val topAlpha = if (darkTheme) baseAlpha * 0.98f else baseAlpha * 0.92f
+        val bottomAlpha = if (darkTheme) baseAlpha * 0.88f else baseAlpha * 0.80f
+        Brush.verticalGradient(
+            colors = listOf(
+                courseColor.copy(alpha = topAlpha),
+                courseColor.copy(alpha = bottomAlpha)
+            )
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -1288,7 +1430,12 @@ private fun CourseOverlayCard(
                         with(scope) {
                             Modifier.sharedElement(
                                 rememberSharedContentState(key = "courseCard_${course.id}"),
-                                animatedVisibilityScope = avScope
+                                animatedVisibilityScope = avScope,
+                                boundsTransform = { _, _ -> spring(dampingRatio = 0.9f, stiffness = 600f) },
+                                renderInOverlayDuringTransition = true,
+                                clipInOverlayDuringTransition = OverlayClip(
+                                    ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
+                                )
                             )
                         }
                     }
@@ -1306,16 +1453,7 @@ private fun CourseOverlayCard(
             .background(fillShadow)
             .then(
                 run {
-                    val courseColor = getCourseColor(course.name, darkTheme)
-                    val alpha = if (showNonCurrentWeekCourses && !isCurrentWeekCourse) 0.35f else 0.92f
-                    Modifier.background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                courseColor.copy(alpha = alpha * 0.98f),
-                                courseColor.copy(alpha = alpha * 0.88f)
-                            )
-                        )
-                    )
+                    Modifier.background(gradientBrush)
                 }
             )
             .combinedClickable(
@@ -1340,6 +1478,9 @@ private fun CourseOverlayCard(
         contentAlignment = Alignment.Center
     ) {
         val textAlpha = if (showNonCurrentWeekCourses && !isCurrentWeekCourse) 0.6f else 1f
+        val courseTextColor = Color.White.copy(alpha = textAlpha)
+        val courseSecondaryTextColor = Color.White.copy(alpha = textAlpha * 0.8f)
+        val courseSeparatorColor = Color.White.copy(alpha = 0.25f)
         
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -1353,9 +1494,31 @@ private fun CourseOverlayCard(
                 ),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                color = labelsPrimary.copy(alpha = textAlpha),
+                color = courseTextColor,
                 textAlign = TextAlign.Center
             )
+
+            if (isCustomTime) {
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Box(
+                    modifier = Modifier
+                        .width(12.dp)
+                        .height(1.dp)
+                        .background(courseSeparatorColor)
+                )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = course.getTimeString(),
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = courseLocationFontSize.sp),
+                    maxLines = 1,
+                    color = courseSecondaryTextColor,
+                    textAlign = TextAlign.Center,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
 
             if (course.location.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(2.dp))
@@ -1364,7 +1527,7 @@ private fun CourseOverlayCard(
                     modifier = Modifier
                         .width(12.dp)
                         .height(1.dp)
-                        .background(labelsSecondary.copy(alpha = 0.25f))
+                        .background(courseSeparatorColor)
                 )
 
                 Spacer(modifier = Modifier.height(2.dp))
@@ -1373,7 +1536,7 @@ private fun CourseOverlayCard(
                     text = course.location,
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = courseLocationFontSize.sp),
                     maxLines = ScheduleDimensions.LocationMaxLines,
-                    color = labelsSecondary.copy(alpha = textAlpha * 0.8f),
+                    color = courseSecondaryTextColor,
                     textAlign = TextAlign.Center,
                     overflow = TextOverflow.Ellipsis
                 )

@@ -29,6 +29,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "duo_schedule_database"
         )
+            .addMigrations(AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7)
             .fallbackToDestructiveMigration()
             .build()
     }

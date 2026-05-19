@@ -1,12 +1,16 @@
 package com.duoschedule.ui.edit
 
+import android.app.Application
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.duoschedule.data.local.CourseDao
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.WeekType
 import com.duoschedule.data.repository.CourseRepository
+import com.duoschedule.notification.AlarmScheduler
+import com.duoschedule.notification.BootReceiverManager
 import com.duoschedule.notification.CourseNotificationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,19 +40,27 @@ data class CourseEditState(
     val startWeek: Int = 1,
     val endWeek: Int = 16,
     val customWeeks: String = "",
-    val personType: PersonType = PersonType.PERSON_B,
+    val personType: PersonType = PersonType.PERSON_A,
     val isEditing: Boolean = false,
     val errorMessage: String? = null,
     val saved: Boolean = false,
     val deleted: Boolean = false,
     val selectedWeeks: Set<Int> = emptySet(),
-    val selectedPeriods: Set<Int> = setOf(1, 2)
+    val selectedPeriods: Set<Int> = setOf(1, 2),
+    val isCustomTime: Boolean = false,
+    val customStartHour: Int = 8,
+    val customStartMinute: Int = 0,
+    val customEndHour: Int = 9,
+    val customEndMinute: Int = 30
 )
 
 @HiltViewModel
 class CourseEditViewModel @Inject constructor(
     private val repository: CourseRepository,
-    private val notificationManager: CourseNotificationManager
+    private val notificationManager: CourseNotificationManager,
+    private val alarmScheduler: AlarmScheduler,
+    private val courseDao: CourseDao,
+    private val application: Application
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CourseEditState())
@@ -78,7 +90,7 @@ class CourseEditViewModel @Inject constructor(
                 _state.value = _state.value.copy(personType = PersonType.PERSON_A)
                 loadSettings(PersonType.PERSON_A)
             } else {
-                loadSettings(PersonType.PERSON_B)
+                loadSettings(PersonType.PERSON_A)
             }
         }
         loadHistory()
@@ -162,7 +174,12 @@ class CourseEditViewModel @Inject constructor(
                     personType = course.personType,
                     isEditing = true,
                     selectedWeeks = selectedWeeks,
-                    selectedPeriods = selectedPeriods
+                    selectedPeriods = selectedPeriods,
+                    isCustomTime = course.isCustomTime,
+                    customStartHour = course.startHour,
+                    customStartMinute = course.startMinute,
+                    customEndHour = course.endHour,
+                    customEndMinute = course.endMinute
                 )
                 
                 loadSettings(course.personType)
@@ -271,6 +288,44 @@ class CourseEditViewModel @Inject constructor(
         }
     }
 
+    fun setTimeMode(isCustomTime: Boolean) {
+        val currentState = _state.value
+        if (currentState.isCustomTime == isCustomTime) return
+
+        if (isCustomTime) {
+            val times = periodTimes.value
+            val (startHour, startMinute) = getTimeFromPeriod(currentState.startPeriod, times)
+            val (endHour, endMinute) = getTimeFromPeriodEnd(currentState.endPeriod, times)
+            _state.value = currentState.copy(
+                isCustomTime = true,
+                customStartHour = startHour,
+                customStartMinute = startMinute,
+                customEndHour = endHour,
+                customEndMinute = endMinute
+            )
+        } else {
+            val times = periodTimes.value
+            val startPeriod = getPeriodFromTime(currentState.customStartHour, currentState.customStartMinute, times)
+            val endPeriod = getPeriodFromTime(currentState.customEndHour, currentState.customEndMinute, times)
+            val clampedEndPeriod = endPeriod.coerceAtLeast(startPeriod)
+            _state.value = currentState.copy(
+                isCustomTime = false,
+                startPeriod = startPeriod,
+                endPeriod = clampedEndPeriod,
+                selectedPeriods = (startPeriod..clampedEndPeriod).toSet()
+            )
+        }
+    }
+
+    fun setCustomTime(startHour: Int, startMinute: Int, endHour: Int, endMinute: Int) {
+        _state.value = _state.value.copy(
+            customStartHour = startHour,
+            customStartMinute = startMinute,
+            customEndHour = endHour,
+            customEndMinute = endMinute
+        )
+    }
+
     fun selectFromHistory(historyItem: CourseHistoryItem) {
         _state.value = _state.value.copy(
             name = historyItem.name,
@@ -281,10 +336,19 @@ class CourseEditViewModel @Inject constructor(
 
     fun saveCourse() {
         val currentState = _state.value
-        
+
         if (currentState.name.isBlank()) {
             _state.value = currentState.copy(errorMessage = "请输入课程名称")
             return
+        }
+
+        if (currentState.isCustomTime) {
+            val startTotal = currentState.customStartHour * 60 + currentState.customStartMinute
+            val endTotal = currentState.customEndHour * 60 + currentState.customEndMinute
+            if (endTotal <= startTotal) {
+                _state.value = currentState.copy(errorMessage = "结束时间必须晚于开始时间")
+                return
+            }
         }
 
         viewModelScope.launch {
@@ -304,12 +368,23 @@ class CourseEditViewModel @Inject constructor(
                 ""
             }
 
-            val times = periodTimes.value
-            val startPeriod = currentState.startPeriod
-            val endPeriod = currentState.endPeriod
-            
-            val (startHour, startMinute) = getTimeFromPeriod(startPeriod, times)
-            val (endHour, endMinute) = getTimeFromPeriodEnd(endPeriod, times)
+            val (startHour, startMinute, endHour, endMinute, startPeriod, endPeriod) = if (currentState.isCustomTime) {
+                Tuple6(
+                    currentState.customStartHour,
+                    currentState.customStartMinute,
+                    currentState.customEndHour,
+                    currentState.customEndMinute,
+                    0,
+                    0
+                )
+            } else {
+                val times = periodTimes.value
+                val sp = currentState.startPeriod
+                val ep = currentState.endPeriod
+                val (sh, sm) = getTimeFromPeriod(sp, times)
+                val (eh, em) = getTimeFromPeriodEnd(ep, times)
+                Tuple6(sh, sm, eh, em, sp, ep)
+            }
 
             val course = Course(
                 id = currentState.id,
@@ -327,7 +402,8 @@ class CourseEditViewModel @Inject constructor(
                 customWeeks = customWeeks,
                 personType = currentState.personType,
                 startPeriod = startPeriod,
-                endPeriod = endPeriod
+                endPeriod = endPeriod,
+                isCustomTime = currentState.isCustomTime
             )
 
             val hasConflict = repository.checkTimeConflict(course, currentState.id)
@@ -337,6 +413,7 @@ class CourseEditViewModel @Inject constructor(
             }
 
             if (currentState.isEditing) {
+                alarmScheduler.cancelAlarmsForCourse(currentState.id)
                 repository.updateCourse(course)
             } else {
                 repository.insertCourse(course)
@@ -344,20 +421,27 @@ class CourseEditViewModel @Inject constructor(
 
             Log.d("CourseEditViewModel", "课程已保存: ${course.name}, 重新调度通知")
             notificationManager.scheduleReminderNotifications()
+            BootReceiverManager.updateBootReceiverEnabled(application, courseDao)
 
             _state.value = currentState.copy(saved = true)
         }
     }
+
+    private data class Tuple6<T1, T2, T3, T4, T5, T6>(
+        val v1: T1, val v2: T2, val v3: T3, val v4: T4, val v5: T5, val v6: T6
+    )
 
     fun deleteCourse() {
         val currentState = _state.value
         if (!currentState.isEditing) return
 
         viewModelScope.launch {
+            alarmScheduler.cancelAlarmsForCourse(currentState.id)
             repository.deleteCourseById(currentState.id)
             
             Log.d("CourseEditViewModel", "课程已删除, 重新调度通知")
             notificationManager.scheduleReminderNotifications()
+            BootReceiverManager.updateBootReceiverEnabled(application, courseDao)
             
             _state.value = currentState.copy(deleted = true)
         }

@@ -26,7 +26,10 @@ import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.ThemeMode
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
+import com.duoschedule.ui.theme.ScrollTopBlurOverlay
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
 @Composable
 fun SettingsScreen(
@@ -76,16 +79,24 @@ fun SettingsScreen(
     val labelsTertiary = getLabelsVibrantTertiary()
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0)
     ) { paddingValues ->
+    val scrollBackdrop = rememberLayerBackdrop()
+    val scrollState = rememberScrollState()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = paddingValues.calculateTopPadding())
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
-        ) {
-            Spacer(modifier = Modifier.height(Spacing.sm))
+                .verticalScroll(scrollState)
+                .layerBackdrop(scrollBackdrop),
+                verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
+            ) {
+            Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
             Text(
                 text = "设置",
@@ -107,7 +118,7 @@ fun SettingsScreen(
                 SettingsToggleRow(
                     title = "单人模式",
                     checked = singleModeEnabled,
-                    onCheckedChange = { viewModel.setSingleModeEnabled(it) },
+                    onCheckedChange = remember { { viewModel.setSingleModeEnabled(it) } },
                     subtitle = if (singleModeEnabled) "仅显示一个人的课表" else "同时显示两个人的课表",
                     icon = Icons.Outlined.PersonOff,
                     iconBackgroundColor = IOSColors.Purple
@@ -117,10 +128,10 @@ fun SettingsScreen(
 
                 SettingsNavigationRow(
                     title = "我的名称",
-                    value = personBName,
+                    value = personAName,
                     icon = Icons.Outlined.Person,
-                    iconBackgroundColor = BrandColors.PersonB,
-                    onClick = { showPersonBDialog = true }
+                    iconBackgroundColor = BrandColors.PersonA,
+                    onClick = { showPersonADialog = true }
                 )
 
                 if (!singleModeEnabled) {
@@ -128,10 +139,10 @@ fun SettingsScreen(
 
                     SettingsNavigationRow(
                         title = "Ta的名称",
-                        value = personAName,
+                        value = personBName,
                         icon = Icons.Outlined.Person,
-                        iconBackgroundColor = BrandColors.PersonA,
-                        onClick = { showPersonADialog = true }
+                        iconBackgroundColor = BrandColors.PersonB,
+                        onClick = { showPersonBDialog = true }
                     )
                 }
             }
@@ -153,10 +164,10 @@ fun SettingsScreen(
                     iconBackgroundColor = IOSColors.Indigo,
                     selectedOption = getThemeModeLabel(themeMode),
                     options = ThemeMode.entries.map { getThemeModeLabel(it) },
-                    onOptionSelected = { selected ->
+                    onOptionSelected = remember { { selected: String ->
                         val mode = ThemeMode.entries.find { getThemeModeLabel(it) == selected }
                         mode?.let { viewModel.setThemeMode(it) }
-                    }
+                    } },
                 )
 
                 Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
@@ -231,14 +242,18 @@ fun SettingsScreen(
                 SettingsToggleRow(
                     title = "预测式返回",
                     checked = predictiveBackEnabled,
-                    onCheckedChange = { viewModel.setPredictiveBackEnabled(it) },
+                    onCheckedChange = remember { { viewModel.setPredictiveBackEnabled(it) } },
                     subtitle = "返回时显示页面过渡动画预览（实验性功能）",
                     icon = Icons.Outlined.TouchApp,
                     iconBackgroundColor = IOSColors.Blue
                 )
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(Spacing.xl))
+            Spacer(modifier = Modifier.height(LiquidBottomTabsSpec.Height + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()))
+            }
+
+            ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollState.value)
         }
     }
 
@@ -246,8 +261,8 @@ fun SettingsScreen(
         val backdrop = LocalBackdrop.current ?: emptyBackdrop()
         TextInputAlert(
             backdrop = backdrop,
-            title = "Ta的名称",
-            label = "请输入Ta的名称",
+            title = "我的名称",
+            label = "请输入我的名称",
             initialValue = personAName,
             onDismiss = { showPersonADialog = false },
             onConfirm = {
@@ -262,8 +277,8 @@ fun SettingsScreen(
         val backdrop = LocalBackdrop.current ?: emptyBackdrop()
         TextInputAlert(
             backdrop = backdrop,
-            title = "我的名称",
-            label = "请输入我的名称",
+            title = "Ta的名称",
+            label = "请输入Ta的名称",
             initialValue = personBName,
             onDismiss = { showPersonBDialog = false },
             onConfirm = {

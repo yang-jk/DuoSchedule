@@ -1,18 +1,27 @@
 package com.duoschedule.data.model
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Entity
-import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.util.Locale
 
+object CourseWeekCache {
+    private val cache = mutableMapOf<Int, Set<Int>>()
+    fun get(id: Int): Set<Int>? = cache[id]
+    fun put(id: Int, weeks: Set<Int>) { cache[id] = weeks }
+    fun clear(id: Int) { cache.remove(id) }
+}
+
+@Immutable
 @Entity(
     tableName = "courses",
     indices = [
         Index(value = ["personType"]),
         Index(value = ["dayOfWeek"]),
         Index(value = ["startWeek", "endWeek"]),
-        Index(value = ["personType", "dayOfWeek"])
+        Index(value = ["personType", "dayOfWeek"]),
+        Index(value = ["dayOfWeek", "personType", "startHour", "startMinute"])
     ]
 )
 data class Course(
@@ -32,11 +41,9 @@ data class Course(
     val customWeeks: String = "",
     val personType: PersonType,
     val startPeriod: Int = 1,
-    val endPeriod: Int = 1
+    val endPeriod: Int = 1,
+    val isCustomTime: Boolean = false
 ) {
-    @Ignore
-    private var cachedCustomWeeks: Set<Int>? = null
-
     fun getStartTimeString(): String {
         return String.format(Locale.ROOT, "%02d:%02d", startHour, startMinute)
     }
@@ -66,9 +73,9 @@ data class Course(
             WeekType.EVEN -> currentWeek % 2 == 0 && currentWeek in startWeek..endWeek
             WeekType.CUSTOM -> {
                 if (customWeeks.isEmpty()) return false
-                val weeks = cachedCustomWeeks ?: run {
+                val weeks = CourseWeekCache.get(id.toInt()) ?: run {
                     customWeeks.split(",").mapNotNull { it.trim().toIntOrNull() }.toSet().also {
-                        cachedCustomWeeks = it
+                        CourseWeekCache.put(id.toInt(), it)
                     }
                 }
                 currentWeek in weeks
@@ -105,5 +112,5 @@ data class Course(
     }
 
     val duration: Int
-        get() = (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
+        get() = ((endHour * 60 + endMinute) - (startHour * 60 + startMinute)).coerceAtLeast(0)
 }

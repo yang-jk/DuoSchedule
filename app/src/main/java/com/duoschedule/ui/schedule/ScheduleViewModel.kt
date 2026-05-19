@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.repository.CourseRepository
+import com.duoschedule.notification.AlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +19,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ScheduleViewModel @Inject constructor(
-    private val repository: CourseRepository
+    private val repository: CourseRepository,
+    private val alarmScheduler: AlarmScheduler
 ) : ViewModel() {
 
     private val cachedFlows = mutableMapOf<String, StateFlow<*>>()
@@ -30,12 +32,12 @@ class ScheduleViewModel @Inject constructor(
 
     val personAName: StateFlow<String> = getCachedFlow("personAName") {
         repository.getPersonAName()
-            .stateIn(viewModelScope, SharingStarted.Eagerly, "Ta")
+            .stateIn(viewModelScope, SharingStarted.Eagerly, "我")
     }
 
     val personBName: StateFlow<String> = getCachedFlow("personBName") {
         repository.getPersonBName()
-            .stateIn(viewModelScope, SharingStarted.Eagerly, "我")
+            .stateIn(viewModelScope, SharingStarted.Eagerly, "Ta")
     }
 
     fun getPersonName(personType: PersonType): StateFlow<String> =
@@ -80,15 +82,16 @@ class ScheduleViewModel @Inject constructor(
         combine(
             repository.getCurrentWeek(PersonType.PERSON_A),
             repository.getSemesterStartDate(PersonType.PERSON_A),
-            repository.getTotalWeeks(PersonType.PERSON_A)
-        ) { storedWeek, startDate, totalWeeks ->
+            repository.getTotalWeeks(PersonType.PERSON_A),
+            repository.getManualWeekOverride(PersonType.PERSON_A)
+        ) { storedWeek, startDate, totalWeeks, manualOverride ->
             val calculated = repository.calculateCurrentWeek(startDate, totalWeeks)
-            if (storedWeek != calculated) {
+            if (storedWeek != calculated && !manualOverride) {
                 viewModelScope.launch {
                     repository.setCurrentWeek(PersonType.PERSON_A, calculated)
                 }
             }
-            calculated
+            if (manualOverride) storedWeek else calculated
         }.stateIn(viewModelScope, SharingStarted.Eagerly, 1)
     }
 
@@ -96,15 +99,16 @@ class ScheduleViewModel @Inject constructor(
         combine(
             repository.getCurrentWeek(PersonType.PERSON_B),
             repository.getSemesterStartDate(PersonType.PERSON_B),
-            repository.getTotalWeeks(PersonType.PERSON_B)
-        ) { storedWeek, startDate, totalWeeks ->
+            repository.getTotalWeeks(PersonType.PERSON_B),
+            repository.getManualWeekOverride(PersonType.PERSON_B)
+        ) { storedWeek, startDate, totalWeeks, manualOverride ->
             val calculated = repository.calculateCurrentWeek(startDate, totalWeeks)
-            if (storedWeek != calculated) {
+            if (storedWeek != calculated && !manualOverride) {
                 viewModelScope.launch {
                     repository.setCurrentWeek(PersonType.PERSON_B, calculated)
                 }
             }
-            calculated
+            if (manualOverride) storedWeek else calculated
         }.stateIn(viewModelScope, SharingStarted.Eagerly, 1)
     }
 
@@ -179,6 +183,7 @@ class ScheduleViewModel @Inject constructor(
 
     fun deleteCourse(courseId: Long) {
         viewModelScope.launch {
+            alarmScheduler.cancelAlarmsForCourse(courseId)
             repository.deleteCourseById(courseId)
         }
     }

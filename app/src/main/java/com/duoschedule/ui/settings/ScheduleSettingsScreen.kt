@@ -14,7 +14,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
+import com.duoschedule.ui.theme.ScrollTopBlurOverlay
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -49,6 +51,7 @@ fun ScheduleSettingsScreen(
     val labelsPrimary = getLabelsVibrantPrimary()
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { 
@@ -81,11 +84,18 @@ fun ScheduleSettingsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
+        val scrollBackdrop = rememberLayerBackdrop()
+        val scrollState = rememberScrollState()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = paddingValues.calculateTopPadding())
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState)
+                .layerBackdrop(scrollBackdrop),
             verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
         ) {
             Spacer(modifier = Modifier.height(Spacing.sm))
@@ -93,32 +103,32 @@ fun ScheduleSettingsScreen(
             SettingsSection(title = if (singleModeEnabled) "课表设置" else "我的课表设置") {
                 SettingsValueRow(
                     title = "开学时间",
-                    value = personBSemesterStart?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) ?: "未设置",
-                    onClick = { showPersonBSemesterStartDialog = true }
+                    value = personASemesterStart?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) ?: "未设置",
+                    onClick = { showPersonASemesterStartDialog = true }
                 )
                 
                 Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
                 
                 SettingsValueRow(
                     title = "学期总周数",
-                    value = "${personBTotalWeeks} 周",
-                    onClick = { showPersonBTotalWeeksDialog = true }
+                    value = "${personATotalWeeks} 周",
+                    onClick = { showPersonATotalWeeksDialog = true }
                 )
                 
                 Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
                 
                 SettingsValueRow(
                     title = "当前周次",
-                    value = "第 ${personBCurrentWeek} 周",
-                    onClick = { showPersonBCurrentWeekDialog = true }
+                    value = "第 ${personACurrentWeek} 周",
+                    onClick = { showPersonACurrentWeekDialog = true }
                 )
                 
                 Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
                 
                 SettingsValueRow(
                     title = "每天节数",
-                    value = "${personBPeriodsPerDay} 节",
-                    onClick = { showPersonBPeriodsDialog = true }
+                    value = "${personAPeriodsPerDay} 节",
+                    onClick = { showPersonAPeriodsDialog = true }
                 )
                 
                 Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
@@ -128,7 +138,7 @@ fun ScheduleSettingsScreen(
                     subtitle = "设置每节课的开始和结束时间",
                     icon = Icons.Outlined.Schedule,
                     iconBackgroundColor = IOSColors.Blue,
-                    onClick = { onNavigateToPeriodTimes(PersonType.PERSON_B) }
+                    onClick = { onNavigateToPeriodTimes(PersonType.PERSON_A) }
                 )
             }
 
@@ -136,32 +146,32 @@ fun ScheduleSettingsScreen(
                 SettingsSection(title = "Ta的课表设置") {
                     SettingsValueRow(
                         title = "开学时间",
-                        value = personASemesterStart?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) ?: "未设置",
-                        onClick = { showPersonASemesterStartDialog = true }
+                        value = personBSemesterStart?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) ?: "未设置",
+                        onClick = { showPersonBSemesterStartDialog = true }
                     )
                     
                     Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
                     
                     SettingsValueRow(
                         title = "学期总周数",
-                        value = "${personATotalWeeks} 周",
-                        onClick = { showPersonATotalWeeksDialog = true }
+                        value = "${personBTotalWeeks} 周",
+                        onClick = { showPersonBTotalWeeksDialog = true }
                     )
                     
                     Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
                     
                     SettingsValueRow(
                         title = "当前周次",
-                        value = "第 ${personACurrentWeek} 周",
-                        onClick = { showPersonACurrentWeekDialog = true }
+                        value = "第 ${personBCurrentWeek} 周",
+                        onClick = { showPersonBCurrentWeekDialog = true }
                     )
                     
                     Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
                     
                     SettingsValueRow(
                         title = "每天节数",
-                        value = "${personAPeriodsPerDay} 节",
-                        onClick = { showPersonAPeriodsDialog = true }
+                        value = "${personBPeriodsPerDay} 节",
+                        onClick = { showPersonBPeriodsDialog = true }
                     )
                     
                     Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
@@ -170,8 +180,8 @@ fun ScheduleSettingsScreen(
                         title = "时间设置",
                         subtitle = "设置每节课的开始和结束时间",
                         icon = Icons.Outlined.Schedule,
-                        iconBackgroundColor = BrandColors.PersonA,
-                        onClick = { onNavigateToPeriodTimes(PersonType.PERSON_A) }
+                        iconBackgroundColor = BrandColors.PersonB,
+                        onClick = { onNavigateToPeriodTimes(PersonType.PERSON_B) }
                     )
                 }
             }
@@ -180,7 +190,11 @@ fun ScheduleSettingsScreen(
                 text = if (singleModeEnabled) "课表设置用于配置学期信息和显示方式。" else "课表设置用于配置学期信息和显示方式。开学时间用于计算当前周次。"
             )
 
+            Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             Spacer(modifier = Modifier.weight(1f))
+        }
+
+        ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollState.value)
         }
     }
 

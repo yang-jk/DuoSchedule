@@ -33,6 +33,8 @@ class RingerModeManager @Inject constructor(
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    private var originalRingerMode: Int? = null
+    private var originalInterruptionFilter: Int? = null
 
     fun hasNotificationPolicyAccess(): Boolean {
         return notificationManager.isNotificationPolicyAccessGranted
@@ -43,10 +45,17 @@ class RingerModeManager @Inject constructor(
     }
 
     fun saveCurrentRingerMode() {
+        if (isAutoSilentActive()) return
+
         val currentMode = audioManager.ringerMode
+        val currentFilter = notificationManager.currentInterruptionFilter
+
+        originalRingerMode = currentMode
+        originalInterruptionFilter = currentFilter
+
         prefs.edit {
             putInt(KEY_SAVED_RINGER_MODE, currentMode)
-            putInt(KEY_SAVED_INTERRUPTION_FILTER, notificationManager.currentInterruptionFilter)
+            putInt(KEY_SAVED_INTERRUPTION_FILTER, currentFilter)
         }
         
         Log.d(TAG, "已保存当前铃声模式: $currentMode")
@@ -58,15 +67,20 @@ class RingerModeManager @Inject constructor(
             return
         }
 
-        val savedMode = prefs.getInt(KEY_SAVED_RINGER_MODE, AudioManager.RINGER_MODE_NORMAL)
-        
+        val modeToRestore = originalRingerMode
+            ?: prefs.getInt(KEY_SAVED_RINGER_MODE, AudioManager.RINGER_MODE_NORMAL)
+        val filterToRestore = originalInterruptionFilter
+            ?: prefs.getInt(KEY_SAVED_INTERRUPTION_FILTER, NotificationManager.INTERRUPTION_FILTER_ALL)
+
         try {
-            audioManager.ringerMode = savedMode
-            Log.d(TAG, "已恢复铃声模式: $savedMode")
+            audioManager.ringerMode = modeToRestore
+            Log.d(TAG, "已恢复铃声模式: $modeToRestore")
             
-            val savedFilter = prefs.getInt(KEY_SAVED_INTERRUPTION_FILTER, NotificationManager.INTERRUPTION_FILTER_ALL)
-            notificationManager.setInterruptionFilter(savedFilter)
-            Log.d(TAG, "已恢复勿扰过滤器: $savedFilter")
+            notificationManager.setInterruptionFilter(filterToRestore)
+            Log.d(TAG, "已恢复勿扰过滤器: $filterToRestore")
+
+            originalRingerMode = null
+            originalInterruptionFilter = null
         } catch (e: SecurityException) {
             Log.e(TAG, "恢复铃声模式失败: ${e.message}")
         }

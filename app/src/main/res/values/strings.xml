@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">双人课程表</string>
-    <string name="person_a">Ta的课表</string>
-    <string name="person_b">我的课表</string>
+    <string name="person_a">我的课表</string>
+    <string name="person_b">Ta的课表</string>
     <string name="no_class">无课</string>
     <string name="widget_name">今日课程</string>
     <string name="widget_description">显示今日课程安排</string>

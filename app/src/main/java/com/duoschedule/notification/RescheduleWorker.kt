@@ -1,6 +1,7 @@
 package com.duoschedule.notification
 
 import android.content.Context
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -19,6 +20,10 @@ class RescheduleWorker @AssistedInject constructor(
     private val courseDao: com.duoschedule.data.local.CourseDao
 ) : CoroutineWorker(context, workerParams) {
 
+    companion object {
+        private const val TAG = "RescheduleWorker"
+    }
+
     override suspend fun doWork(): Result {
         return try {
             val isEnabled = settingsDataStore.getNotificationEnabled()
@@ -26,36 +31,41 @@ class RescheduleWorker @AssistedInject constructor(
                 return Result.success()
             }
 
+            val allCourses = courseDao.getAllCoursesSync()
+            if (allCourses.isEmpty()) {
+                Log.i(TAG, "No courses found, skipping reschedule")
+                return Result.success()
+            }
+
+            notificationManager.scheduleReminderNotifications()
+
             val today = LocalDate.now()
             val currentTime = LocalTime.now()
-            val currentWeekB = settingsDataStore.getCurrentWeek(
-                com.duoschedule.data.model.PersonType.PERSON_B
+            val currentWeekA = settingsDataStore.getCurrentWeek(
+                com.duoschedule.data.model.PersonType.PERSON_A
             ).first()
 
-            val personBCourses = courseDao.getCoursesForDaySync(
+            val personACourses = courseDao.getCoursesForDaySync(
                 dayOfWeek = today.dayOfWeek.value,
-                personType = com.duoschedule.data.model.PersonType.PERSON_B
-            ).filter { it.isInWeek(currentWeekB) }
+                personType = com.duoschedule.data.model.PersonType.PERSON_A
+            ).filter { it.isInWeek(currentWeekA) }
 
-            for (course in personBCourses) {
+            for (course in personACourses) {
                 val courseStartTime = LocalTime.of(course.startHour, course.startMinute)
-                val courseEndTime = courseStartTime.plusMinutes(course.duration.toLong())
-                val advanceMinutes = settingsDataStore.getNotificationAdvanceTime()
-                val reminderTime = courseStartTime.minusMinutes(advanceMinutes.toLong())
-
-                if (currentTime.isBefore(courseStartTime)) {
-                    if (reminderTime.isAfter(currentTime)) {
-                        notificationManager.scheduleReminderNotifications()
-                    }
-                }
+                val courseEndTime = LocalTime.of(course.endHour, course.endMinute)
 
                 if (currentTime.isAfter(courseStartTime) && currentTime.isBefore(courseEndTime)) {
                     val remainingMinutes = java.time.Duration.between(currentTime, courseEndTime).toMinutes().toInt()
-                    notificationManager.showOngoingNotification(
+                    LiveUpdateService.start(
+                        context = context,
                         courseName = course.name,
                         courseLocation = course.location ?: "",
-                        remainingMinutes = remainingMinutes
+                        remainingMinutes = remainingMinutes,
+                        endHour = course.endHour,
+                        endMinute = course.endMinute,
+                        totalMinutes = course.duration
                     )
+                    break
                 }
             }
 

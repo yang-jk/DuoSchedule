@@ -114,7 +114,7 @@ object PromotedNotificationBuilder {
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(courseName)
-            .setContentText("$location · ${remainingMinutes}m")
+            .setContentText("$location · 剩余${remainingMinutes}分钟")
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -128,7 +128,7 @@ object PromotedNotificationBuilder {
 
         if (useLiveNotification) {
             builder.setRequestPromotedOngoing(true)
-            builder.setShortCriticalText("${remainingMinutes}m")
+            builder.setShortCriticalText("${remainingMinutes}分钟")
             Log.d(TAG, ">>> Live notification enabled <<<")
         }
 
@@ -136,7 +136,7 @@ object PromotedNotificationBuilder {
             builder.setOngoing(false)
             builder.setRequestPromotedOngoing(false)
             builder.setAutoCancel(true)
-            builder.setContentTitle("$courseName ended")
+            builder.setContentTitle("$courseName 已结束")
             builder.setContentText(location)
             builder.setUsesChronometer(false)
             Log.d(TAG, "Course ended: $courseName")
@@ -166,7 +166,7 @@ object PromotedNotificationBuilder {
             .setContentText("$location · $startTime")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("$location\nStarts at $startTime, $advanceMinutes min")
+                    .bigText("$location\n${advanceMinutes}分钟后开始 $startTime")
             )
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
@@ -189,7 +189,7 @@ object PromotedNotificationBuilder {
     ): Notification {
         return NotificationCompat.Builder(context, CHANNEL_ID_ONGOING)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Course Service")
+            .setContentTitle("课程服务")
             .setContentText(contentText)
             .setContentIntent(pendingIntent)
             .setOngoing(true)

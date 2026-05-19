@@ -6,6 +6,7 @@ import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.TodayCourseDisplayMode
 import com.duoschedule.data.repository.CourseRepository
+import com.duoschedule.notification.AlarmScheduler
 import com.duoschedule.ui.model.CurrentCourseState
 import com.duoschedule.ui.model.FreeTimeSlot
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,9 +15,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
@@ -26,44 +29,50 @@ import javax.inject.Inject
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModel @Inject constructor(
-    private val repository: CourseRepository
+    private val repository: CourseRepository,
+    private val alarmScheduler: AlarmScheduler
 ) : ViewModel() {
 
     private val _currentHour = MutableStateFlow(LocalTime.now().hour)
     private val _currentMinute = MutableStateFlow(LocalTime.now().minute)
-    
+
+    val currentHour: StateFlow<Int> get() = _currentHour
+    val currentMinute: StateFlow<Int> get() = _currentMinute
+
     val personAName: StateFlow<String> = repository.getPersonAName()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "Ta")
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "我")
 
     val personBName: StateFlow<String> = repository.getPersonBName()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "我")
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "Ta")
 
     val personACurrentWeek: StateFlow<Int> = combine(
         repository.getCurrentWeek(PersonType.PERSON_A),
         repository.getSemesterStartDate(PersonType.PERSON_A),
-        repository.getTotalWeeks(PersonType.PERSON_A)
-    ) { storedWeek, startDate, totalWeeks ->
+        repository.getTotalWeeks(PersonType.PERSON_A),
+        repository.getManualWeekOverride(PersonType.PERSON_A)
+    ) { storedWeek, startDate, totalWeeks, manualOverride ->
         val calculated = repository.calculateCurrentWeek(startDate, totalWeeks)
-        if (storedWeek != calculated) {
+        if (storedWeek != calculated && !manualOverride) {
             viewModelScope.launch {
                 repository.setCurrentWeek(PersonType.PERSON_A, calculated)
             }
         }
-        calculated
+        if (manualOverride) storedWeek else calculated
     }.stateIn(viewModelScope, SharingStarted.Eagerly, 1)
 
     val personBCurrentWeek: StateFlow<Int> = combine(
         repository.getCurrentWeek(PersonType.PERSON_B),
         repository.getSemesterStartDate(PersonType.PERSON_B),
-        repository.getTotalWeeks(PersonType.PERSON_B)
-    ) { storedWeek, startDate, totalWeeks ->
+        repository.getTotalWeeks(PersonType.PERSON_B),
+        repository.getManualWeekOverride(PersonType.PERSON_B)
+    ) { storedWeek, startDate, totalWeeks, manualOverride ->
         val calculated = repository.calculateCurrentWeek(startDate, totalWeeks)
-        if (storedWeek != calculated) {
+        if (storedWeek != calculated && !manualOverride) {
             viewModelScope.launch {
                 repository.setCurrentWeek(PersonType.PERSON_B, calculated)
             }
         }
-        calculated
+        if (manualOverride) storedWeek else calculated
     }.stateIn(viewModelScope, SharingStarted.Eagerly, 1)
 
     val todayCourseDisplayMode: StateFlow<TodayCourseDisplayMode> = repository.getTodayCourseDisplayMode()
@@ -102,6 +111,16 @@ class MainViewModel @Inject constructor(
                 .sortedBy { it.startHour * 60 + it.startMinute }
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    init {
+        viewModelScope.launch {
+            while (true) {
+                updateTime()
+                val delayMs = calculateNextUpdateDelay()
+                delay(delayMs)
+            }
+        }
+    }
 
     private data class TimeState(
         val hour: Int,
@@ -147,8 +166,8 @@ class MainViewModel @Inject constructor(
             periodText = currentCourse?.let { getPeriodText(it, periodTimes) } ?: "",
             nextCoursePeriodText = nextCourse?.let { getPeriodText(it, periodTimes) } ?: ""
         )
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, 
-        CurrentCourseState(PersonType.PERSON_A, "Ta"))
+    }.distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, 
+        CurrentCourseState(PersonType.PERSON_A, "我"))
 
     val personBCurrentCourse: StateFlow<CurrentCourseState> = combine(
         personBTodayCourses,
@@ -185,8 +204,8 @@ class MainViewModel @Inject constructor(
             periodText = currentCourse?.let { getPeriodText(it, periodTimes) } ?: "",
             nextCoursePeriodText = nextCourse?.let { getPeriodText(it, periodTimes) } ?: ""
         )
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, 
-        CurrentCourseState(PersonType.PERSON_B, "我"))
+    }.distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, 
+        CurrentCourseState(PersonType.PERSON_B, "Ta"))
 
     val freeTimeSlots: StateFlow<List<FreeTimeSlot>> = combine(
         personATodayCourses,
@@ -194,7 +213,7 @@ class MainViewModel @Inject constructor(
         currentTime
     ) { coursesA, coursesB, time ->
         calculateFreeTimeSlots(coursesA, coursesB, time.hour, time.minute)
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }.distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private var lastDate: LocalDate = LocalDate.now()
 
@@ -208,6 +227,36 @@ class MainViewModel @Inject constructor(
             lastDate = today
             refreshCurrentDay()
         }
+    }
+
+    private fun calculateNextUpdateDelay(): Long {
+        val now = LocalTime.now()
+        val nowMinutes = now.hour * 60 + now.minute
+
+        val allCourses = personATodayCourses.value + personBTodayCourses.value
+
+        val isInCourse = allCourses.any { course ->
+            val startMinutes = course.startHour * 60 + course.startMinute
+            val endMinutes = course.endHour * 60 + course.endMinute
+            nowMinutes in startMinutes until endMinutes
+        }
+
+        if (isInCourse) {
+            return 60_000L
+        }
+
+        val nextCourseStartMinutes = allCourses
+            .map { it.startHour * 60 + it.startMinute }
+            .filter { it > nowMinutes }
+            .minOrNull()
+
+        if (nextCourseStartMinutes != null) {
+            val minutesUntilNext = nextCourseStartMinutes - nowMinutes
+            val delayMs = minutesUntilNext * 60 * 1000L
+            return delayMs.coerceIn(60_000L, 30 * 60 * 1000L)
+        }
+
+        return 60_000L
     }
 
     fun setCurrentWeek(personType: PersonType, week: Int) {
@@ -233,6 +282,7 @@ class MainViewModel @Inject constructor(
 
     fun deleteCourse(courseId: Long) {
         viewModelScope.launch {
+            alarmScheduler.cancelAlarmsForCourse(courseId)
             repository.deleteCourseById(courseId)
         }
     }
@@ -295,6 +345,9 @@ class MainViewModel @Inject constructor(
     }
 
     private fun getPeriodText(course: Course, periodTimes: List<String>): String {
+        if (course.isCustomTime) {
+            return course.getTimeString()
+        }
         if (course.startPeriod > 0 && course.endPeriod > 0) {
             return if (course.startPeriod == course.endPeriod) {
                 "第${course.startPeriod}节"

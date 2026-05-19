@@ -11,7 +11,9 @@ import com.duoschedule.data.local.AppDatabase
 import com.duoschedule.data.local.SettingsDataStore
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.repository.CourseRepository
+import com.duoschedule.notification.BootReceiverManager
 import com.duoschedule.notification.CourseNotificationManager
+import com.duoschedule.notification.FairMemoryReceiver
 import com.duoschedule.notification.NotificationRescheduleWorker
 import com.duoschedule.notification.RingerModeManager
 import com.duoschedule.util.ComposeWarmup
@@ -52,6 +54,14 @@ class DuoScheduleApp : Application(), Configuration.Provider {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var timeChangeReceiver: TimeChangeReceiver? = null
     private var lifecycleObserver: AppLifecycleObserver? = null
+    private var fairMemoryReceiver: FairMemoryReceiver? = null
+
+    @Volatile
+    private var lastScheduleTime = 0L
+
+    companion object {
+        private const val SCHEDULE_DEBOUNCE_MS = 5_000L
+    }
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -68,6 +78,7 @@ class DuoScheduleApp : Application(), Configuration.Provider {
         ComposeWarmup.warmup(this, applicationScope)
         
         applicationScope.launch {
+            settingsDataStore.migratePersonTypeIfNeeded()
             preloadViewModels()
         }
         
@@ -76,6 +87,10 @@ class DuoScheduleApp : Application(), Configuration.Provider {
             Log.i("DuoScheduleApp", "Notification channels created")
             
             timeChangeReceiver = TimeChangeReceiver.register(this)
+
+            fairMemoryReceiver = FairMemoryReceiver()
+            fairMemoryReceiver?.initialize(this)
+            Log.i("DuoScheduleApp", "FairMemoryReceiver initialized")
         } catch (e: Exception) {
             Log.e("DuoScheduleApp", "Failed to initialize components", e)
         }
@@ -88,20 +103,12 @@ class DuoScheduleApp : Application(), Configuration.Provider {
         Log.i("DuoScheduleApp", "NotificationRescheduleWorker scheduled")
         
         applicationScope.launch {
-            PerformanceMonitor.startTrace("database_preload")
-            try {
-                database.courseDao().getAllCourses()
-            } catch (e: Exception) {
-                Log.e("DuoScheduleApp", "Failed to preload database", e)
-            }
-            PerformanceMonitor.endTrace("database_preload")
-            
-            preloadSettings()
-            
+            BootReceiverManager.updateBootReceiverEnabled(this@DuoScheduleApp, database.courseDao())
+
             updateCurrentWeekIfNeeded()
-            
+
             checkAndRestoreRingerMode()
-            
+
             rescheduleNotifications("app_start")
         }
     }
@@ -122,7 +129,11 @@ class DuoScheduleApp : Application(), Configuration.Provider {
                 ringerModeManager.clearAutoSilentState()
             } else {
                 val remainingMinutes = (endTime - now) / 60000
-                Log.i("DuoScheduleApp", "自动静音未过期，剩余 $remainingMinutes 分钟")
+                Log.i("DuoScheduleApp", "自动静音未过期，剩余 $remainingMinutes 分钟，重新设置静音模式")
+                applicationScope.launch {
+                    val silentModeType = settingsDataStore.getAutoSilentModeType()
+                    ringerModeManager.setSilentMode(silentModeType)
+                }
             }
         } else {
             Log.d("DuoScheduleApp", "自动静音未激活")
@@ -130,6 +141,12 @@ class DuoScheduleApp : Application(), Configuration.Provider {
     }
     
     private suspend fun rescheduleNotifications(reason: String) {
+        val now = System.currentTimeMillis()
+        if (now - lastScheduleTime < SCHEDULE_DEBOUNCE_MS) {
+            Log.d("DuoScheduleApp", "Skipping reschedule (reason: $reason), last schedule was ${now - lastScheduleTime}ms ago")
+            return
+        }
+        lastScheduleTime = now
         try {
             Log.i("DuoScheduleApp", "Rescheduling notifications (reason: $reason)...")
             notificationManager.scheduleReminderNotifications()
@@ -196,23 +213,25 @@ class DuoScheduleApp : Application(), Configuration.Provider {
             val personBTotalWeeks = settingsDataStore.getTotalWeeks(PersonType.PERSON_B).first()
             val personACurrentWeek = settingsDataStore.getCurrentWeek(PersonType.PERSON_A).first()
             val personBCurrentWeek = settingsDataStore.getCurrentWeek(PersonType.PERSON_B).first()
+            val personAManualOverride = settingsDataStore.getManualWeekOverride(PersonType.PERSON_A).first()
+            val personBManualOverride = settingsDataStore.getManualWeekOverride(PersonType.PERSON_B).first()
             
-            Log.i("DuoScheduleApp", "Ta开学日期: $personAStartDate, 总周数: $personATotalWeeks, 当前周: $personACurrentWeek")
-            Log.i("DuoScheduleApp", "我开学日期: $personBStartDate, 总周数: $personBTotalWeeks, 当前周: $personBCurrentWeek")
+            Log.i("DuoScheduleApp", "我开学日期: $personAStartDate, 总周数: $personATotalWeeks, 当前周: $personACurrentWeek, 手动覆盖: $personAManualOverride")
+            Log.i("DuoScheduleApp", "Ta开学日期: $personBStartDate, 总周数: $personBTotalWeeks, 当前周: $personBCurrentWeek, 手动覆盖: $personBManualOverride")
             Log.i("DuoScheduleApp", "今天日期: ${java.time.LocalDate.now()}")
             
             val calculatedWeekA = settingsDataStore.calculateCurrentWeek(personAStartDate, personATotalWeeks)
             val calculatedWeekB = settingsDataStore.calculateCurrentWeek(personBStartDate, personBTotalWeeks)
             
-            Log.i("DuoScheduleApp", "计算得到Ta周次: $calculatedWeekA, 我周次: $calculatedWeekB")
+            Log.i("DuoScheduleApp", "计算得到我周次: $calculatedWeekA, Ta周次: $calculatedWeekB")
             
-            if (calculatedWeekA != personACurrentWeek) {
-                Log.i("DuoScheduleApp", "自动更新Ta的当前周次: $personACurrentWeek -> $calculatedWeekA")
+            if (calculatedWeekA != personACurrentWeek && !personAManualOverride) {
+                Log.i("DuoScheduleApp", "自动更新我的当前周次: $personACurrentWeek -> $calculatedWeekA")
                 settingsDataStore.setCurrentWeek(PersonType.PERSON_A, calculatedWeekA)
             }
             
-            if (calculatedWeekB != personBCurrentWeek) {
-                Log.i("DuoScheduleApp", "自动更新我的当前周次: $personBCurrentWeek -> $calculatedWeekB")
+            if (calculatedWeekB != personBCurrentWeek && !personBManualOverride) {
+                Log.i("DuoScheduleApp", "自动更新Ta的当前周次: $personBCurrentWeek -> $calculatedWeekB")
                 settingsDataStore.setCurrentWeek(PersonType.PERSON_B, calculatedWeekB)
             }
         } catch (e: Exception) {

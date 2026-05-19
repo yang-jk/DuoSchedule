@@ -160,12 +160,12 @@ object SemanticColors {
 object BrandColors {
     val Primary = Color(0xFF007AFF)
     val Secondary = Color(0xFFFFB74D)
-    val PersonA = Color(0xFFFFB74D)
-    val PersonB = Color(0xFF4789FE)
-    val PersonALight = Color(0xFFFFB74D)
-    val PersonADark = Color(0xFFFFCA28)
-    val PersonBLight = Color(0xFF4789FE)
-    val PersonBDark = Color(0xFF4789FE)
+    val PersonA = Color(0xFF4789FE)
+    val PersonB = Color(0xFFFFB74D)
+    val PersonALight = Color(0xFF4789FE)
+    val PersonADark = Color(0xFF4789FE)
+    val PersonBLight = Color(0xFFFFB74D)
+    val PersonBDark = Color(0xFFFFCA28)
 }
 
 object LiquidGlassColors {
@@ -386,22 +386,22 @@ object ComponentSize {
 }
 
 val CourseColorPaletteLight = listOf(
-    Color(0xFF2196F3),
-    Color(0xFF4CAF50),
-    Color(0xFFE53935),
-    Color(0xFF7B1FA2),
-    Color(0xFFFF9800),
-    Color(0xFF00897B),
-    Color(0xFFD81B60),
-    Color(0xFF558B2F),
-    Color(0xFFF4511E),
-    Color(0xFF1565C0),
-    Color(0xFFFFB300),
-    Color(0xFF6D4C41),
-    Color(0xFF00838F),
-    Color(0xFFAD1457),
-    Color(0xFF2E7D32),
-    Color(0xFFE65100)
+    Color(0xFF4A9AF5),
+    Color(0xFF4DB870),
+    Color(0xFFEF5350),
+    Color(0xFF9C7CE8),
+    Color(0xFFF09638),
+    Color(0xFF2EB8A8),
+    Color(0xFFEC5F92),
+    Color(0xFF7CB342),
+    Color(0xFFF07050),
+    Color(0xFF5C7CFA),
+    Color(0xFFE8B830),
+    Color(0xFF8D7B6B),
+    Color(0xFF22B8CF),
+    Color(0xFFC85888),
+    Color(0xFF40A850),
+    Color(0xFFE07838)
 )
 
 val CourseColorPaletteDark = listOf(

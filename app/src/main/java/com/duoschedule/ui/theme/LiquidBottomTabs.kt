@@ -103,9 +103,8 @@ fun LiquidBottomTabs(
 
     BoxWithConstraints(
         modifier
-            .fillMaxWidth()
             .navigationBarsPadding()
-            .height(LiquidBottomTabsSpec.Height),
+            .fillMaxWidth(),
         contentAlignment = Alignment.CenterStart
     ) {
         val density = LocalDensity.current

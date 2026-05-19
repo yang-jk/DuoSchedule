@@ -50,9 +50,9 @@ fun <T> SegmentedControl(
     val backgroundColor = if (transparentBackground) {
         Color.Transparent
     } else if (darkTheme) {
-        Color(0x1F767680)
+        Color(0x38787880)
     } else {
-        Color(0x1E767680)
+        Color(0x28787880)
     }
 
     var selectedIndex by remember(selectedOption) {

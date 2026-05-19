@@ -19,7 +19,8 @@ data class CourseImportData(
     val customWeeks: String = "",
     val personType: PersonType,
     val startPeriod: Int = 1,
-    val endPeriod: Int = 1
+    val endPeriod: Int = 1,
+    val isCustomTime: Boolean = false
 ) {
     fun toCourse(): Course {
         return Course(
@@ -37,7 +38,8 @@ data class CourseImportData(
             customWeeks = customWeeks,
             personType = personType,
             startPeriod = startPeriod,
-            endPeriod = endPeriod
+            endPeriod = endPeriod,
+            isCustomTime = isCustomTime
         )
     }
 
@@ -107,7 +109,8 @@ data class ImportResult(
     val settingsA: ScheduleSettingsExport? = null,
     val settingsB: ScheduleSettingsExport? = null,
     val personAName: String? = null,
-    val personBName: String? = null
+    val personBName: String? = null,
+    val exportVersion: Int = 0
 )
 
 enum class CsvFileType {
@@ -121,7 +124,8 @@ data class ImportPreviewData(
     val settingsA: ScheduleSettingsExport? = null,
     val settingsB: ScheduleSettingsExport? = null,
     val personAName: String? = null,
-    val personBName: String? = null
+    val personBName: String? = null,
+    val exportVersion: Int = 0
 )
 
 data class ImportedSettings(

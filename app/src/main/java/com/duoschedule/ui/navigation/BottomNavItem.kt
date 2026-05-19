@@ -17,14 +17,14 @@ sealed class BottomNavItem(
         icon = Icons.Default.Home
     )
 
-    object ScheduleB : BottomNavItem(
-        route = "schedule_b",
+    object ScheduleA : BottomNavItem(
+        route = "schedule_a",
         title = "我的课表",
         icon = Icons.Default.Person
     )
 
-    object ScheduleA : BottomNavItem(
-        route = "schedule_a",
+    object ScheduleB : BottomNavItem(
+        route = "schedule_b",
         title = "Ta的课表",
         icon = Icons.Default.Person
     )

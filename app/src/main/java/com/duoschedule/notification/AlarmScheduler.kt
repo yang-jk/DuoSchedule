@@ -30,6 +30,26 @@ class AlarmScheduler @Inject constructor(
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
+    data class AlarmInfo(
+        val requestCode: Int,
+        val type: String,
+        val courseName: String,
+        val triggerTime: Long,
+        val isExact: Boolean
+    )
+
+    private val scheduledAlarms = mutableMapOf<Int, AlarmInfo>()
+
+    fun getScheduledAlarms(): List<AlarmInfo> = scheduledAlarms.values.toList()
+
+    private fun recordAlarm(requestCode: Int, type: String, courseName: String, triggerTime: Long, isExact: Boolean) {
+        scheduledAlarms[requestCode] = AlarmInfo(requestCode, type, courseName, triggerTime, isExact)
+    }
+
+    fun clearScheduledAlarmsRecord() {
+        scheduledAlarms.clear()
+    }
+
     fun canScheduleExactAlarms(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             alarmManager.canScheduleExactAlarms()
@@ -91,14 +111,28 @@ class AlarmScheduler @Inject constructor(
                         pendingIntent = pendingIntent,
                         label = "课前提醒: ${course.name}"
                     )
+                    recordAlarm(SafeConverters.safeRequestCode(course.id), "reminder", course.name, triggerTime, true)
                     AppLog.d(TAG, "  AlarmClock已设置: ${course.name} at $reminderTime")
+                    NotificationDebugLogger.log(NotificationDebugLog(
+                        type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                        result = NotificationDebugLog.LogResult.SUCCESS,
+                        message = "课前提醒闹钟已设置",
+                        params = mapOf("courseName" to course.name, "triggerTime" to triggerTime.toString())
+                    ))
                 } else {
                     alarmManager.setAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
                         triggerTime,
                         pendingIntent
                     )
+                    recordAlarm(SafeConverters.safeRequestCode(course.id), "reminder", course.name, triggerTime, false)
                     AppLog.d(TAG, "  非精确闹钟已设置(无精确闹钟权限): ${course.name} at $reminderTime")
+                    NotificationDebugLogger.log(NotificationDebugLog(
+                        type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                        result = NotificationDebugLog.LogResult.SUCCESS,
+                        message = "课前提醒闹钟已设置",
+                        params = mapOf("courseName" to course.name, "triggerTime" to triggerTime.toString())
+                    ))
                 }
             } else {
                 scheduleAlarmClock(
@@ -106,10 +140,23 @@ class AlarmScheduler @Inject constructor(
                     pendingIntent = pendingIntent,
                     label = "课前提醒: ${course.name}"
                 )
+                recordAlarm(SafeConverters.safeRequestCode(course.id), "reminder", course.name, triggerTime, true)
                 AppLog.d(TAG, "  AlarmClock已设置: ${course.name} at $reminderTime")
+                NotificationDebugLogger.log(NotificationDebugLog(
+                    type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                    result = NotificationDebugLog.LogResult.SUCCESS,
+                    message = "课前提醒闹钟已设置",
+                    params = mapOf("courseName" to course.name, "triggerTime" to triggerTime.toString())
+                ))
             }
         } catch (e: SecurityException) {
             Log.e(TAG, "  无法设置闹钟: ${e.message}")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.FAILURE,
+                message = "课前提醒闹钟设置失败",
+                params = mapOf("courseName" to course.name, "error" to (e.message ?: ""))
+            ))
             scheduleReminderWork(course, reminderTime, advanceMinutes)
         }
     }
@@ -153,14 +200,28 @@ class AlarmScheduler @Inject constructor(
                         pendingIntent = pendingIntent,
                         label = "课程开始: ${course.name}"
                     )
+                    recordAlarm(SafeConverters.safeRequestCode(course.id, 10000), "ongoing", course.name, triggerTime, true)
                     AppLog.d(TAG, "  课程开始AlarmClock已设置: ${course.name} at $courseStartTime")
+                    NotificationDebugLogger.log(NotificationDebugLog(
+                        type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                        result = NotificationDebugLog.LogResult.SUCCESS,
+                        message = "课程开始闹钟已设置",
+                        params = mapOf("courseName" to course.name, "triggerTime" to triggerTime.toString())
+                    ))
                 } else {
                     alarmManager.setAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
                         triggerTime,
                         pendingIntent
                     )
+                    recordAlarm(SafeConverters.safeRequestCode(course.id, 10000), "ongoing", course.name, triggerTime, false)
                     AppLog.d(TAG, "  课程开始闹钟已设置(非精确-无权限): ${course.name} at $courseStartTime")
+                    NotificationDebugLogger.log(NotificationDebugLog(
+                        type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                        result = NotificationDebugLog.LogResult.SUCCESS,
+                        message = "课程开始闹钟已设置",
+                        params = mapOf("courseName" to course.name, "triggerTime" to triggerTime.toString())
+                    ))
                 }
             } else {
                 scheduleAlarmClock(
@@ -168,10 +229,23 @@ class AlarmScheduler @Inject constructor(
                     pendingIntent = pendingIntent,
                     label = "课程开始: ${course.name}"
                 )
+                recordAlarm(SafeConverters.safeRequestCode(course.id, 10000), "ongoing", course.name, triggerTime, true)
                 AppLog.d(TAG, "  课程开始AlarmClock已设置: ${course.name} at $courseStartTime")
+                NotificationDebugLogger.log(NotificationDebugLog(
+                    type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                    result = NotificationDebugLog.LogResult.SUCCESS,
+                    message = "课程开始闹钟已设置",
+                    params = mapOf("courseName" to course.name, "triggerTime" to triggerTime.toString())
+                ))
             }
         } catch (e: SecurityException) {
             Log.e(TAG, "  无法设置课程开始闹钟: ${e.message}")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.FAILURE,
+                message = "课程开始闹钟设置失败",
+                params = mapOf("courseName" to course.name, "error" to (e.message ?: ""))
+            ))
         }
     }
 
@@ -210,9 +284,22 @@ class AlarmScheduler @Inject constructor(
                 triggerTime,
                 pendingIntent
             )
+            recordAlarm(SafeConverters.safeRequestCode(course.id, 60000), "pre_start", course.name, triggerTime, canScheduleExactAlarms())
             AppLog.i(TAG, "  预启动服务闹钟已设置: ${course.name} at $preStartTime")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.SUCCESS,
+                message = "预启动服务闹钟已设置",
+                params = mapOf("courseName" to course.name, "triggerTime" to triggerTime.toString())
+            ))
         } catch (e: Exception) {
             Log.e(TAG, "  无法设置预启动服务闹钟: ${e.message}")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.FAILURE,
+                message = "预启动服务闹钟设置失败",
+                params = mapOf("courseName" to course.name, "error" to (e.message ?: ""))
+            ))
         }
     }
 
@@ -247,9 +334,22 @@ class AlarmScheduler @Inject constructor(
                 triggerTime,
                 pendingIntent
             )
+            recordAlarm(SafeConverters.safeRequestCode(course.id, 50000), "pre_check", course.name, triggerTime, canScheduleExactAlarms())
             AppLog.i(TAG, "  课前检查闹钟已设置：${course.name} at $preCheckTime")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.SUCCESS,
+                message = "课前检查闹钟已设置",
+                params = mapOf("courseName" to course.name, "triggerTime" to triggerTime.toString())
+            ))
         } catch (e: Exception) {
             Log.e(TAG, "  无法设置课前检查闹钟：${e.message}")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.FAILURE,
+                message = "课前检查闹钟设置失败",
+                params = mapOf("courseName" to course.name, "error" to (e.message ?: ""))
+            ))
         }
     }
 
@@ -293,9 +393,22 @@ class AlarmScheduler @Inject constructor(
                 triggerTime,
                 pendingIntent
             )
+            recordAlarm(SafeConverters.safeRequestCode(course.id, 20000), "silent_start", course.name, triggerTime, canScheduleExactAlarms())
             AppLog.i(TAG, "  静音开始闹钟已设置: ${course.name}")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.SUCCESS,
+                message = "静音开始闹钟已设置",
+                params = mapOf("courseName" to course.name, "triggerTime" to triggerTime.toString())
+            ))
         } catch (e: SecurityException) {
             Log.e(TAG, "  无法设置静音开始闹钟: ${e.message}")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.FAILURE,
+                message = "静音开始闹钟设置失败",
+                params = mapOf("courseName" to course.name, "error" to (e.message ?: ""))
+            ))
         }
     }
 
@@ -335,9 +448,22 @@ class AlarmScheduler @Inject constructor(
                 triggerTime,
                 pendingIntent
             )
+            recordAlarm(SafeConverters.safeRequestCode(course.id, 30000), "silent_end", course.name, triggerTime, canScheduleExactAlarms())
             AppLog.i(TAG, "  静音结束闹钟已设置: ${course.name}")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.SUCCESS,
+                message = "静音结束闹钟已设置",
+                params = mapOf("courseName" to course.name, "triggerTime" to triggerTime.toString())
+            ))
         } catch (e: SecurityException) {
             Log.e(TAG, "  无法设置静音结束闹钟: ${e.message}")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.FAILURE,
+                message = "静音结束闹钟设置失败",
+                params = mapOf("courseName" to course.name, "error" to (e.message ?: ""))
+            ))
         }
     }
 
@@ -363,9 +489,22 @@ class AlarmScheduler @Inject constructor(
                 triggerTime,
                 pendingIntent
             )
+            recordAlarm(9999, "daily_reschedule", "", triggerTime, canScheduleExactAlarms())
             AppLog.d(TAG, "每日重新调度任务已设置: $midnight")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.SUCCESS,
+                message = "每日重新调度闹钟已设置",
+                params = mapOf("triggerTime" to triggerTime.toString())
+            ))
         } catch (e: SecurityException) {
             Log.e(TAG, "设置每日重新调度任务失败: ${e.message}")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.FAILURE,
+                message = "每日重新调度闹钟设置失败",
+                params = mapOf("error" to (e.message ?: ""))
+            ))
         }
     }
 
@@ -395,6 +534,74 @@ class AlarmScheduler @Inject constructor(
             }
         }
         WorkManager.getInstance(context).cancelUniqueWork("${CourseNotificationManager.WORK_NAME_REMINDER}_$courseId")
+        NotificationDebugLogger.log(NotificationDebugLog(
+            type = NotificationDebugLog.LogType.ALARM_CANCELLED,
+            result = NotificationDebugLog.LogResult.SUCCESS,
+            message = "已取消课程闹钟",
+            params = mapOf("courseId" to courseId.toString())
+        ))
+    }
+
+    fun cancelAllSilentAlarms() {
+        val silentAlarmEntries = scheduledAlarms.entries
+            .filter { it.value.type == "silent_start" || it.value.type == "silent_end" || it.value.type == "silent_end_test" }
+
+        for (entry in silentAlarmEntries) {
+            val intent = Intent(context, SilentModeReceiver::class.java)
+            val pendingIntent = PendingIntent.getBroadcast(
+                context, entry.key, intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            pendingIntent?.let { alarmManager.cancel(it) }
+            scheduledAlarms.remove(entry.key)
+        }
+
+        AppLog.d(TAG, "cancelAllSilentAlarms: 已取消 ${silentAlarmEntries.size} 个静音闹钟")
+        NotificationDebugLogger.log(NotificationDebugLog(
+            type = NotificationDebugLog.LogType.ALARM_CANCELLED,
+            result = NotificationDebugLog.LogResult.SUCCESS,
+            message = "已取消所有静音闹钟",
+            params = mapOf("count" to silentAlarmEntries.size.toString())
+        ))
+    }
+
+    fun scheduleSilentEndAlarmForTest(courseId: Long, courseName: String, triggerTimeMillis: Long) {
+        val intent = Intent(context, SilentModeReceiver::class.java).apply {
+            action = SilentModeReceiver.ACTION_SILENT_END
+            putExtra(SilentModeReceiver.EXTRA_COURSE_ID, courseId)
+            putExtra(SilentModeReceiver.EXTRA_COURSE_NAME, courseName)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            SafeConverters.safeRequestCode(courseId, 30000),
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        try {
+            setAlarmWithFallback(
+                AlarmManager.RTC_WAKEUP,
+                triggerTimeMillis,
+                pendingIntent
+            )
+            recordAlarm(SafeConverters.safeRequestCode(courseId, 30000), "silent_end_test", courseName, triggerTimeMillis, canScheduleExactAlarms())
+            AppLog.i(TAG, "测试静音结束闹钟已设置: $courseName, ${((triggerTimeMillis - System.currentTimeMillis()) / 1000)}秒后触发")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.SUCCESS,
+                message = "测试静音结束闹钟已设置",
+                params = mapOf("courseName" to courseName, "triggerTime" to triggerTimeMillis.toString())
+            ))
+        } catch (e: SecurityException) {
+            Log.e(TAG, "无法设置测试静音结束闹钟: ${e.message}")
+            NotificationDebugLogger.log(NotificationDebugLog(
+                type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
+                result = NotificationDebugLog.LogResult.FAILURE,
+                message = "测试静音结束闹钟设置失败",
+                params = mapOf("courseName" to courseName, "error" to (e.message ?: ""))
+            ))
+        }
     }
 
     private fun scheduleAlarmClock(triggerTime: Long, pendingIntent: PendingIntent, label: String) {
@@ -432,6 +639,7 @@ class AlarmScheduler @Inject constructor(
         val workRequest = OneTimeWorkRequestBuilder<ReminderWorker>()
             .setInitialDelay(delayMinutes, TimeUnit.MINUTES)
             .setInputData(workData)
+            .addTag(CourseNotificationManager.WORK_NAME_REMINDER)
             .build()
 
         WorkManager.getInstance(context).enqueueUniqueWork(

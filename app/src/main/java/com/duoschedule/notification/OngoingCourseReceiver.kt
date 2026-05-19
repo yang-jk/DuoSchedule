@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.duoschedule.DuoScheduleApp
+import java.util.Calendar
 
 class OngoingCourseReceiver : BroadcastReceiver() {
 
@@ -16,7 +17,7 @@ class OngoingCourseReceiver : BroadcastReceiver() {
         if (intent.action == ACTION_COURSE_START) {
             val courseName = intent.getStringExtra(EXTRA_COURSE_NAME)
             val courseLocation = intent.getStringExtra(EXTRA_COURSE_LOCATION) ?: ""
-            val duration = intent.getIntExtra(EXTRA_DURATION, 45)
+            val duration = intent.getIntExtra(EXTRA_DURATION, 0)
             val endHour = intent.getIntExtra(EXTRA_END_HOUR, -1)
             val endMinute = intent.getIntExtra(EXTRA_END_MINUTE, -1)
 
@@ -27,13 +28,19 @@ class OngoingCourseReceiver : BroadcastReceiver() {
                 return
             }
 
+            if (duration <= 0) {
+                Log.e(TAG, "Invalid duration: $duration, skip LiveUpdateService")
+                return
+            }
+
             LiveUpdateService.start(
                 context = context,
                 courseName = courseName,
                 courseLocation = courseLocation,
                 remainingMinutes = duration,
                 endHour = endHour,
-                endMinute = endMinute
+                endMinute = endMinute,
+                totalMinutes = duration
             )
             
             Log.d(TAG, "LiveUpdateService started")

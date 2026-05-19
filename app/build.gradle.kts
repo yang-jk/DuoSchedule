@@ -7,14 +7,38 @@ plugins {
 
 android {
     namespace = "com.duoschedule"
-    compileSdk = 36
+    compileSdk = 37
+
+    val keystoreFile = System.getenv("KEYSTORE_FILE")
+        ?: file("../key.properties").let { props ->
+            if (props.exists()) {
+                val propsObj = java.util.Properties()
+                propsObj.load(props.inputStream())
+                propsObj.getProperty("storeFile")
+            } else null
+        }
+
+    if (keystoreFile != null) {
+        val keystoreProps = java.util.Properties().apply {
+            val propsFile = file("../key.properties")
+            if (propsFile.exists()) load(propsFile.inputStream())
+        }
+        signingConfigs {
+            create("release") {
+                storeFile = file(System.getenv("KEYSTORE_FILE") ?: keystoreProps.getProperty("storeFile") ?: "")
+                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: keystoreProps.getProperty("storePassword") ?: ""
+                keyAlias = System.getenv("KEY_ALIAS") ?: keystoreProps.getProperty("keyAlias") ?: ""
+                keyPassword = System.getenv("KEY_PASSWORD") ?: keystoreProps.getProperty("keyPassword") ?: ""
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.duoschedule"
         minSdk = 26
         targetSdk = 36
-        versionCode = 12000
-        versionName = "1.2.0"
+        versionCode = 25000
+        versionName = "1.15.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -33,6 +57,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (keystoreFile != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {
@@ -101,11 +128,16 @@ dependencies {
     
     implementation("androidx.core:core-splashscreen:1.0.1")
     
-    implementation("io.github.kyant0:backdrop:1.0.6")
+    implementation("io.github.kyant0:backdrop:2.0.0-alpha03")
     implementation("io.github.kyant0:shapes:1.2.0")
     implementation("io.github.kyant0:capsule:2.1.3")
     
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    testImplementation("org.robolectric:robolectric:4.12")
+    testImplementation("androidx.test:core:1.6.1")
+    testImplementation("androidx.test.ext:junit:1.2.1")
+    testImplementation("io.mockk:mockk:1.13.9")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2026.05.00"))

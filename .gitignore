@@ -1,12 +1,7 @@
 *.iml
 .gradle
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+/.idea/
 .DS_Store
 /build
 /captures
@@ -29,7 +24,6 @@ navigation/
 *.orig
 *.swp
 *~
-.DS_Store
 Thumbs.db
 .codebuddy/
 .trae/
@@ -42,3 +36,14 @@ keystore
 duoschedule-update-tmp/
 fix-gradle-lock.bat
 AGENTS.md
+
+AndroidLiquidGlass-2.0.0-alpha03/
+miuix-0.9.0/
+docs/
+assets/CodeBubbyAssets/
+*.csv
+*.png
+!app/src/main/res/**/ic_*.png
+!app/src/main/res/**/widget_*.png
+Product-Spec.md
+Product-Spec-CHANGELOG.md
