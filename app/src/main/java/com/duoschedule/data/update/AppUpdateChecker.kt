@@ -21,8 +21,10 @@ class AppUpdateChecker @Inject constructor(
 ) {
     companion object {
         private const val TAG = "AppUpdateChecker"
-        private const val UPDATE_JSON_URL =
+        private const val UPDATE_JSON_URL_GITHUB =
             "https://cdn.jsdelivr.net/gh/yang-jk/duoschedule-update@main/update.json"
+        private const val UPDATE_JSON_URL_GITEE =
+            "https://gitee.com/yang-jk/duoschedule-update/raw/main/update.json"
         private const val CONNECT_TIMEOUT_SECONDS = 10L
         private const val READ_TIMEOUT_SECONDS = 15L
     }
@@ -37,7 +39,7 @@ class AppUpdateChecker @Inject constructor(
             val currentVersionCode = getCurrentVersionCode(context)
             AppLog.i(TAG, "当前版本号: $currentVersionCode")
 
-            val updateInfo = fetchUpdateInfo()
+            val updateInfo = fetchUpdateInfoWithFallback()
             AppLog.i(TAG, "最新版本: ${updateInfo.latestVersion} (${updateInfo.latestVersionCode})")
 
             val status = determineUpdateStatus(currentVersionCode, updateInfo)
@@ -73,22 +75,32 @@ class AppUpdateChecker @Inject constructor(
         }
     }
 
-    private suspend fun fetchUpdateInfo(): UpdateInfo = withContext(Dispatchers.IO) {
-        val url = "$UPDATE_JSON_URL?t=${System.currentTimeMillis()}"
-        val request = Request.Builder()
-            .url(url)
-            .build()
+    private suspend fun fetchUpdateInfoWithFallback(): UpdateInfo = withContext(Dispatchers.IO) {
+        val urls = listOf(UPDATE_JSON_URL_GITEE, UPDATE_JSON_URL_GITHUB)
+        
+        for ((index, url) in urls.withIndex()) {
+            try {
+                AppLog.i(TAG, "尝试获取更新信息 (${index + 1}/${urls.size}): $url")
+                val request = Request.Builder()
+                    .url("$url?t=${System.currentTimeMillis()}")
+                    .build()
 
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw Exception("HTTP ${response.code}")
+                client.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        val body = response.body?.string()
+                            ?: throw Exception("响应体为空")
+                        AppLog.i(TAG, "成功从 $url 获取更新信息")
+                        return@withContext parseUpdateInfo(body)
+                    }
+                }
+            } catch (e: Exception) {
+                AppLog.w(TAG, "从 $url 获取更新信息失败: ${e.message}")
+                if (index == urls.lastIndex) {
+                    throw e
+                }
             }
-
-            val body = response.body?.string()
-                ?: throw Exception("响应体为空")
-
-            parseUpdateInfo(body)
         }
+        throw Exception("所有更新服务器都无法访问")
     }
 
     private fun parseUpdateInfo(json: String): UpdateInfo {
