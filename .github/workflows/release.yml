@@ -1,4 +1,4 @@
-name: Build & Release APK
+name: 构建与发布 APK
 
 on:
   push:
@@ -17,28 +17,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: 检出代码
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 17
+      - name: 配置 JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
+      - name: 配置 Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Ensure Gradle wrapper
+      - name: 确保 Gradle Wrapper 可执行
         run: |
           if [ ! -f gradlew ]; then
             gradle wrapper
           fi
           chmod +x gradlew
 
-      - name: Extract version info and verify versionCode
+      - name: 提取版本信息并校验 versionCode
         id: version
         run: |
           VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*versionName[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/')
@@ -52,12 +52,12 @@ jobs:
           echo "calculated_version_code=$CALCULATED_VERSION_CODE" >> $GITHUB_OUTPUT
 
           if [ "$VERSION_CODE" != "$CALCULATED_VERSION_CODE" ]; then
-            echo "::error::versionCode mismatch! build.gradle.kts has $VERSION_CODE, but formula (MAJOR×10000 + MINOR×100 + PATCH) calculates $CALCULATED_VERSION_CODE for versionName $VERSION_NAME"
+            echo "::error::versionCode 不匹配！build.gradle.kts 中为 $VERSION_CODE，但按公式 (MAJOR×10000 + MINOR×100 + PATCH) 计算版本名 $VERSION_NAME 应为 $CALCULATED_VERSION_CODE"
             exit 1
           fi
-          echo "✅ versionCode verification passed: $VERSION_CODE"
+          echo "✅ versionCode 校验通过: $VERSION_CODE"
 
-      - name: Extract changelog
+      - name: 提取变更记录
         id: changelog
         run: |
           CHANGELOG=""
@@ -73,10 +73,10 @@ jobs:
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
-      - name: Decode keystore
+      - name: 解码签名文件
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore
 
-      - name: Build release APK
+      - name: 构建正式版 APK
         id: build
         env:
           KEYSTORE_FILE: keystore
@@ -85,7 +85,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease
 
-      - name: Rename APK
+      - name: 重命名 APK 文件
         if: success()
         run: |
           mv app/build/outputs/apk/release/app-release-unsigned.apk \
@@ -94,7 +94,7 @@ jobs:
           mv app/build/outputs/apk/release/app-release.apk \
              app/build/outputs/apk/release/DuoSchedule-${{ steps.version.outputs.version_name }}.apk
 
-      - name: Create or update tag
+      - name: 创建或更新 Git 标签
         if: success()
         run: |
           TAG="v${{ steps.version.outputs.version_name }}"
@@ -103,7 +103,7 @@ jobs:
           git tag -f "$TAG"
           git push origin "$TAG" --force
 
-      - name: Create GitHub Release
+      - name: 发布到 GitHub Release
         id: release
         if: success()
         uses: softprops/action-gh-release@v2
@@ -123,7 +123,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Gitee Release
+      - name: 发布到 Gitee Release
         id: gitee_release
         if: success()
         continue-on-error: true
@@ -134,7 +134,7 @@ jobs:
           CHANGELOG: ${{ steps.changelog.outputs.changelog }}
         run: |
           if [ -z "$GITEE_TOKEN" ]; then
-            echo "GITEE_TOKEN not configured, skipping Gitee release"
+            echo "GITEE_TOKEN 未配置，跳过 Gitee 发布"
             echo "success=false" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -155,22 +155,22 @@ jobs:
           RELEASE_ID=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
 
           if [ -z "$RELEASE_ID" ]; then
-            echo "Failed to create Gitee release"
+            echo "Gitee Release 创建失败"
             echo "$RESPONSE"
             echo "success=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          echo "Gitee release created: $RELEASE_ID"
+          echo "Gitee Release 已创建: $RELEASE_ID"
 
           curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/duoschedule/releases/${RELEASE_ID}/attach_files" \
             -F "access_token=${GITEE_TOKEN}" \
             -F "file=@${APK_FILE}"
 
-          echo "✅ APK uploaded to Gitee release"
+          echo "✅ APK 已上传到 Gitee Release"
           echo "success=true" >> $GITHUB_OUTPUT
 
-      - name: Update update.json via GitHub API
+      - name: 更新 update.json
         id: update_repo
         if: success()
         continue-on-error: true
@@ -184,7 +184,7 @@ jobs:
           GITEE_RELEASE_SUCCESS: ${{ steps.gitee_release.outputs.success }}
         run: python3 scripts/update_repo.py
 
-      - name: Notify via ServerChan
+      - name: Server酱通知
         if: always()
         env:
           SERVERCHAN_URL: ${{ secrets.SERVERCHAN_URL }}
@@ -198,7 +198,7 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ -z "$SERVERCHAN_URL" ]; then
-            echo "SERVERCHAN_URL not configured, skipping notification"
+            echo "SERVERCHAN_URL 未配置，跳过通知"
             exit 0
           fi
 
@@ -255,4 +255,4 @@ jobs:
             -d @notify.json)
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | sed '$d')
-          echo "ServerChan response (HTTP $HTTP_CODE): $BODY"
+          echo "Server酱响应 (HTTP $HTTP_CODE): $BODY"
