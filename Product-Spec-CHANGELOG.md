@@ -16,15 +16,16 @@
 
 ### 变更内容
 
-**统一版本号计算规则**
+**统一版本号计算规则 + 修复 GitHub Actions 构建签名错误**
 
 1. **BREAKING**：版本号计算公式统一为 `versionCode = MAJOR × 10000 + MINOR × 100 + PATCH`，确保 versionCode 与 versionName 视觉对应关系直观（如 3.0.0 → 30000，12.12.12 → 121212）
 2. **修复**：修正 GitHub Actions 工作流中的版本号验证公式，与实际使用的公式保持一致
+3. **修复**：修复 GitHub Actions 构建时密钥库路径错误（`app/app/keystore` → `keystore`），解决 `validateSigningRelease` 任务失败问题
 
 ### 修改文件
 
 - `app/build.gradle.kts`（versionCode 更新为 30000，versionName 更新为 3.0.0）
-- `.github/workflows/release.yml`（修正版本号验证错误消息中的公式）
+- `.github/workflows/release.yml`（修正版本号验证错误消息中的公式；修复密钥库路径配置）
 - `Product-Spec-CHANGELOG.md`（统一版本号计算公式，添加本次变更记录）
 
 ---
