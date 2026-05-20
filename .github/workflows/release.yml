@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: write
-  workflows: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -126,12 +125,16 @@ jobs:
 
       - name: 创建或更新 Git 标签
         if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="v${{ steps.version.outputs.version_name }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -f "$TAG"
-          git push origin "$TAG" --force
+          SHA="${{ github.sha }}"
+          gh api "repos/${{ github.repository }}/git/refs/tags/$TAG" --method DELETE 2>/dev/null || true
+          gh api "repos/${{ github.repository }}/git/refs" \
+            --method POST \
+            -f ref="refs/tags/$TAG" \
+            -f sha="$SHA"
 
       - name: 发布到 GitHub Release
         id: release

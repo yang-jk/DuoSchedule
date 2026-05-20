@@ -6,6 +6,28 @@
 
 ---
 
+## [3.3.6] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 CI 推送标签被拒绝：改用 GitHub API 创建标签**
+
+1. **修复**：`git push origin "$TAG" --force` 推送包含工作流文件变更的 tag 时，`GITHUB_TOKEN` 缺少 `workflow` scope 被拒绝。改用 `gh api` 通过 GitHub REST API 创建/更新标签引用（`POST /repos/{owner}/{repo}/git/refs`），API 方式不受 workflow scope 限制
+2. **移除**：删除无效的 `workflows: write` 权限声明（GitHub Actions 不支持该权限值）
+
+### 修改文件
+
+- `.github/workflows/release.yml`（标签创建步骤从 git push 改为 gh api，移除 workflows: write）
+- `app/build.gradle.kts`（versionCode 30305→30306，versionName 3.3.5→3.3.6）
+- `Product-Spec.md`（版本号 3.3.5→3.3.6）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
 ## [3.3.5] - 2026-05-20
 
 ### 变更类型：Bug修复
@@ -2315,6 +2337,6 @@
 
 ---
 
-**文档版本**：3.3.5
+**文档版本**：3.3.6
 
 **最后更新**：2026-05-20
