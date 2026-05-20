@@ -151,7 +151,7 @@ if USE_GITEE and GITEE_TOKEN:
     print("=" * 50)
     print("Updating Gitee...")
     gitee_api_url = f"https://gitee.com/api/v5/repos/{GITEE_OWNER}/duoschedule-update/contents/update.json"
-    gitee_download_url = f"https://gitee.com/{GITEE_OWNER}/DuoSchedule/releases/download/{TAG_NAME}/DuoSchedule-{VERSION_NAME}.apk"
+    gitee_download_url = f"https://gitee.com/{GITEE_OWNER}/duoschedule/releases/download/{TAG_NAME}/DuoSchedule-{VERSION_NAME}.apk"
     gitee_success = update_gitee(gitee_api_url, GITEE_TOKEN, gitee_download_url)
 
     if gitee_success:

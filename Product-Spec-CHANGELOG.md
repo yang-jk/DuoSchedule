@@ -21,10 +21,12 @@
 1. **修复**：update_repo.py 对 Gitee API 使用了 GitHub 的 `Authorization: token` 头认证，但 Gitee API 需要使用 `access_token` 查询参数和请求体字段认证，导致 Gitee update.json 更新一直失败
 2. **新增**：update_repo.py 更新 GitHub update.json 后自动刷新 jsDelivr CDN 缓存（访问 purge.jsdelivr.net），避免 app 从 CDN 获取到过时的更新信息
 3. **重构**：update_repo.py 拆分为 `update_github()` 和 `update_gitee()` 两个独立函数，分别使用各自平台正确的认证方式
+4. **修复**：Gitee Release 仓库名大小写错误，代码中写的是 `DuoSchedule`（大写），实际 Gitee 仓库名为 `duoschedule`（全小写），导致 downloadUrl 指向不存在的仓库
 
 ### 修改文件
 
-- `scripts/update_repo.py`（拆分 GitHub/Gitee 更新函数，修复 Gitee 认证方式，新增 jsDelivr CDN 缓存刷新）
+- `scripts/update_repo.py`（拆分 GitHub/Gitee 更新函数，修复 Gitee 认证方式，新增 jsDelivr CDN 缓存刷新，修复 Gitee 仓库名大小写）
+- `.github/workflows/release.yml`（Gitee Release API URL 仓库名 DuoSchedule → duoschedule）
 - `app/build.gradle.kts`（versionCode 30002→30003，versionName 3.0.2→3.0.3）
 - `Product-Spec.md`（版本号 3.0.2→3.0.3）
 - `Product-Spec-CHANGELOG.md`（添加变更记录）

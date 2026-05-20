@@ -141,7 +141,7 @@ jobs:
           TAG="v${VERSION_NAME}"
           APK_FILE="app/build/outputs/apk/release/DuoSchedule-${VERSION_NAME}.apk"
 
-          RESPONSE=$(curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/DuoSchedule/releases" \
+          RESPONSE=$(curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/duoschedule/releases" \
             -H "Content-Type: application/json" \
             -d "{
               \"access_token\": \"${GITEE_TOKEN}\",
@@ -161,7 +161,7 @@ jobs:
 
           echo "Gitee release created: $RELEASE_ID"
 
-          curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/DuoSchedule/releases/${RELEASE_ID}/attach_files" \
+          curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/duoschedule/releases/${RELEASE_ID}/attach_files" \
             -F "access_token=${GITEE_TOKEN}" \
             -F "file=@${APK_FILE}"
 
