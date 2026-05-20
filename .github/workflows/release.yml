@@ -172,18 +172,15 @@ jobs:
             exit 0
           fi
 
-          TAG="v${VERSION_NAME}"
           APK_FILE="app/build/outputs/apk/release/DuoSchedule-${VERSION_NAME}.apk"
-
-          BODY="版本号: ${VERSION_CODE}\n\n${CHANGELOG}"
 
           JSON_BODY=$(python3 -c "
           import json, os
           data = {
             'access_token': os.environ['GITEE_TOKEN'],
-            'tag_name': os.environ.get('TAG', ''),
+            'tag_name': 'v' + os.environ['VERSION_NAME'],
             'name': 'DuoSchedule ' + os.environ['VERSION_NAME'],
-            'body': os.environ.get('BODY', ''),
+            'body': '版本号: ' + os.environ['VERSION_CODE'] + '\n\n' + os.environ.get('CHANGELOG', ''),
             'target_commitish': 'main'
           }
           print(json.dumps(data, ensure_ascii=False))
@@ -199,14 +196,17 @@ jobs:
             echo "Gitee Release 创建失败"
             echo "$RESPONSE"
             echo "success=false" >> $GITHUB_OUTPUT
+            echo "gitee_error<<EOF" >> $GITHUB_OUTPUT
+            echo "$RESPONSE" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           echo "Gitee Release 已创建: $RELEASE_ID"
 
-          curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/duoschedule/releases/${RELEASE_ID}/attach_files" \
+          UPLOAD_RESPONSE=$(curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/duoschedule/releases/${RELEASE_ID}/attach_files" \
             -F "access_token=${GITEE_TOKEN}" \
-            -F "file=@${APK_FILE}"
+            -F "file=@${APK_FILE}")
 
           echo "✅ APK 已上传到 Gitee Release"
           echo "success=true" >> $GITHUB_OUTPUT
@@ -237,6 +237,7 @@ jobs:
           UPDATE_REPO_OUTCOME: ${{ steps.update_repo.outcome }}
           GITEE_RELEASE_SUCCESS: ${{ steps.gitee_release.outputs.success }}
           BUILD_ERRORS: ${{ steps.build_errors.outputs.errors }}
+          GITEE_ERROR: ${{ steps.gitee_release.outputs.gitee_error }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ -z "$SERVERCHAN_URL" ]; then
@@ -279,13 +280,19 @@ jobs:
           update_repo_status = os.environ['UPDATE_REPO_STATUS']
           gitee_release_success = os.environ.get('GITEE_RELEASE_SUCCESS', '')
           build_errors = os.environ.get('BUILD_ERRORS', '')
+          gitee_error = os.environ.get('GITEE_ERROR', '')
           run_url = os.environ['RUN_URL']
           title = os.environ['TITLE']
           desp = f'版本: {version_name} ({version_code})  \nAPK 构建: {build_status}  \nGitHub Release: {release_status}  \nGitee Release: {gitee_release_status}  \n更新仓库: {update_repo_status}  '
           if gitee_release_success == 'false':
               desp += f'  \n⚠️ Gitee Release 失败，downloadUrl 已回退到 GitHub  '
+          error_parts = []
           if build_errors:
-              desp += f'  \n\n---  \n**构建错误:**  \n```\n{build_errors}\n```  '
+              error_parts.append(f'**构建错误:**  \n```\n{build_errors}\n```')
+          if gitee_error:
+              error_parts.append(f'**Gitee Release 错误:**  \n```\n{gitee_error}\n```')
+          if error_parts:
+              desp += f'  \n\n---  \n' + '  \n'.join(error_parts) + '  '
           desp += f' \n\n构建详情: {run_url}'
           data = {
             'title': title,
