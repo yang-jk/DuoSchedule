@@ -178,6 +178,7 @@ jobs:
           RELEASE_NOTES: ${{ steps.changelog.outputs.changelog }}
           USE_GITEE: ${{ secrets.USE_GITEE }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GITEE_OWNER: su-zijie21
         run: python3 scripts/update_repo.py
 
       - name: Notify via ServerChan
