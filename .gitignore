@@ -51,4 +51,5 @@ assets/CodeBubbyAssets/
 !app/src/main/res/**/ic_*.png
 !app/src/main/res/**/widget_*.png
 Product-Spec.md
+gradle/init.gradle
 日志.txt
