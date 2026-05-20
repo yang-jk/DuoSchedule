@@ -6,6 +6,28 @@
 
 ---
 
+## [3.2.3] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 CI 构建失败：移除阿里云镜像配置**
+
+1. **修复**：移除 settings.gradle.kts 中的阿里云镜像源，阿里云镜像在 CI（GitHub Actions）上返回错误响应导致 Gradle 无法解析插件（如 KSP 2.3.6），干扰仓库回退机制
+2. **修复**：恢复 gradle-wrapper.properties 中 Gradle distribution 的原始下载地址（services.gradle.org），CI 环境可直接访问
+3. **说明**：本地开发如需国内镜像加速，请在 `~/.gradle/init.gradle` 中配置阿里云镜像
+
+### 修改文件
+
+- `settings.gradle.kts`（移除阿里云镜像源配置）
+- `gradle/wrapper/gradle-wrapper.properties`（恢复 Gradle 原始下载地址）
+- `app/build.gradle.kts`（versionCode 30202→30203，versionName 3.2.2→3.2.3）
+- `Product-Spec.md`（版本号 3.2.2→3.2.3）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
 ---
 
 ## [3.2.2] - 2026-05-20
