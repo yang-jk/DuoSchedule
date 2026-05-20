@@ -50,6 +50,8 @@ fun SettingsScreen(
     val themeMode by viewModel.themeMode.collectAsState()
 
     val context = LocalContext.current
+    val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+    val versionName = packageInfo.versionName ?: "3.4.2"
     var hasNotificationPermission by remember {
         mutableStateOf(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -241,8 +243,8 @@ fun SettingsScreen(
 
             SettingsSection(title = "关于") {
                 SettingsNavigationRow(
-                    title = "关于 DuoSchedule",
-                    subtitle = "版本 3.2.0",
+                    title = "关于 双人课程表",
+                    subtitle = "版本 $versionName",
                     icon = Icons.Outlined.Info,
                     iconBackgroundColor = IOSColors.Blue,
                     onClick = onNavigateToAbout

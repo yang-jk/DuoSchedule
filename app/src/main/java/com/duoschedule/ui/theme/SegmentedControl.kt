@@ -63,7 +63,7 @@ fun <T> SegmentedControl(
     val itemWidthDp = with(density) { itemWidthPx.toDp() }
     val spacingPx = with(density) { 4.dp.toPx().toInt() }
 
-    val animatedOffset = remember { Animatable(0f) }
+    val animatedOffset = remember { Animatable(-1f) }
     var hasInitialized by remember { mutableStateOf(false) }
 
     LaunchedEffect(selectedIndex, itemWidthPx) {
@@ -92,7 +92,7 @@ fun <T> SegmentedControl(
             .background(backgroundColor)
             .padding(2.dp)
     ) {
-        if (itemWidthPx > 0 && options.isNotEmpty()) {
+        if (itemWidthPx > 0 && options.isNotEmpty() && animatedOffset.value >= 0) {
             val surfaceColor = if (darkTheme) {
                 Color(0xFF636366)
             } else {

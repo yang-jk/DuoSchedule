@@ -1,5 +1,6 @@
 package com.duoschedule.ui.settings
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,10 +13,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.duoschedule.R
+import com.duoschedule.ui.update.UpdateDialog
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.backdrops.emptyBackdrop
@@ -27,7 +36,6 @@ import com.kyant.capsule.ContinuousRoundedRectangle
 fun AboutScreen(
     onNavigateBack: () -> Unit,
     onNavigateToChangelog: () -> Unit,
-    onNavigateToUpdate: () -> Unit,
     onNavigateToLegal: () -> Unit,
     onNavigateToAcknowledgments: () -> Unit
 ) {
@@ -35,6 +43,7 @@ fun AboutScreen(
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
     val versionName = packageInfo.versionName ?: "3.2.0"
     val versionCode = packageInfo.versionCode
+    var showUpdateDialog by remember { mutableStateOf(false) }
 
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
@@ -73,31 +82,19 @@ fun AboutScreen(
             ) {
                 Spacer(modifier = Modifier.height(20.dp))
 
-                Box(
+                Image(
+                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
                     modifier = Modifier
                         .size(80.dp)
                         .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.container)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(BrandColors.Primary),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Schedule,
-                            contentDescription = null,
-                            modifier = Modifier.size(44.dp),
-                            tint = Color.White
-                        )
-                    }
-                }
+                    contentScale = ContentScale.Crop
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "DuoSchedule",
+                    text = "双人课程表",
                     style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.SemiBold
                     ),
@@ -128,7 +125,7 @@ fun AboutScreen(
                         subtitle = "查看是否有新版本",
                         icon = Icons.Outlined.SystemUpdate,
                         iconBackgroundColor = IOSColors.Green,
-                        onClick = onNavigateToUpdate
+                        onClick = { showUpdateDialog = true }
                     )
                 }
 
@@ -165,6 +162,12 @@ fun AboutScreen(
             }
 
             ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollState.value)
+        }
+
+        if (showUpdateDialog) {
+            UpdateDialog(
+                onDismiss = { showUpdateDialog = false }
+            )
         }
     }
 }

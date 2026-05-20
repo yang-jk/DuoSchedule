@@ -38,6 +38,15 @@ jobs:
           fi
           chmod +x gradlew
 
+      - name: 从变更记录生成更新日志数据
+        run: python3 scripts/generate_changelog.py
+
+      - name: 切换 Gradle 下载源为官方源
+        run: sed -i 's|mirrors.cloud.tencent.com/gradle|services.gradle.org/distributions|g' gradle/wrapper/gradle-wrapper.properties
+
+      - name: 移除阿里云镜像配置
+        run: sed -i '/maven.*aliyun/d' settings.gradle.kts
+
       - name: 提取版本信息并校验 versionCode
         id: version
         run: |

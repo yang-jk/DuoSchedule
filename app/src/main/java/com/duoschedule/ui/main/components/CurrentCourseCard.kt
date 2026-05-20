@@ -156,7 +156,7 @@ private fun PersonCourseColumn(
             )
             Text(
                 text = state.personName,
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.bodyMedium,
                 color = labelsSecondary,
                 fontWeight = FontWeight.Medium
             )
@@ -177,7 +177,7 @@ private fun PersonCourseColumn(
             ) { displayText ->
                 Text(
                     text = displayText,
-                    style = MaterialTheme.typography.bodyLarge.copy(
+                    style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.SemiBold
                     ),
                     color = labelsPrimary,
@@ -190,7 +190,7 @@ private fun PersonCourseColumn(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = state.locationText,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = labelsSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -201,7 +201,7 @@ private fun PersonCourseColumn(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "↗ 下节: ${state.nextCourseDisplayText} · ${state.nextCourseStartTime}",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = labelsTertiary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -236,7 +236,7 @@ private fun PersonCourseColumn(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "↗ 下节: ${state.nextCourseDisplayText} · ${state.nextCourseStartTime}",
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = labelsTertiary
                     )
                 }

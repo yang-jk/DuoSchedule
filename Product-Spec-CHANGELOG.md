@@ -6,6 +6,149 @@
 
 ---
 
+## [3.3.2] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复更新弹窗 Checking 状态高度不一致**
+
+1. **修复**：UpdateDialog 内容 Column 添加 `heightIn(min = 176.dp)` 最小高度和 `verticalArrangement = Arrangement.Center`，使 Checking 状态弹窗高度与 NoUpdate/Error/ReadyToInstall 状态一致，Checking 内容在固定高度内垂直居中
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/update/UpdateDialog.kt`（Column 添加 heightIn(min=176.dp) + verticalArrangement = Arrangement.Center + Arrangement import）
+- `app/build.gradle.kts`（versionCode 30301→30302，versionName 3.3.1→3.3.2）
+- `Product-Spec.md`（版本号 3.3.1→3.3.2）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
+---
+
+## [3.3.1] - 2026-05-20
+
+### 变更类型：功能优化
+
+### 状态：已实现
+
+### 变更内容
+
+**更新弹窗 CheckingContent 布局对齐 + 弹窗宽度调整**
+
+1. **重构**：CheckingContent 从单行文字（CircularProgressIndicator 32dp + bodyLarge "正在检查更新..."）重构为与 NoUpdateContent/ErrorContent 一致的三层结构：40dp CircularProgressIndicator + headlineSmall 标题"正在检查更新" + bodyMedium 副标题"请稍候..."
+2. **优化**：弹窗宽度从 320.dp 缩减为 300.dp
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/update/UpdateDialog.kt`（CheckingContent 重构 + 弹窗宽度 320.dp→300.dp）
+- `app/build.gradle.kts`（versionCode 30300→30301，versionName 3.3.0→3.3.1）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
+---
+
+## [3.3.1] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复五个 UI 问题**
+
+1. **修复**：UpdateDialog 弹窗宽度从 320.dp 统一为 300.dp（与 GlassDialogContainer 一致）
+2. **重构**：CheckingContent 布局对齐 NoUpdateContent/ErrorContent 结构（40dp CircularProgressIndicator + headlineSmall 标题 + bodyMedium 副标题）
+3. **修复**：AboutScreen 应用名称从 "DuoSchedule" 改为 "双人课程表"
+4. **修复**：AboutScreen 图标从 Icons.Outlined.Schedule 替换为应用 launcher icon
+5. **修复**：SettingsScreen "关于"行标题从 "关于 DuoSchedule" 改为 "关于 双人课程表"
+6. **修复**：SettingsScreen 版本号从硬编码改为动态读取 PackageInfo.versionName
+7. **修复**：SegmentedControl 首次打开时滑块指示器飞入动画（animatedOffset 初始值改为 -1f，显示条件增加 animatedOffset.value >= 0）
+8. **优化**：CurrentCourseCard 人名 labelMedium→bodyMedium、课程名 bodyLarge→titleMedium、地点 bodySmall→bodyMedium、下节课预告 labelSmall→bodySmall
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/update/UpdateDialog.kt`（弹窗宽度 320→300dp，CheckingContent 重构）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（应用名称改为"双人课程表"，图标改为 launcher icon）
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（标题改为"关于 双人课程表"，版本号动态读取）
+- `app/src/main/java/com/duoschedule/ui/theme/SegmentedControl.kt`（修复飞入动画）
+- `app/src/main/java/com/duoschedule/ui/main/components/CurrentCourseCard.kt`（增大文字大小）
+- `app/build.gradle.kts`（versionCode 30300→30301，versionName 3.3.0→3.3.1）
+- `Product-Spec.md`（版本号 3.3.0→3.3.1）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
+## [3.3.0] - 2026-05-20
+
+### 变更类型：功能增强
+
+### 状态：已实现
+
+### 变更内容
+
+**检测更新从页面改为弹窗**
+
+1. **重构**：将 `UpdateScreen`（全屏页面）重构为 `UpdateDialog`（Glass 风格弹窗组件），使用项目已有的 Backdrop + drawBackdrop + ContinuousRoundedRectangle 弹窗模式，宽度 320.dp
+2. **重构**：使用 LiquidGlassButton 替代原有的 Material Button/OutlinedButton
+3. **重构**：AboutScreen 移除 `onNavigateToUpdate` 参数，"检查更新"行点击改为在当前页面弹出 UpdateDialog
+4. **移除**：Navigation.kt 移除 `settings/update` 路由
+5. **删除**：移除 `UpdateScreen.kt`（已被 UpdateDialog 替代）
+6. **实现**：弹窗打开时自动调用 checkForUpdate，强制更新时弹窗不可关闭
+7. **实现**：UpdateAvailable 状态显示新版本号、可滚动更新内容摘要（最大高度 150.dp）、"立即更新"和"跳过此版本"按钮
+8. **实现**：Downloading 状态显示下载进度条 + 进度文案 + "取消下载"按钮
+9. **实现**：ReadyToInstall 状态显示"下载完成" + "安装更新"按钮
+10. **实现**：NoUpdate 状态显示"已是最新版本" + "好的"关闭按钮
+11. **实现**：Error 状态显示错误信息 + "重试"按钮
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/update/UpdateDialog.kt`（新增，Glass 风格更新弹窗组件）
+- `app/src/main/java/com/duoschedule/ui/update/UpdateScreen.kt`（删除）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（移除 onNavigateToUpdate 参数，添加 showUpdateDialog 状态和 UpdateDialog 调用）
+- `app/src/main/java/com/duoschedule/ui/navigation/Navigation.kt`（移除 settings/update 路由和 onNavigateToUpdate 参数）
+- `app/build.gradle.kts`（versionCode 30204→30300，versionName 3.2.4→3.3.0）
+- `Product-Spec.md`（版本号 3.2.4→3.3.0，更新检查更新描述）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
+## [3.2.4] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**更新日志自动生成与国内源配置优化**
+
+1. **新增**：创建 `scripts/generate_changelog.py` 脚本，从 Product-Spec-CHANGELOG.md 自动解析版本条目生成 ChangelogData.kt，app 内更新日志不再手动维护
+2. **新增**：CI 工作流（release.yml）构建前自动运行生成脚本，确保更新日志始终与变更记录同步
+3. **新增**：CI 构建时自动切换 Gradle 下载源为官方源、移除阿里云镜像配置，本地开发保留国内源加速
+4. **修复**：生成脚本中摘要文本包含双引号时未转义导致 Kotlin 编译失败
+5. **修复**：恢复 settings.gradle.kts 中的阿里云镜像配置和 gradle-wrapper.properties 的腾讯云镜像，本地构建使用国内源加速
+6. **修复**：删除旧的 `~/.gradle/init.gradle`（与 FAIL_ON_PROJECT_REPOS 冲突），改为在 settings.gradle.kts 中直接配置阿里云镜像
+
+### 修改文件
+
+- `scripts/generate_changelog.py`（新增，更新日志自动生成脚本）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（移除硬编码数据，使用生成的 ChangelogData）
+- `.github/workflows/release.yml`（新增生成脚本步骤、源切换步骤、阿里云移除步骤，步骤名改中文）
+- `settings.gradle.kts`（恢复阿里云镜像配置）
+- `gradle/wrapper/gradle-wrapper.properties`（恢复腾讯云 Gradle distribution 镜像）
+- `.gitignore`（添加 ChangelogData.kt）
+- `app/build.gradle.kts`（versionCode 30203→30204，versionName 3.2.3→3.2.4）
+- `Product-Spec.md`（版本号 3.2.3→3.2.4）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
 ## [3.2.3] - 2026-05-20
 
 ### 变更类型：Bug修复
@@ -2125,6 +2268,6 @@
 
 ---
 
-**文档版本**：3.1.0
+**文档版本**：3.3.2
 
 **最后更新**：2026-05-20

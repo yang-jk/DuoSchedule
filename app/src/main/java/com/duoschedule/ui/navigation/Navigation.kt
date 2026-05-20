@@ -205,17 +205,10 @@ fun DuoScheduleNavGraph(
             )
         }
 
-        composable("settings/update") {
-            com.duoschedule.ui.update.UpdateScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-
         composable("settings/about") {
             AboutScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToChangelog = { navController.navigate("settings/changelog") },
-                onNavigateToUpdate = { navController.navigate("settings/update") },
                 onNavigateToLegal = { navController.navigate("settings/legal") },
                 onNavigateToAcknowledgments = { navController.navigate("settings/acknowledgments") }
             )
