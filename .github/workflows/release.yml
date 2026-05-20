@@ -123,6 +123,50 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create Gitee Release
+        id: gitee_release
+        if: success()
+        continue-on-error: true
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
+        run: |
+          if [ -z "$GITEE_TOKEN" ]; then
+            echo "GITEE_TOKEN not configured, skipping Gitee release"
+            exit 0
+          fi
+
+          TAG="v${VERSION_NAME}"
+          APK_FILE="app/build/outputs/apk/release/DuoSchedule-${VERSION_NAME}.apk"
+
+          RESPONSE=$(curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/DuoSchedule/releases" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"access_token\": \"${GITEE_TOKEN}\",
+              \"tag_name\": \"${TAG}\",
+              \"name\": \"DuoSchedule ${VERSION_NAME}\",
+              \"body\": \"版本号: ${VERSION_CODE}\\n\\n${CHANGELOG}\",
+              \"target_commitish\": \"main\"
+            }")
+
+          RELEASE_ID=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
+
+          if [ -z "$RELEASE_ID" ]; then
+            echo "Failed to create Gitee release"
+            echo "$RESPONSE"
+            exit 0
+          fi
+
+          echo "Gitee release created: $RELEASE_ID"
+
+          curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/DuoSchedule/releases/${RELEASE_ID}/attach_files" \
+            -F "access_token=${GITEE_TOKEN}" \
+            -F "file=@${APK_FILE}"
+
+          echo "✅ APK uploaded to Gitee release"
+
       - name: Update update.json via GitHub API
         id: update_repo
         if: success()
@@ -133,6 +177,7 @@ jobs:
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
           RELEASE_NOTES: ${{ steps.changelog.outputs.changelog }}
           USE_GITEE: ${{ secrets.USE_GITEE }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: python3 scripts/update_repo.py
 
       - name: Notify via ServerChan

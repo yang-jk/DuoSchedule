@@ -13,9 +13,7 @@ REPO_OWNER = os.environ.get('REPO_OWNER', 'yang-jk')
 GITEE_TOKEN = os.environ.get('GITEE_TOKEN', '')
 USE_GITEE = os.environ.get('USE_GITEE', 'false').lower() == 'true'
 
-def update_single_platform(api_url, token, platform_name):
-    download_url = f"https://gitee.com/{REPO_OWNER}/DuoSchedule/releases/download/{TAG_NAME}/DuoSchedule-{VERSION_NAME}.apk"
-    
+def update_single_platform(api_url, token, platform_name, download_url):
     update_data = {
         "latestVersion": VERSION_NAME,
         "latestVersionCode": VERSION_CODE,
@@ -72,7 +70,8 @@ if USE_GITEE and GITEE_TOKEN:
     print("=" * 50)
     print("Updating Gitee...")
     gitee_api_url = f"https://gitee.com/api/v5/repos/{REPO_OWNER}/duoschedule-update/contents/update.json"
-    gitee_success = update_single_platform(gitee_api_url, GITEE_TOKEN, "Gitee")
+    gitee_download_url = f"https://gitee.com/{REPO_OWNER}/DuoSchedule/releases/download/{TAG_NAME}/DuoSchedule-{VERSION_NAME}.apk"
+    gitee_success = update_single_platform(gitee_api_url, GITEE_TOKEN, "Gitee", gitee_download_url)
     
     if gitee_success:
         print(f"[Gitee] Purging cache...")
