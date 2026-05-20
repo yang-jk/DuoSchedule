@@ -188,6 +188,7 @@ jobs:
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           RELEASE_OUTCOME: ${{ steps.release.outcome }}
+          GITEE_RELEASE_OUTCOME: ${{ steps.gitee_release.outcome }}
           UPDATE_REPO_OUTCOME: ${{ steps.update_repo.outcome }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
@@ -208,9 +209,11 @@ jobs:
 
           BUILD_STATUS=$(format_status "$BUILD_OUTCOME")
           RELEASE_STATUS=$(format_status "$RELEASE_OUTCOME")
+          GITEE_RELEASE_STATUS=$(format_status "$GITEE_RELEASE_OUTCOME")
           UPDATE_REPO_STATUS=$(format_status "$UPDATE_REPO_OUTCOME")
           export BUILD_STATUS
           export RELEASE_STATUS
+          export GITEE_RELEASE_STATUS
           export UPDATE_REPO_STATUS
 
           if [ "$BUILD_OUTCOME" = "success" ] && [ "$RELEASE_OUTCOME" = "success" ] && [ "$UPDATE_REPO_OUTCOME" = "success" ]; then
@@ -225,10 +228,11 @@ jobs:
           version_code = os.environ['VERSION_CODE']
           build_status = os.environ['BUILD_STATUS']
           release_status = os.environ['RELEASE_STATUS']
+          gitee_release_status = os.environ['GITEE_RELEASE_STATUS']
           update_repo_status = os.environ['UPDATE_REPO_STATUS']
           run_url = os.environ['RUN_URL']
           title = os.environ['TITLE']
-          desp = f'版本: {version_name} ({version_code})  \nAPK 构建: {build_status}  \nRelease 创建: {release_status}  \n更新仓库: {update_repo_status}  \n\n构建详情: {run_url}'
+          desp = f'版本: {version_name} ({version_code})  \nAPK 构建: {build_status}  \nGitHub Release: {release_status}  \nGitee Release: {gitee_release_status}  \n更新仓库: {update_repo_status}  \n\n构建详情: {run_url}'
           data = {
             'title': title,
             'desp': desp
