@@ -6,6 +6,37 @@
 
 ---
 
+## [3.2.4] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**更新日志自动生成与国内源配置优化**
+
+1. **新增**：创建 `scripts/generate_changelog.py` 脚本，从 Product-Spec-CHANGELOG.md 自动解析版本条目生成 ChangelogData.kt，app 内更新日志不再手动维护
+2. **新增**：CI 工作流（release.yml）构建前自动运行生成脚本，确保更新日志始终与变更记录同步
+3. **新增**：CI 构建时自动切换 Gradle 下载源为官方源、移除阿里云镜像配置，本地开发保留国内源加速
+4. **修复**：生成脚本中摘要文本包含双引号时未转义导致 Kotlin 编译失败
+5. **修复**：恢复 settings.gradle.kts 中的阿里云镜像配置和 gradle-wrapper.properties 的腾讯云镜像，本地构建使用国内源加速
+6. **修复**：删除旧的 `~/.gradle/init.gradle`（与 FAIL_ON_PROJECT_REPOS 冲突），改为在 settings.gradle.kts 中直接配置阿里云镜像
+
+### 修改文件
+
+- `scripts/generate_changelog.py`（新增，更新日志自动生成脚本）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（移除硬编码数据，使用生成的 ChangelogData）
+- `.github/workflows/release.yml`（新增生成脚本步骤、源切换步骤、阿里云移除步骤，步骤名改中文）
+- `settings.gradle.kts`（恢复阿里云镜像配置）
+- `gradle/wrapper/gradle-wrapper.properties`（恢复腾讯云 Gradle distribution 镜像）
+- `.gitignore`（添加 ChangelogData.kt）
+- `app/build.gradle.kts`（versionCode 30203→30204，versionName 3.2.3→3.2.4）
+- `Product-Spec.md`（版本号 3.2.3→3.2.4）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
 ## [3.2.3] - 2026-05-20
 
 ### 变更类型：Bug修复

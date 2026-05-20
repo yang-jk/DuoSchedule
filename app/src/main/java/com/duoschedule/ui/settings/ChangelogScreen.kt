@@ -28,51 +28,6 @@ data class ChangelogEntry(
     val summary: String
 )
 
-val changelogEntries = listOf(
-    ChangelogEntry(
-        version = "3.2.0",
-        date = "2026-05-20",
-        type = ChangelogType.FEATURE,
-        summary = "新增关于页面，包含更新日志、用户协议和隐私政策、开源致谢；预测式返回开关移至外观与显示分组"
-    ),
-    ChangelogEntry(
-        version = "3.1.1",
-        date = "2026-05-20",
-        type = ChangelogType.BUGFIX,
-        summary = "修复应用内更新下载和安装功能多个严重问题"
-    ),
-    ChangelogEntry(
-        version = "3.1.0",
-        date = "2026-05-20",
-        type = ChangelogType.FEATURE,
-        summary = "重新梳理 Gitee 仓库与自动打包 APK 工作流"
-    ),
-    ChangelogEntry(
-        version = "3.0.0",
-        date = "2026-05-20",
-        type = ChangelogType.BREAKING,
-        summary = "统一版本号计算规则 + 修复 GitHub Actions 构建签名错误"
-    ),
-    ChangelogEntry(
-        version = "1.16.3",
-        date = "2026-05-19",
-        type = ChangelogType.BUGFIX,
-        summary = "修复应用内更新安装 APK 崩溃 + 优化更新日志格式"
-    ),
-    ChangelogEntry(
-        version = "1.16.0",
-        date = "2026-05-19",
-        type = ChangelogType.FEATURE,
-        summary = "重写 GitHub Actions 发布工作流与版本号计算规则"
-    ),
-    ChangelogEntry(
-        version = "1.15.0",
-        date = "2026-05-19",
-        type = ChangelogType.FEATURE,
-        summary = "GitHub Actions CI/CD 自动打包发布"
-    )
-)
-
 @Composable
 fun ChangelogScreen(
     onNavigateBack: () -> Unit
