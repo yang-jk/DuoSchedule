@@ -51,7 +51,7 @@ fun SettingsScreen(
 
     val context = LocalContext.current
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-    val versionName = packageInfo.versionName ?: "3.4.2"
+    val versionName = packageInfo.versionName ?: "3.3.1"
     var hasNotificationPermission by remember {
         mutableStateOf(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

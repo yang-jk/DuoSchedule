@@ -97,7 +97,7 @@ jobs:
         continue-on-error: true
 
       - name: 提取构建错误
-        if: failure() && steps.build.outcome == 'failure'
+        if: steps.build.outcome == 'failure'
         id: build_errors
         run: |
           ERRORS=$(grep -E '^(e: |w: |ERROR|FAILURE|> Task.*FAILED)' build_output.log | head -20 || true)
@@ -173,6 +173,11 @@ jobs:
           fi
 
           APK_FILE="app/build/outputs/apk/release/DuoSchedule-${VERSION_NAME}.apk"
+          TAG="v${VERSION_NAME}"
+
+          curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/duoschedule/git/refs" \
+            -H "Content-Type: application/json" \
+            -d "{\"access_token\": \"${GITEE_TOKEN}\", \"ref\": \"refs/tags/${TAG}\", \"sha\": \"${{ github.sha }}\"}" 2>/dev/null || true
 
           JSON_BODY=$(python3 -c "
           import json, os
@@ -264,7 +269,7 @@ jobs:
           export GITEE_RELEASE_STATUS
           export UPDATE_REPO_STATUS
 
-          if [ "$BUILD_OUTCOME" = "success" ] && [ "$RELEASE_OUTCOME" = "success" ] && [ "$UPDATE_REPO_OUTCOME" = "success" ]; then
+          if [ "$BUILD_OUTCOME" = "success" ] && [ "$RELEASE_OUTCOME" = "success" ] && [ "$UPDATE_REPO_OUTCOME" = "success" ] && [ "$GITEE_RELEASE_SUCCESS" != "false" ]; then
             export TITLE="✅ DuoSchedule v${VERSION_NAME} 发布成功"
           else
             export TITLE="⚠️ DuoSchedule v${VERSION_NAME} 发布异常"

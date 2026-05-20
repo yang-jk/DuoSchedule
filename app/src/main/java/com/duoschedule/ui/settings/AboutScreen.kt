@@ -41,7 +41,7 @@ fun AboutScreen(
 ) {
     val context = LocalContext.current
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-    val versionName = packageInfo.versionName ?: "3.2.0"
+    val versionName = packageInfo.versionName ?: "3.3.1"
     val versionCode = packageInfo.versionCode
     var showUpdateDialog by remember { mutableStateOf(false) }
 
