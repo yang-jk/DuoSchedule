@@ -132,6 +132,7 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
           RELEASE_NOTES: ${{ steps.changelog.outputs.changelog }}
+          USE_GITEE: ${{ secrets.USE_GITEE }}
         run: python3 scripts/update_repo.py
 
       - name: Notify via ServerChan
