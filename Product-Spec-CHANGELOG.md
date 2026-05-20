@@ -6,6 +6,27 @@
 
 ---
 
+## [3.3.5] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 CI 推送标签被拒绝：缺少 workflows 权限**
+
+1. **修复**：`.github/workflows/release.yml` 的 `permissions` 添加 `workflows: write`，解决 GitHub Actions 推送包含工作流文件变更的 tag 时报 `refusing to allow a GitHub App to create or update workflow without workflows permission` 错误
+
+### 修改文件
+
+- `.github/workflows/release.yml`（permissions 添加 workflows: write）
+- `app/build.gradle.kts`（versionCode 30304→30305，versionName 3.3.4→3.3.5）
+- `Product-Spec.md`（版本号 3.3.4→3.3.5）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
 ## [3.3.4] - 2026-05-20
 
 ### 变更类型：功能优化
@@ -2294,6 +2315,6 @@
 
 ---
 
-**文档版本**：3.3.4
+**文档版本**：3.3.5
 
 **最后更新**：2026-05-20
