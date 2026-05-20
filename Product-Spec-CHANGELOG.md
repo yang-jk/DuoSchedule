@@ -21,7 +21,7 @@
 1. **BREAKING**：版本号计算公式统一为 `versionCode = MAJOR × 10000 + MINOR × 100 + PATCH`，确保 versionCode 与 versionName 视觉对应关系直观（如 3.0.0 → 30000，12.12.12 → 121212）
 2. **修复**：修正 GitHub Actions 工作流中的版本号验证公式，与实际使用的公式保持一致
 3. **修复**：修复 GitHub Actions 构建时密钥库路径错误（`app/app/keystore` → `app/keystore`），解决 `validateSigningRelease` 任务失败问题
-4. **新增**：添加 Gitee 镜像支持，通过环境变量 `USE_GITEE=true` 切换到 Gitee 平台进行更新发布，应用内更新检查支持双服务器故障转移（优先 Gitee，失败时自动切换到 GitHub CDN）
+4. **新增**：添加 Gitee 镜像支持，应用发布时自动更新 Gitee `update.json`（需要配置 `USE_GITEE=true` 和 `GITEE_TOKEN`），国内用户可从 Gitee 快速获取更新；应用内更新检查支持双服务器故障转移（优先 Gitee，失败时自动切换到 GitHub CDN）
 
 ### 修改文件
 
