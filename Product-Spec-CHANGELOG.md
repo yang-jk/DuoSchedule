@@ -8,6 +8,53 @@
 
 ---
 
+## [3.0.3] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 Gitee API 认证方式错误 + jsDelivr CDN 缓存刷新**
+
+1. **修复**：update_repo.py 对 Gitee API 使用了 GitHub 的 `Authorization: token` 头认证，但 Gitee API 需要使用 `access_token` 查询参数和请求体字段认证，导致 Gitee update.json 更新一直失败
+2. **新增**：update_repo.py 更新 GitHub update.json 后自动刷新 jsDelivr CDN 缓存（访问 purge.jsdelivr.net），避免 app 从 CDN 获取到过时的更新信息
+3. **重构**：update_repo.py 拆分为 `update_github()` 和 `update_gitee()` 两个独立函数，分别使用各自平台正确的认证方式
+
+### 修改文件
+
+- `scripts/update_repo.py`（拆分 GitHub/Gitee 更新函数，修复 Gitee 认证方式，新增 jsDelivr CDN 缓存刷新）
+- `app/build.gradle.kts`（versionCode 30002→30003，versionName 3.0.2→3.0.3）
+- `Product-Spec.md`（版本号 3.0.2→3.0.3）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
+## [3.0.2] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复应用内更新检查失败的问题**
+
+1. **修复**：AppUpdateChecker.kt 中 Gitee 更新检查 URL 使用了错误的用户名 `yang-jk`，导致 Gitee 更新源返回 404，修正为正确的 Gitee 用户名 `su-zijie21`
+2. **修复**：update_repo.py 只更新 Gitee 的 update.json，未更新 GitHub 的 `yang-jk/duoschedule-update` 仓库，导致 GitHub CDN（jsDelivr）上的 update.json 严重过时（仍显示版本 1.0.0），app 从 GitHub CDN 获取到的最新版本号远低于当前安装版本，判定为无需更新
+3. **新增**：update_repo.py 添加 GitHub 更新逻辑，发布时同时更新 GitHub 和 Gitee 两个平台的 update.json，确保双服务器故障转移机制正常工作
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/data/update/AppUpdateChecker.kt`（Gitee URL 用户名 yang-jk → su-zijie21）
+- `scripts/update_repo.py`（新增 GitHub update.json 更新逻辑，双平台同步更新）
+- `app/build.gradle.kts`（versionCode 30001→30002，versionName 3.0.1→3.0.2）
+- `Product-Spec.md`（版本号 3.0.1→3.0.2）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
 ## [3.0.1] - 2026-05-20
 
 ### 变更类型：Bug修复
@@ -1905,6 +1952,6 @@
 
 ---
 
-**文档版本**：1.16.3
+**文档版本**：3.0.3
 
-**最后更新**：2026-05-19
+**最后更新**：2026-05-20

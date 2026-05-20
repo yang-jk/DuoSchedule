@@ -24,7 +24,7 @@ class AppUpdateChecker @Inject constructor(
         private const val UPDATE_JSON_URL_GITHUB =
             "https://cdn.jsdelivr.net/gh/yang-jk/duoschedule-update@main/update.json"
         private const val UPDATE_JSON_URL_GITEE =
-            "https://gitee.com/yang-jk/duoschedule-update/raw/main/update.json"
+            "https://gitee.com/su-zijie21/duoschedule-update/raw/main/update.json"
         private const val CONNECT_TIMEOUT_SECONDS = 10L
         private const val READ_TIMEOUT_SECONDS = 15L
     }

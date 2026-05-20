@@ -1,8 +1,8 @@
 {
-  "latestVersion": "3.0.0",
-  "latestVersionCode": 30000,
+  "latestVersion": "3.0.2",
+  "latestVersionCode": 30002,
   "minSupportedVersionCode": 1,
-  "downloadUrl": "https://gitee.com/su-zijie21/DuoSchedule/releases/download/v3.0.0/DuoSchedule-3.0.0.apk",
-  "releaseNotes": "统一版本号计算规则",
+  "downloadUrl": "https://gitee.com/su-zijie21/DuoSchedule/releases/download/v3.0.2/DuoSchedule-3.0.2.apk",
+  "releaseNotes": "修复应用内更新检查失败的问题",
   "forceUpdate": false
 }
