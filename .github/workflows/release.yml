@@ -175,15 +175,23 @@ jobs:
           TAG="v${VERSION_NAME}"
           APK_FILE="app/build/outputs/apk/release/DuoSchedule-${VERSION_NAME}.apk"
 
+          BODY="版本号: ${VERSION_CODE}\n\n${CHANGELOG}"
+
+          JSON_BODY=$(python3 -c "
+          import json, os
+          data = {
+            'access_token': os.environ['GITEE_TOKEN'],
+            'tag_name': os.environ.get('TAG', ''),
+            'name': 'DuoSchedule ' + os.environ['VERSION_NAME'],
+            'body': os.environ.get('BODY', ''),
+            'target_commitish': 'main'
+          }
+          print(json.dumps(data, ensure_ascii=False))
+          ")
+
           RESPONSE=$(curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/duoschedule/releases" \
             -H "Content-Type: application/json" \
-            -d "{
-              \"access_token\": \"${GITEE_TOKEN}\",
-              \"tag_name\": \"${TAG}\",
-              \"name\": \"DuoSchedule ${VERSION_NAME}\",
-              \"body\": \"版本号: ${VERSION_CODE}\\n\\n${CHANGELOG}\",
-              \"target_commitish\": \"main\"
-            }")
+            -d "$JSON_BODY")
 
           RELEASE_ID=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
 
