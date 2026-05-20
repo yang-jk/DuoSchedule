@@ -244,19 +244,29 @@ private fun DownloadingContent(
 
     Spacer(modifier = Modifier.height(Spacing.lg))
 
-    LinearProgressIndicator(
-        progress = { percent / 100f },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(8.dp),
-        color = BrandColors.Primary,
-        trackColor = getFillsVibrantPrimary(),
-    )
+    if (percent >= 0) {
+        LinearProgressIndicator(
+            progress = { percent / 100f },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp),
+            color = BrandColors.Primary,
+            trackColor = getFillsVibrantPrimary(),
+        )
+    } else {
+        LinearProgressIndicator(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp),
+            color = BrandColors.Primary,
+            trackColor = getFillsVibrantPrimary(),
+        )
+    }
 
     Spacer(modifier = Modifier.height(Spacing.sm))
 
     Text(
-        text = "$percent%  ·  ${formatFileSize(downloadedBytes)} / ${formatFileSize(totalBytes)}",
+        text = if (percent >= 0) "$percent%  ·  ${formatFileSize(downloadedBytes)} / ${formatFileSize(totalBytes)}" else "${formatFileSize(downloadedBytes)} 已下载",
         style = MaterialTheme.typography.bodySmall,
         color = labelsSecondary
     )

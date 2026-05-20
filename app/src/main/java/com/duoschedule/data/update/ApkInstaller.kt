@@ -18,8 +18,8 @@ class ApkInstaller @Inject constructor() {
         private const val TAG = "ApkInstaller"
     }
 
-    fun installApk(context: Context, apkFile: File) {
-        try {
+    fun installApk(context: Context, apkFile: File): Result<Unit> {
+        return try {
             val uri = FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.fileprovider",
@@ -34,8 +34,16 @@ class ApkInstaller @Inject constructor() {
 
             context.startActivity(intent)
             AppLog.i(TAG, "已触发APK安装")
+            Result.success(Unit)
+        } catch (e: IllegalArgumentException) {
+            AppLog.e(TAG, "安装APK失败: FileProvider路径未配置 - ${e.message}")
+            Result.failure(Exception("安装失败: 应用配置错误，无法访问APK文件"))
+        } catch (e: android.content.ActivityNotFoundException) {
+            AppLog.e(TAG, "安装APK失败: 找不到安装器 - ${e.message}")
+            Result.failure(Exception("安装失败: 设备没有应用安装器"))
         } catch (e: Exception) {
             AppLog.e(TAG, "安装APK失败: ${e.message}")
+            Result.failure(Exception("安装失败: ${e.message}"))
         }
     }
 

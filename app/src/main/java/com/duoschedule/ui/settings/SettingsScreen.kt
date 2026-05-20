@@ -38,7 +38,7 @@ fun SettingsScreen(
     onNavigateToDisplaySettings: () -> Unit,
     onNavigateToDataManagement: () -> Unit,
     onNavigateToNotificationSettings: () -> Unit,
-    onNavigateToUpdate: () -> Unit = {},
+    onNavigateToAbout: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val personAName by viewModel.personAName.collectAsState()
@@ -179,6 +179,17 @@ fun SettingsScreen(
                     iconBackgroundColor = IOSColors.Indigo,
                     onClick = onNavigateToDisplaySettings
                 )
+
+                Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
+
+                SettingsToggleRow(
+                    title = "预测式返回",
+                    checked = predictiveBackEnabled,
+                    onCheckedChange = remember { { viewModel.setPredictiveBackEnabled(it) } },
+                    subtitle = "返回时显示页面过渡动画预览（实验性功能）",
+                    icon = Icons.Outlined.TouchApp,
+                    iconBackgroundColor = IOSColors.Blue
+                )
             }
 
             SettingsSection(title = "通知与提醒") {
@@ -230,22 +241,11 @@ fun SettingsScreen(
 
             SettingsSection(title = "关于") {
                 SettingsNavigationRow(
-                    title = "检查更新",
-                    subtitle = "查看是否有新版本",
-                    icon = Icons.Outlined.SystemUpdate,
-                    iconBackgroundColor = IOSColors.Green,
-                    onClick = onNavigateToUpdate
-                )
-
-                Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
-
-                SettingsToggleRow(
-                    title = "预测式返回",
-                    checked = predictiveBackEnabled,
-                    onCheckedChange = remember { { viewModel.setPredictiveBackEnabled(it) } },
-                    subtitle = "返回时显示页面过渡动画预览（实验性功能）",
-                    icon = Icons.Outlined.TouchApp,
-                    iconBackgroundColor = IOSColors.Blue
+                    title = "关于 DuoSchedule",
+                    subtitle = "版本 3.2.0",
+                    icon = Icons.Outlined.Info,
+                    iconBackgroundColor = IOSColors.Blue,
+                    onClick = onNavigateToAbout
                 )
             }
 

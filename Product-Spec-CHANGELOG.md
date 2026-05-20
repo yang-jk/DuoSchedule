@@ -8,6 +8,69 @@
 
 ---
 
+## [3.2.0] - 2026-05-20
+
+### 变更类型：功能增强
+
+### 状态：已实现
+
+### 变更内容
+
+**关于页面重构 + 开源致谢功能**
+
+1. **重构**：设置页"关于"分组改为仅显示"关于 DuoSchedule"导航入口，点击进入独立的关于页面
+2. **新增**：AboutScreen 关于页面，包含应用图标/名称/版本号，以及四个导航条目：更新日志、检查更新、用户协议和隐私政策、开源致谢
+3. **新增**：ChangelogScreen 更新日志页面，展示版本更新记录列表，每条记录包含版本号、日期、变更类型标签和更新内容摘要
+4. **新增**：LegalScreen 用户协议和隐私政策页面，展示用户协议（MIT License 开源许可、使用规范、免责声明）和隐私政策（数据存储、数据收集、网络访问、通知权限、第三方库）
+5. **新增**：AcknowledgmentsScreen 开源致谢页面，按许可证类型分组展示所有开源依赖库（MIT License: jsoup；Apache License 2.0: Kotlin Stdlib、Jetpack Compose、AndroidX 系列、OkHttp、AndroidLiquidGlass、Shapes、Capsule）
+6. **迁移**："预测式返回"开关从"关于"分组移至"外观与显示"分组末尾，更符合功能分类逻辑
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（新增关于页面）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（新增更新日志页面）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（新增法律信息页面）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（新增开源致谢页面）
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（重构关于分组，移动预测式返回开关位置）
+- `app/src/main/java/com/duoschedule/ui/navigation/Navigation.kt`（添加 settings/about、settings/changelog、settings/legal、settings/acknowledgments 路由）
+- `app/build.gradle.kts`（versionCode 30101→30200，versionName 3.1.1→3.2.0）
+- `Product-Spec.md`（版本号 3.1.1→3.2.0，添加关于页面和开源致谢功能描述）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
+---
+
+## [3.1.1] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复应用内更新下载和安装功能多个严重问题**
+
+1. **修复**：`file_paths.xml` 缺少 `<external-files-path>` 配置，APK 下载到 `context.getExternalFilesDir("apk")` 目录但 FileProvider 只配置了 `<cache-path>`，导致 `FileProvider.getUriForFile()` 抛出 `IllegalArgumentException`，安装按钮点击无反应
+2. **修复**：`ApkInstaller.installApk()` 异常被 `try-catch` 静默吞掉，用户点击安装失败时看不到任何错误提示，现在返回 `Result<Unit>` 并在 ViewModel 中将错误展示给用户
+3. **修复**：`UpdateViewModel.checkForUpdate()` 检测到缓存 APK 时未验证版本号，旧版 APK 直接显示为"下载完成"状态，现在使用 `PackageManager.getPackageArchiveInfo()` 读取缓存 APK 的 versionCode 与更新版本号比对，版本不匹配时删除旧文件并重新下载
+4. **修复**：`ApkDownloader` 缺少下载内容验证，服务器返回 HTML 错误页面时也会被当作 APK 保存，现在校验 Content-Type（拒绝 text/html/text/plain）、最小文件大小（>500KB）、APK 文件头魔数（PK\x03\x04）
+5. **修复**：`ApkDownloader` 当服务器不返回 Content-Length 时（`contentLength = -1`）进度回调永远不触发，UI 停留在 0%，现在每下载 64KB 报告一次进度（percent=-1 表示未知总大小）
+6. **优化**：`UpdateScreen` 下载进度条支持未知总大小模式，显示不确定进度条 + "X MB 已下载" 文案
+
+### 修改文件
+
+- `res/xml/file_paths.xml`（添加 `<external-files-path name="apk_files" path="apk/" />`）
+- `data/update/ApkInstaller.kt`（返回 `Result<Unit>` 替代静默吞异常，区分 IllegalArgumentException/ActivityNotFoundException 通用异常）
+- `data/update/ApkDownloader.kt`（新增 Content-Type 校验、最小文件大小校验、APK 魔数校验、未知 contentLength 进度报告）
+- `ui/update/UpdateViewModel.kt`（缓存 APK 版本号验证、安装失败错误反馈、APK 不存在错误反馈）
+- `ui/update/UpdateScreen.kt`（下载进度条支持未知总大小模式）
+- `app/build.gradle.kts`（versionCode 30100→30101，versionName 3.1.0→3.1.1）
+- `Product-Spec.md`（版本号 3.1.0→3.1.1）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
 ## [3.1.0] - 2026-05-20
 
 ### 变更类型：功能增强

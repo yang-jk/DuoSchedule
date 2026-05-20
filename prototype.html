@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DuoSchedule 关于页面原型</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #f2f2f7;
+  --bg-card: rgba(255,255,255,0.72);
+  --bg-card-hover: rgba(255,255,255,0.85);
+  --text-primary: #1c1c1e;
+  --text-secondary: #8e8e93;
+  --text-tertiary: #aeaeb2;
+  --accent: #4789fe;
+  --separator: rgba(60,60,67,0.12);
+  --icon-bg-purple: #af52de;
+  --icon-bg-blue: #007aff;
+  --icon-bg-green: #34c759;
+  --icon-bg-orange: #ff9500;
+  --icon-bg-indigo: #5856d6;
+  --icon-bg-red: #ff3b30;
+  --icon-bg-teal: #5ac8fa;
+  --icon-bg-pink: #ff2d55;
+  --icon-bg-cyan: #32ade6;
+  --border-radius: 16px;
+  --phone-width: 393px;
+  --phone-height: 852px;
+}
+
+body {
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  overflow-x: hidden;
+}
+
+.prototype-container {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.phone-frame {
+  width: var(--phone-width);
+  height: var(--phone-height);
+  background: var(--bg-primary);
+  border-radius: 48px;
+  overflow: hidden;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.phone-frame::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 126px; height: 34px;
+  background: #000;
+  border-radius: 0 0 20px 20px;
+  z-index: 100;
+}
+
+.status-bar {
+  height: 54px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 32px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.status-bar .time { font-weight: 700; }
+.status-bar .icons { display: flex; gap: 6px; align-items: center; }
+.status-bar .icons span { font-size: 12px; }
+
+.screen-content {
+  height: calc(var(--phone-height) - 54px - 83px);
+  overflow-y: auto;
+  padding: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.screen-content::-webkit-scrollbar { display: none; }
+
+.page-title {
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: 8px 20px 8px;
+  letter-spacing: -0.5px;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  padding: 24px 20px 6px 36px;
+  letter-spacing: 0.02em;
+}
+
+.card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--border-radius);
+  margin: 0 16px;
+  overflow: hidden;
+}
+
+.card-row {
+  display: flex;
+  align-items: center;
+  padding: 11px 16px;
+  min-height: 44px;
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+}
+
+.card-row:hover { background: var(--bg-card-hover); }
+
+.card-row + .card-row::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 52px; right: 0;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.card-row .icon-box {
+  width: 29px; height: 29px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.card-row .icon-box svg {
+  width: 17px; height: 17px;
+  fill: white;
+}
+
+.card-row .row-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-row .row-title {
+  font-size: 17px;
+  color: var(--text-primary);
+  font-weight: 400;
+}
+
+.card-row .row-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+.card-row .row-value {
+  font-size: 17px;
+  color: var(--text-secondary);
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.card-row .chevron {
+  color: var(--text-tertiary);
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.card-row .toggle {
+  width: 51px; height: 31px;
+  border-radius: 16px;
+  background: #e9e9eb;
+  position: relative;
+  transition: background 0.25s;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.card-row .toggle.active { background: var(--accent); }
+
+.card-row .toggle::after {
+  content: '';
+  width: 27px; height: 27px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 2px; left: 2px;
+  transition: transform 0.25s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.card-row .toggle.active::after { transform: translateX(20px); }
+
+.app-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 20px 8px;
+}
+
+.app-icon {
+  width: 80px; height: 80px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #4789fe, #6cb4ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(71,137,254,0.3);
+}
+
+.app-icon svg { width: 44px; height: 44px; fill: white; }
+
+.app-name {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.app-version {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.changelog-entry {
+  padding: 14px 16px;
+  position: relative;
+}
+
+.changelog-entry + .changelog-entry::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 16px; right: 16px;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.changelog-version {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.changelog-version .version-tag {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.changelog-version .type-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  color: white;
+}
+
+.type-badge.feature { background: var(--accent); }
+.type-badge.bugfix { background: var(--icon-bg-orange); }
+.type-badge.breaking { background: var(--icon-bg-red); }
+
+.changelog-date {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.changelog-summary {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.license-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 24px 20px 6px 36px;
+}
+
+.lib-row {
+  display: flex;
+  align-items: center;
+  padding: 11px 16px;
+  min-height: 44px;
+  position: relative;
+}
+
+.lib-row + .lib-row::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 16px; right: 16px;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.lib-row .lib-icon {
+  width: 29px; height: 29px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.lib-row .lib-info { flex: 1; }
+.lib-row .lib-name { font-size: 16px; color: var(--text-primary); font-weight: 500; }
+.lib-row .lib-desc { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+.lib-row .lib-license { font-size: 12px; color: var(--accent); font-weight: 500; flex-shrink: 0; }
+
+.legal-section {
+  padding: 16px;
+}
+
+.legal-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.legal-section p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 8px;
+}
+
+.bottom-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 83px;
+  background: rgba(242,242,247,0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 0.5px solid var(--separator);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  padding-top: 8px;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+
+.tab-item.active { opacity: 1; }
+
+.tab-item svg { width: 24px; height: 24px; fill: var(--accent); }
+.tab-item span { font-size: 10px; color: var(--accent); font-weight: 500; }
+
+.page-label {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  font-weight: 500;
+}
+
+.nav-back {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 20px;
+  color: var(--accent);
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.nav-back svg { width: 20px; height: 20px; fill: var(--accent); }
+
+.footer-text {
+  text-align: center;
+  padding: 16px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.page-indicator {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  padding: 8px;
+}
+
+.page-indicator .dot {
+  width: 6px; height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.3);
+}
+
+.page-indicator .dot.active {
+  background: white;
+  width: 18px;
+}
+</style>
+</head>
+<body>
+
+<div class="prototype-container">
+
+<!-- Screen 1: Settings (Modified) -->
+<div>
+<div class="phone-frame">
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons"><span>5G</span> <span>🔋</span></div>
+  </div>
+  <div class="screen-content">
+    <div class="page-title">设置</div>
+
+    <div class="section-title">用户与身份</div>
+    <div class="card">
+      <div class="card-row">
+        <div class="icon-box" style="background:var(--icon-bg-purple)">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </div>
+        <div class="row-content"><div class="row-title">单人模式</div></div>
+        <div class="toggle active"></div>
+      </div>
+      <div class="card-row">
+        <div class="icon-box" style="background:var(--accent)">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"/></svg>
+        </div>
+        <div class="row-content"><div class="row-title">我的名称</div><div class="row-subtitle">小明</div></div>
+        <span class="chevron">›</span>
+      </div>
+    </div>
+
+    <div class="section-title">课表参数</div>
+    <div class="card">
+      <div class="card-row">
+        <div class="icon-box" style="background:var(--icon-bg-orange)">
+          <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+        </div>
+        <div class="row-content"><div class="row-title">课表设置</div><div class="row-subtitle">课表参数配置</div></div>
+        <span class="chevron">›</span>
+      </div>
+    </div>
+
+    <div class="section-title">外观与显示</div>
+    <div class="card">
+      <div class="card-row">
+        <div class="icon-box" style="background:var(--icon-bg-indigo)">
+          <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-1 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8z"/></svg>
+        </div>
+        <div class="row-content"><div class="row-title">主题模式</div></div>
+        <span class="row-value">跟随系统</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="card-row">
+        <div class="icon-box" style="background:var(--icon-bg-indigo)">
+          <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/></svg>
+        </div>
+        <div class="row-content"><div class="row-title">显示设置</div><div class="row-subtitle">课表外观和字体设置</div></div>
+        <span class="chevron">›</span>
+      </div>
+      <div class="card-row" style="background:rgba(71,137,254,0.04)">
+        <div class="icon-box" style="background:var(--icon-bg-blue)">
+          <svg viewBox="0 0 24 24"><path d="M9 11.24V7.5C9 6.12 10.12 5 11.5 5S14 6.12 14 7.5v3.74c1.21-.81 2-2.18 2-3.74C16 5.01 13.99 3 11.5 3S7 5.01 7 7.5c0 1.56.79 2.93 2 3.74z"/></svg>
+        </div>
+        <div class="row-content">
+          <div class="row-title">预测式返回</div>
+          <div class="row-subtitle">返回时显示页面过渡动画预览（实验性功能）</div>
+        </div>
+        <div class="toggle"></div>
+      </div>
+    </div>
+
+    <div class="section-title">通知与提醒</div>
+    <div class="card">
+      <div class="card-row">
+        <div class="icon-box" style="background:var(--icon-bg-red)">
+          <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+        </div>
+        <div class="row-content"><div class="row-title">启用通知</div></div>
+        <div class="toggle active"></div>
+      </div>
+      <div class="card-row">
+        <div class="icon-box" style="background:var(--icon-bg-orange)">
+          <svg viewBox="0 0 24 24"><path d="M7.58 4.08L6.15 2.65C3.75 4.48 2.17 7.3 2.03 10.5h2c.13-2.67 1.47-5.03 3.55-6.42zm12.39 6.42h2c-.15-3.2-1.73-6.02-4.12-7.85l-1.42 1.43c2.07 1.39 3.41 3.75 3.54 6.42zM18 11c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C8.63 5.36 7 7.92 7 11v5l-2 2v1h16v-1l-2-2v-5z"/></svg>
+        </div>
+        <div class="row-content"><div class="row-title">通知设置</div><div class="row-subtitle">课前5分钟提醒</div></div>
+        <span class="chevron">›</span>
+      </div>
+    </div>
+
+    <div class="section-title">数据</div>
+    <div class="card">
+      <div class="card-row">
+        <div class="icon-box" style="background:var(--icon-bg-green)">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+        </div>
+        <div class="row-content"><div class="row-title">数据管理</div><div class="row-subtitle">导入导出课表数据</div></div>
+        <span class="chevron">›</span>
+      </div>
+    </div>
+
+    <div class="section-title">关于</div>
+    <div class="card">
+      <div class="card-row" style="background:rgba(71,137,254,0.04)">
+        <div class="icon-box" style="background:var(--icon-bg-blue)">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        </div>
+        <div class="row-content"><div class="row-title">关于 DuoSchedule</div><div class="row-subtitle">版本 3.2.0</div></div>
+        <span class="chevron">›</span>
+      </div>
+    </div>
+
+    <div style="height:120px"></div>
+  </div>
+  <div class="bottom-bar">
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>主页</span></div>
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg><span>我的课表</span></div>
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3z"/></svg><span>Ta的课表</span></div>
+    <div class="tab-item active"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z"/></svg><span>设置</span></div>
+  </div>
+</div>
+<div class="page-label">设置页（修改后）</div>
+</div>
+
+<!-- Screen 2: About -->
+<div>
+<div class="phone-frame">
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons"><span>5G</span> <span>🔋</span></div>
+  </div>
+  <div class="screen-content">
+    <div class="nav-back">
+      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      设置
+    </div>
+    <div class="page-title">关于</div>
+
+    <div class="app-header">
+      <div class="app-icon">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+      </div>
+      <div class="app-name">DuoSchedule</div>
+      <div class="app-version">版本 3.2.0 (30200)</div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="card-row">
+        <div class="icon-box" style="background:var(--icon-bg-blue)">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        </div>
+        <div class="row-content"><div class="row-title">更新日志</div><div class="row-subtitle">查看版本更新记录</div></div>
+        <span class="chevron">›</span>
+      </div>
+      <div class="card-row">
+        <div class="icon-box" style="background:var(--icon-bg-green)">
+          <svg viewBox="0 0 24 24"><path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58s9.14-3.47 12.65 0L21 3v7.12z"/></svg>
+        </div>
+        <div class="row-content"><div class="row-title">检查更新</div><div class="row-subtitle">查看是否有新版本</div></div>
+        <span class="chevron">›</span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="card-row">
+        <div class="icon-box" style="background:var(--icon-bg-teal)">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+        </div>
+        <div class="row-content"><div class="row-title">用户协议和隐私政策</div></div>
+        <span class="chevron">›</span>
+      </div>
+      <div class="card-row">
+        <div class="icon-box" style="background:var(--icon-bg-pink)">
+          <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </div>
+        <div class="row-content"><div class="row-title">开源致谢</div><div class="row-subtitle">感谢开源社区</div></div>
+        <span class="chevron">›</span>
+      </div>
+    </div>
+
+    <div class="footer-text">
+      © 2026 DuoSchedule Contributors<br>
+      MIT License
+    </div>
+
+    <div style="height:100px"></div>
+  </div>
+  <div class="bottom-bar">
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>主页</span></div>
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg><span>我的课表</span></div>
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3z"/></svg><span>Ta的课表</span></div>
+    <div class="tab-item active"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z"/></svg><span>设置</span></div>
+  </div>
+</div>
+<div class="page-label">关于页面</div>
+</div>
+
+<!-- Screen 3: Acknowledgments -->
+<div>
+<div class="phone-frame">
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons"><span>5G</span> <span>🔋</span></div>
+  </div>
+  <div class="screen-content">
+    <div class="nav-back">
+      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      关于
+    </div>
+    <div class="page-title">开源致谢</div>
+
+    <div class="license-group-title">MIT License</div>
+    <div class="card">
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e8f5e9;color:#2e7d32">J</div>
+        <div class="lib-info"><div class="lib-name">jsoup</div><div class="lib-desc">Java HTML 解析器</div></div>
+        <span class="lib-license">MIT</span>
+      </div>
+    </div>
+
+    <div class="license-group-title">Apache License 2.0</div>
+    <div class="card">
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e3f2fd;color:#1565c0">K</div>
+        <div class="lib-info"><div class="lib-name">Kotlin Stdlib</div><div class="lib-desc">Kotlin 标准库</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#fce4ec;color:#c62828">C</div>
+        <div class="lib-info"><div class="lib-name">Jetpack Compose</div><div class="lib-desc">Android 现代 UI 工具包</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e8eaf6;color:#283593">A</div>
+        <div class="lib-info"><div class="lib-name">AndroidX Core KTX</div><div class="lib-desc">AndroidX 核心 Kotlin 扩展</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e8eaf6;color:#283593">A</div>
+        <div class="lib-info"><div class="lib-name">AndroidX Lifecycle</div><div class="lib-desc">生命周期感知组件</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e8eaf6;color:#283593">A</div>
+        <div class="lib-info"><div class="lib-name">AndroidX Navigation</div><div class="lib-desc">导航组件</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e8eaf6;color:#283593">A</div>
+        <div class="lib-info"><div class="lib-name">AndroidX Room</div><div class="lib-desc">本地数据库 ORM</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e8eaf6;color:#283593">A</div>
+        <div class="lib-info"><div class="lib-name">AndroidX DataStore</div><div class="lib-desc">键值数据存储</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e8eaf6;color:#283593">A</div>
+        <div class="lib-info"><div class="lib-name">AndroidX WorkManager</div><div class="lib-desc">后台任务调度</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e8eaf6;color:#283593">A</div>
+        <div class="lib-info"><div class="lib-name">AndroidX Hilt</div><div class="lib-desc">依赖注入框架</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e8eaf6;color:#283593">A</div>
+        <div class="lib-info"><div class="lib-name">AndroidX Glance</div><div class="lib-desc">桌面小组件</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e8eaf6;color:#283593">A</div>
+        <div class="lib-info"><div class="lib-name">AndroidX SplashScreen</div><div class="lib-desc">启动屏</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#fff3e0;color:#e65100">O</div>
+        <div class="lib-info"><div class="lib-name">OkHttp</div><div class="lib-desc">HTTP 客户端</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e0f7fa;color:#00695c">G</div>
+        <div class="lib-info"><div class="lib-name">AndroidLiquidGlass</div><div class="lib-desc">Compose 液态玻璃效果</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e0f7fa;color:#00695c">S</div>
+        <div class="lib-info"><div class="lib-name">Shapes</div><div class="lib-desc">iOS 风格平滑圆角形状</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+      <div class="lib-row">
+        <div class="lib-icon" style="background:#e0f7fa;color:#00695c">C</div>
+        <div class="lib-info"><div class="lib-name">Capsule</div><div class="lib-desc">Compose 连续圆角矩形</div></div>
+        <span class="lib-license">Apache 2.0</span>
+      </div>
+    </div>
+
+    <div class="footer-text">感谢开源社区的贡献者们 ❤️</div>
+    <div style="height:100px"></div>
+  </div>
+  <div class="bottom-bar">
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>主页</span></div>
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg><span>我的课表</span></div>
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3z"/></svg><span>Ta的课表</span></div>
+    <div class="tab-item active"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z"/></svg><span>设置</span></div>
+  </div>
+</div>
+<div class="page-label">开源致谢</div>
+</div>
+
+<!-- Screen 4: Changelog -->
+<div>
+<div class="phone-frame">
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons"><span>5G</span> <span>🔋</span></div>
+  </div>
+  <div class="screen-content">
+    <div class="nav-back">
+      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      关于
+    </div>
+    <div class="page-title">更新日志</div>
+
+    <div class="card">
+      <div class="changelog-entry">
+        <div class="changelog-version">
+          <span class="version-tag">3.2.0</span>
+          <span class="type-badge feature">功能增强</span>
+        </div>
+        <div class="changelog-date">2026-05-20</div>
+        <div class="changelog-summary">新增关于页面，包含更新日志、用户协议和隐私政策、开源致谢；预测式返回开关移至外观与显示分组</div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-version">
+          <span class="version-tag">3.1.1</span>
+          <span class="type-badge bugfix">Bug修复</span>
+        </div>
+        <div class="changelog-date">2026-05-20</div>
+        <div class="changelog-summary">修复应用内更新下载和安装功能多个严重问题</div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-version">
+          <span class="version-tag">3.1.0</span>
+          <span class="type-badge feature">功能增强</span>
+        </div>
+        <div class="changelog-date">2026-05-20</div>
+        <div class="changelog-summary">重新梳理 Gitee 仓库与自动打包 APK 工作流</div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-version">
+          <span class="version-tag">3.0.0</span>
+          <span class="type-badge breaking">重大变更</span>
+        </div>
+        <div class="changelog-date">2026-05-20</div>
+        <div class="changelog-summary">统一版本号计算规则 + 修复 GitHub Actions 构建签名错误</div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-version">
+          <span class="version-tag">1.16.3</span>
+          <span class="type-badge bugfix">Bug修复</span>
+        </div>
+        <div class="changelog-date">2026-05-19</div>
+        <div class="changelog-summary">修复应用内更新安装 APK 崩溃 + 优化更新日志格式</div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-version">
+          <span class="version-tag">1.16.0</span>
+          <span class="type-badge feature">功能增强</span>
+        </div>
+        <div class="changelog-date">2026-05-19</div>
+        <div class="changelog-summary">重写 GitHub Actions 发布工作流与版本号计算规则</div>
+      </div>
+      <div class="changelog-entry">
+        <div class="changelog-version">
+          <span class="version-tag">1.15.0</span>
+          <span class="type-badge feature">功能增强</span>
+        </div>
+        <div class="changelog-date">2026-05-19</div>
+        <div class="changelog-summary">GitHub Actions CI/CD 自动打包发布</div>
+      </div>
+    </div>
+
+    <div style="height:100px"></div>
+  </div>
+  <div class="bottom-bar">
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>主页</span></div>
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg><span>我的课表</span></div>
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3z"/></svg><span>Ta的课表</span></div>
+    <div class="tab-item active"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z"/></svg><span>设置</span></div>
+  </div>
+</div>
+<div class="page-label">更新日志</div>
+</div>
+
+<!-- Screen 5: Legal -->
+<div>
+<div class="phone-frame">
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons"><span>5G</span> <span>🔋</span></div>
+  </div>
+  <div class="screen-content">
+    <div class="nav-back">
+      <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      关于
+    </div>
+    <div class="page-title">法律信息</div>
+
+    <div class="section-title">用户协议</div>
+    <div class="card">
+      <div class="legal-section">
+        <p>欢迎使用 DuoSchedule（以下简称"本应用"）。使用本应用即表示您同意以下条款：</p>
+        <p><strong>1. 开源许可</strong><br>本应用基于 MIT License 开源发布。您可以在 MIT License 条款下自由使用、修改和分发本应用。</p>
+        <p><strong>2. 使用规范</strong><br>本应用仅供个人课表管理使用，不得用于任何违法用途。用户应对自己输入的数据负责。</p>
+        <p><strong>3. 免责声明</strong><br>本应用按"原样"提供，不作任何明示或暗示的保证。开发者不对因使用本应用造成的任何损失承担责任。</p>
+      </div>
+    </div>
+
+    <div class="section-title">隐私政策</div>
+    <div class="card">
+      <div class="legal-section">
+        <p><strong>1. 数据存储</strong><br>所有课程数据和个人设置均存储在您的设备本地（Room 数据库 + DataStore），不会上传到任何服务器。</p>
+        <p><strong>2. 数据收集</strong><br>本应用不收集、不传输任何个人身份数据、位置信息或使用行为数据。</p>
+        <p><strong>3. 网络访问</strong><br>本应用仅在以下情况访问网络：检查应用更新（访问 GitHub/Gitee API）、从教务系统导入课程数据。这些操作不会传输您的个人信息。</p>
+        <p><strong>4. 通知权限</strong><br>课前提醒通知功能需要通知权限，该权限仅用于发送课程提醒，不会用于其他目的。</p>
+        <p><strong>5. 第三方库</strong><br>本应用使用的第三方开源库列表请参见"开源致谢"页面。</p>
+      </div>
+    </div>
+
+    <div style="height:100px"></div>
+  </div>
+  <div class="bottom-bar">
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>主页</span></div>
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg><span>我的课表</span></div>
+    <div class="tab-item"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3z"/></svg><span>Ta的课表</span></div>
+    <div class="tab-item active"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58z"/></svg><span>设置</span></div>
+  </div>
+</div>
+<div class="page-label">用户协议和隐私政策</div>
+</div>
+
+</div>
+
+</body>
+</html>
