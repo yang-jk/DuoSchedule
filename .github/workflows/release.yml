@@ -52,7 +52,7 @@ jobs:
           echo "calculated_version_code=$CALCULATED_VERSION_CODE" >> $GITHUB_OUTPUT
 
           if [ "$VERSION_CODE" != "$CALCULATED_VERSION_CODE" ]; then
-            echo "::error::versionCode mismatch! build.gradle.kts has $VERSION_CODE, but formula (MAJOR×100000 + MINOR×1000 + PATCH) calculates $CALCULATED_VERSION_CODE for versionName $VERSION_NAME"
+            echo "::error::versionCode mismatch! build.gradle.kts has $VERSION_CODE, but formula (MAJOR×10000 + MINOR×100 + PATCH) calculates $CALCULATED_VERSION_CODE for versionName $VERSION_NAME"
             exit 1
           fi
           echo "✅ versionCode verification passed: $VERSION_CODE"

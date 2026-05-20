@@ -2,7 +2,30 @@
 
 本文档记录产品需求文档的所有变更历史，遵循语义化版本规范。
 
-版本号计算公式：versionCode = MAJOR × 100000 + MINOR × 1000 + PATCH
+版本号计算公式：versionCode = MAJOR × 10000 + MINOR × 100 + PATCH
+
+---
+
+---
+
+## [3.0.0] - 2026-05-20
+
+### 变更类型：重大变更
+
+### 状态：已实现
+
+### 变更内容
+
+**统一版本号计算规则**
+
+1. **BREAKING**：版本号计算公式统一为 `versionCode = MAJOR × 10000 + MINOR × 100 + PATCH`，确保 versionCode 与 versionName 视觉对应关系直观（如 3.0.0 → 30000，12.12.12 → 121212）
+2. **修复**：修正 GitHub Actions 工作流中的版本号验证公式，与实际使用的公式保持一致
+
+### 修改文件
+
+- `app/build.gradle.kts`（versionCode 更新为 30000，versionName 更新为 3.0.0）
+- `.github/workflows/release.yml`（修正版本号验证错误消息中的公式）
+- `Product-Spec-CHANGELOG.md`（统一版本号计算公式，添加本次变更记录）
 
 ---
 
@@ -1846,7 +1869,7 @@
 - **MINOR（次版本号）**：向下兼容的功能性新增
 - **PATCH（修订号）**：向下兼容的问题修正
 
-版本号计算公式：versionCode = MAJOR × 100000 + MINOR × 1000 + PATCH
+版本号计算公式：versionCode = MAJOR × 10000 + MINOR × 100 + PATCH
 
 ---
 
