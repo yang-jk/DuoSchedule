@@ -8,6 +8,34 @@
 
 ---
 
+## [3.0.1] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 GitHub Actions 构建流程 + 添加 Gitee 镜像发布**
+
+1. **修复**：修正 GitHub Actions 工作流中的版本号验证公式，与实际使用的公式 `MAJOR × 10000 + MINOR × 100 + PATCH` 保持一致
+2. **修复**：修复 GitHub Actions 构建时密钥库路径错误，解决 `validateSigningRelease` 任务失败问题
+3. **新增**：添加 Gitee 镜像支持，应用发布时自动上传 APK 到 Gitee Release 并更新 `update.json`，国内用户可从 Gitee 快速获取更新
+4. **新增**：应用内更新检查支持双服务器故障转移（优先 Gitee，失败时自动切换到 GitHub CDN）
+5. **优化**：ServerChan 通知增加 Gitee Release 状态追踪
+
+### 修改文件
+
+- `app/build.gradle.kts`（versionCode 116003→30001，versionName 1.16.3→3.0.1）
+- `.github/workflows/release.yml`（修正版本号验证公式；修复密钥库路径；新增 Gitee Release 步骤；通知增加 Gitee 状态）
+- `scripts/update_repo.py`（重写为支持 Gitee API 更新 update.json）
+- `app/src/main/java/com/duoschedule/data/update/AppUpdateChecker.kt`（添加双服务器故障转移机制）
+- `Product-Spec-CHANGELOG.md`（统一版本号计算公式，添加变更记录）
+
+---
+
+---
+
 ## [3.0.0] - 2026-05-20
 
 ### 变更类型：重大变更
