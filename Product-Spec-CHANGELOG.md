@@ -6,6 +6,29 @@
 
 ---
 
+## [3.3.3] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 CI 构建失败：.gitignore 误配置导致 UpdateDialog.kt 未被 git 追踪**
+
+1. **修复**：`.gitignore` 第 42 行 `src/` 规则匹配项目中任何层级的 `src/` 目录（包括 `app/src/`），导致新文件 `UpdateDialog.kt` 被 git 忽略，CI 构建报 `Unresolved reference 'UpdateDialog'`。将 `src/` 改为 `/src/`，仅匹配项目根目录下的 `src/` 目录
+2. **新增**：将 `UpdateDialog.kt` 添加到 git 追踪
+
+### 修改文件
+
+- `.gitignore`（`src/` → `/src/`，仅匹配根目录）
+- `app/src/main/java/com/duoschedule/ui/update/UpdateDialog.kt`（添加到 git 追踪）
+- `app/build.gradle.kts`（versionCode 30302→30303，versionName 3.3.2→3.3.3）
+- `Product-Spec.md`（版本号 3.3.2→3.3.3）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
 ## [3.3.2] - 2026-05-20
 
 ### 变更类型：Bug修复
@@ -16,16 +39,14 @@
 
 **修复更新弹窗 Checking 状态高度不一致**
 
-1. **修复**：UpdateDialog 内容 Column 添加 `heightIn(min = 176.dp)` 最小高度和 `verticalArrangement = Arrangement.Center`，使 Checking 状态弹窗高度与 NoUpdate/Error/ReadyToInstall 状态一致，Checking 内容在固定高度内垂直居中
+1. **修复**：UpdateDialog 内容 Column 添加 `defaultMinSize(minHeight = 176.dp)` 和 `verticalArrangement = Arrangement.Center`，使 Checking 状态弹窗高度与其他状态一致，内容在固定高度内垂直居中
 
 ### 修改文件
 
-- `app/src/main/java/com/duoschedule/ui/update/UpdateDialog.kt`（Column 添加 heightIn(min=176.dp) + verticalArrangement = Arrangement.Center + Arrangement import）
+- `app/src/main/java/com/duoschedule/ui/update/UpdateDialog.kt`（Column 添加 defaultMinSize(minHeight=176.dp) + verticalArrangement = Arrangement.Center）
 - `app/build.gradle.kts`（versionCode 30301→30302，versionName 3.3.1→3.3.2）
 - `Product-Spec.md`（版本号 3.3.1→3.3.2）
 - `Product-Spec-CHANGELOG.md`（添加变更记录）
-
----
 
 ---
 
@@ -37,45 +58,27 @@
 
 ### 变更内容
 
-**更新弹窗 CheckingContent 布局对齐 + 弹窗宽度调整**
+**更新弹窗重构 + 多项 UI 修复**
 
-1. **重构**：CheckingContent 从单行文字（CircularProgressIndicator 32dp + bodyLarge "正在检查更新..."）重构为与 NoUpdateContent/ErrorContent 一致的三层结构：40dp CircularProgressIndicator + headlineSmall 标题"正在检查更新" + bodyMedium 副标题"请稍候..."
-2. **优化**：弹窗宽度从 320.dp 缩减为 300.dp
-
-### 修改文件
-
-- `app/src/main/java/com/duoschedule/ui/update/UpdateDialog.kt`（CheckingContent 重构 + 弹窗宽度 320.dp→300.dp）
-- `app/build.gradle.kts`（versionCode 30300→30301，versionName 3.3.0→3.3.1）
-- `Product-Spec-CHANGELOG.md`（添加变更记录）
-
----
-
----
-
-## [3.3.1] - 2026-05-20
-
-### 变更类型：Bug修复
-
-### 状态：已实现
-
-### 变更内容
-
-**修复五个 UI 问题**
-
-1. **修复**：UpdateDialog 弹窗宽度从 320.dp 统一为 300.dp（与 GlassDialogContainer 一致）
+1. **重构**：将 `UpdateScreen`（全屏页面）重构为 `UpdateDialog`（Glass 风格弹窗组件），使用项目已有的 Backdrop + drawBackdrop + ContinuousRoundedRectangle 弹窗模式，宽度 300.dp
 2. **重构**：CheckingContent 布局对齐 NoUpdateContent/ErrorContent 结构（40dp CircularProgressIndicator + headlineSmall 标题 + bodyMedium 副标题）
-3. **修复**：AboutScreen 应用名称从 "DuoSchedule" 改为 "双人课程表"
-4. **修复**：AboutScreen 图标从 Icons.Outlined.Schedule 替换为应用 launcher icon
-5. **修复**：SettingsScreen "关于"行标题从 "关于 DuoSchedule" 改为 "关于 双人课程表"
-6. **修复**：SettingsScreen 版本号从硬编码改为动态读取 PackageInfo.versionName
-7. **修复**：SegmentedControl 首次打开时滑块指示器飞入动画（animatedOffset 初始值改为 -1f，显示条件增加 animatedOffset.value >= 0）
-8. **优化**：CurrentCourseCard 人名 labelMedium→bodyMedium、课程名 bodyLarge→titleMedium、地点 bodySmall→bodyMedium、下节课预告 labelSmall→bodySmall
+3. **重构**：使用 LiquidGlassButton 替代原有的 Material Button/OutlinedButton
+4. **重构**：AboutScreen 移除 `onNavigateToUpdate` 参数，"检查更新"行点击改为在当前页面弹出 UpdateDialog
+5. **移除**：Navigation.kt 移除 `settings/update` 路由
+6. **修复**：AboutScreen 应用名称从 "DuoSchedule" 改为 "双人课程表"
+7. **修复**：AboutScreen 图标从 Icons.Outlined.Schedule 替换为应用 launcher icon
+8. **修复**：SettingsScreen "关于"行标题从 "关于 DuoSchedule" 改为 "关于 双人课程表"
+9. **修复**：SettingsScreen 版本号从硬编码改为动态读取 PackageInfo.versionName
+10. **修复**：SegmentedControl 首次打开时滑块指示器飞入动画（animatedOffset 初始值改为 -1f，显示条件增加 animatedOffset.value >= 0）
+11. **优化**：CurrentCourseCard 人名 labelMedium→bodyMedium、课程名 bodyLarge→titleMedium、地点 bodySmall→bodyMedium、下节课预告 labelSmall→bodySmall
 
 ### 修改文件
 
-- `app/src/main/java/com/duoschedule/ui/update/UpdateDialog.kt`（弹窗宽度 320→300dp，CheckingContent 重构）
-- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（应用名称改为"双人课程表"，图标改为 launcher icon）
+- `app/src/main/java/com/duoschedule/ui/update/UpdateDialog.kt`（新增，Glass 风格更新弹窗组件）
+- `app/src/main/java/com/duoschedule/ui/update/UpdateScreen.kt`（删除）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（移除 onNavigateToUpdate 参数，添加 showUpdateDialog 状态和 UpdateDialog 调用，应用名称和图标修正）
 - `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（标题改为"关于 双人课程表"，版本号动态读取）
+- `app/src/main/java/com/duoschedule/ui/navigation/Navigation.kt`（移除 settings/update 路由和 onNavigateToUpdate 参数）
 - `app/src/main/java/com/duoschedule/ui/theme/SegmentedControl.kt`（修复飞入动画）
 - `app/src/main/java/com/duoschedule/ui/main/components/CurrentCourseCard.kt`（增大文字大小）
 - `app/build.gradle.kts`（versionCode 30300→30301，versionName 3.3.0→3.3.1）
@@ -2268,6 +2271,6 @@
 
 ---
 
-**文档版本**：3.3.2
+**文档版本**：3.3.3
 
 **最后更新**：2026-05-20

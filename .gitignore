@@ -39,7 +39,7 @@ duoschedule-update-tmp/
 update.json
 fix-gradle-lock.bat
 AGENTS.md
-src/
+/src/
 
 AndroidLiquidGlass-2.0.0-alpha03/
 miuix-0.9.0/
