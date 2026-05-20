@@ -148,7 +148,7 @@ fun DuoScheduleNavGraph(
                 onNavigateToDisplaySettings = { navController.navigate("settings/display") },
                 onNavigateToDataManagement = { navController.navigate("settings/data") },
                 onNavigateToNotificationSettings = { navController.navigate("settings/notification") },
-                onNavigateToUpdate = { navController.navigate("settings/update") }
+                onNavigateToAbout = { navController.navigate("settings/about") }
             )
         }
 
@@ -207,6 +207,34 @@ fun DuoScheduleNavGraph(
 
         composable("settings/update") {
             com.duoschedule.ui.update.UpdateScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("settings/about") {
+            AboutScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToChangelog = { navController.navigate("settings/changelog") },
+                onNavigateToUpdate = { navController.navigate("settings/update") },
+                onNavigateToLegal = { navController.navigate("settings/legal") },
+                onNavigateToAcknowledgments = { navController.navigate("settings/acknowledgments") }
+            )
+        }
+
+        composable("settings/changelog") {
+            ChangelogScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("settings/legal") {
+            LegalScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("settings/acknowledgments") {
+            AcknowledgmentsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

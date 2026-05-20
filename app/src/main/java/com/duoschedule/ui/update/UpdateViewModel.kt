@@ -1,6 +1,7 @@
 package com.duoschedule.ui.update
 
 import android.content.Context
+import android.content.pm.PackageInfo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.duoschedule.data.local.SettingsDataStore
@@ -59,17 +60,25 @@ class UpdateViewModel @Inject constructor(
                         }
                         UpdateStatus.OPTIONAL_UPDATE -> {
                             val downloadedApk = apkDownloader.getDownloadedApk(context)
-                            if (downloadedApk != null) {
+                            if (downloadedApk != null && isApkVersionMatch(context, downloadedApk, info.latestVersionCode)) {
                                 _uiState.value = UpdateUiState.ReadyToInstall(info, false)
                             } else {
+                                if (downloadedApk != null) {
+                                    downloadedApk.delete()
+                                    AppLog.i(TAG, "已删除版本不匹配的缓存APK")
+                                }
                                 _uiState.value = UpdateUiState.UpdateAvailable(info, false)
                             }
                         }
                         UpdateStatus.FORCE_UPDATE -> {
                             val downloadedApk = apkDownloader.getDownloadedApk(context)
-                            if (downloadedApk != null) {
+                            if (downloadedApk != null && isApkVersionMatch(context, downloadedApk, info.latestVersionCode)) {
                                 _uiState.value = UpdateUiState.ReadyToInstall(info, true)
                             } else {
+                                if (downloadedApk != null) {
+                                    downloadedApk.delete()
+                                    AppLog.i(TAG, "已删除版本不匹配的缓存APK")
+                                }
                                 _uiState.value = UpdateUiState.UpdateAvailable(info, true)
                             }
                         }
@@ -108,12 +117,21 @@ class UpdateViewModel @Inject constructor(
         val apkFile = apkDownloader.getDownloadedApk(context)
         if (apkFile != null) {
             if (apkInstaller.canRequestInstall(context)) {
-                apkInstaller.installApk(context, apkFile)
+                val result = apkInstaller.installApk(context, apkFile)
+                result.fold(
+                    onSuccess = {
+                        AppLog.i(TAG, "安装意图已发送")
+                    },
+                    onFailure = { e ->
+                        _uiState.value = UpdateUiState.Error(e.message ?: "安装失败")
+                    }
+                )
             } else {
                 apkInstaller.openInstallPermissionSettings(context)
             }
         } else {
             AppLog.e(TAG, "APK文件不存在，无法安装")
+            _uiState.value = UpdateUiState.Error("APK文件不存在，请重新下载")
         }
     }
 
@@ -136,6 +154,20 @@ class UpdateViewModel @Inject constructor(
             _uiState.value = UpdateUiState.UpdateAvailable(info, isForceUpdate)
         } else {
             _uiState.value = UpdateUiState.Idle
+        }
+    }
+
+    private fun isApkVersionMatch(context: Context, apkFile: File, expectedVersionCode: Int): Boolean {
+        return try {
+            val packageInfo: PackageInfo = context.packageManager
+                .getPackageArchiveInfo(apkFile.absolutePath, 0)
+                ?: return false
+            val apkVersionCode = packageInfo.versionCode
+            AppLog.i(TAG, "缓存APK版本号: $apkVersionCode, 期望版本号: $expectedVersionCode")
+            apkVersionCode == expectedVersionCode
+        } catch (e: Exception) {
+            AppLog.e(TAG, "读取缓存APK版本号失败: ${e.message}")
+            false
         }
     }
 }

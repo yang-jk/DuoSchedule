@@ -100,6 +100,30 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 ## 🙏 致谢
 
+感谢以下开源项目和库：
+
+### MIT License
+
+- **jsoup** - Java HTML 解析器，用于教务系统课程数据抓取
+
+### Apache License 2.0
+
+- **Kotlin Stdlib** - Kotlin 标准库
+- **Jetpack Compose** - Android 现代 UI 工具包
+- **AndroidX Core KTX** - AndroidX 核心 Kotlin 扩展
+- **AndroidX Lifecycle** - 生命周期感知组件
+- **AndroidX Navigation** - 导航组件
+- **AndroidX Room** - 本地数据库 ORM
+- **AndroidX DataStore** - 键值数据存储
+- **AndroidX WorkManager** - 后台任务调度
+- **AndroidX Hilt** - 依赖注入框架
+- **AndroidX Glance** - 桌面小组件
+- **AndroidX SplashScreen** - 启动屏
+- **OkHttp** - HTTP 客户端
+- **AndroidLiquidGlass (backdrop)** - Compose 液态玻璃效果
+- **Shapes** - iOS 风格平滑圆角形状
+- **Capsule** - Compose 连续圆角矩形
+
 感谢所有为项目做出贡献的开发者！
 
 ---

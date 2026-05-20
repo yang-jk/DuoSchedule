@@ -8,6 +8,126 @@
 
 ---
 
+## [3.2.2] - 2026-05-20
+
+### 变更类型：功能优化
+
+### 状态：已实现
+
+### 变更内容
+
+**开源致谢页面重构**
+
+1. **重构**：OpenSourceLibrary 数据模型从 (name, description, license) 改为 (name, author, description, url)，移除 license 字段，新增 author 和 url 字段
+2. **重构**：合并 mitLibraries 和 apacheLibraries 为单一 libraries 列表，精简为7个核心开源依赖库（Kotlin、Hilt、OkHttp、jsoup、AndroidLiquidGlass、Shapes、Capsule）
+3. **重构**：移除 MIT License 和 Apache License 2.0 两个分组，改为单一 SettingsSection(title = null) 展示所有库
+4. **重构**：LibraryRow 组件重写，左侧图标首字母 + 中间库名/作者/描述三行布局 + 右侧箭头图标
+5. **新增**：LibraryRow 点击跳转功能，使用 Intent.ACTION_VIEW 打开库 URL
+6. **移除**：LibraryRow 右侧许可证文本，替换为 KeyboardArrowRight 箭头图标
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（重构数据模型、库列表、布局和 LibraryRow 组件）
+- `app/build.gradle.kts`（versionCode 30201→30202，versionName 3.2.1→3.2.2）
+- `Product-Spec.md`（版本号 3.2.1→3.2.2，更新开源致谢功能描述）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
+## [3.2.1] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复关于页面系列子页面编译错误（缺少 import）**
+
+1. **修复**：AboutScreen.kt 缺少 `clip`、`background`、`ContinuousRoundedRectangle`、`TextAlign` 的 import，`Icons.Outlined.FileText` 不存在于 Material Icons Extended，替换为 `Icons.Outlined.Description`
+2. **修复**：AcknowledgmentsScreen.kt 缺少 `layerBackdrop`、`clip`、`background`、`ContinuousRoundedRectangle`、`TextAlign` 的 import，`BorderRadius.iOS26.button` 不存在，替换为 `BorderRadius.iOS26.icon`（与 SettingsComponents.kt 中图标圆角一致）
+3. **修复**：ChangelogScreen.kt 缺少 `layerBackdrop` 的 import
+4. **修复**：LegalScreen.kt 缺少 `layerBackdrop` 的 import
+5. **优化**：settings.gradle.kts 添加阿里云镜像源加速依赖下载
+6. **优化**：gradle-wrapper.properties Gradle distribution URL 改为腾讯云镜像加速下载
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（添加 clip/background/ContinuousRoundedRectangle/TextAlign import，FileText→Description）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（添加 layerBackdrop/clip/background/ContinuousRoundedRectangle/TextAlign import，iOS26.button→iOS26.icon）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（添加 layerBackdrop import）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（添加 layerBackdrop import）
+- `settings.gradle.kts`（添加阿里云镜像源）
+- `gradle/wrapper/gradle-wrapper.properties`（Gradle distribution URL 改为腾讯云镜像）
+- `app/build.gradle.kts`（versionCode 30200→30201，versionName 3.2.0→3.2.1）
+- `Product-Spec.md`（版本号 3.2.0→3.2.1）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
+## [3.2.0] - 2026-05-20
+
+### 变更类型：功能增强
+
+### 状态：已实现
+
+### 变更内容
+
+**关于页面重构 + 开源致谢功能**
+
+1. **重构**：设置页"关于"分组改为仅显示"关于 DuoSchedule"导航入口，点击进入独立的关于页面
+2. **新增**：AboutScreen 关于页面，包含应用图标/名称/版本号，以及四个导航条目：更新日志、检查更新、用户协议和隐私政策、开源致谢
+3. **新增**：ChangelogScreen 更新日志页面，展示版本更新记录列表，每条记录包含版本号、日期、变更类型标签和更新内容摘要
+4. **新增**：LegalScreen 用户协议和隐私政策页面，展示用户协议（MIT License 开源许可、使用规范、免责声明）和隐私政策（数据存储、数据收集、网络访问、通知权限、第三方库）
+5. **新增**：AcknowledgmentsScreen 开源致谢页面，按许可证类型分组展示所有开源依赖库（MIT License: jsoup；Apache License 2.0: Kotlin Stdlib、Jetpack Compose、AndroidX 系列、OkHttp、AndroidLiquidGlass、Shapes、Capsule）
+6. **迁移**："预测式返回"开关从"关于"分组移至"外观与显示"分组末尾，更符合功能分类逻辑
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（新增关于页面）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（新增更新日志页面）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（新增法律信息页面）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（新增开源致谢页面）
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（重构关于分组，移动预测式返回开关位置）
+- `app/src/main/java/com/duoschedule/ui/navigation/Navigation.kt`（添加 settings/about、settings/changelog、settings/legal、settings/acknowledgments 路由）
+- `app/build.gradle.kts`（versionCode 30101→30200，versionName 3.1.1→3.2.0）
+- `Product-Spec.md`（版本号 3.1.1→3.2.0，添加关于页面和开源致谢功能描述）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
+---
+
+## [3.1.1] - 2026-05-20
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复应用内更新下载和安装功能多个严重问题**
+
+1. **修复**：`file_paths.xml` 缺少 `<external-files-path>` 配置，APK 下载到 `context.getExternalFilesDir("apk")` 目录但 FileProvider 只配置了 `<cache-path>`，导致 `FileProvider.getUriForFile()` 抛出 `IllegalArgumentException`，安装按钮点击无反应
+2. **修复**：`ApkInstaller.installApk()` 异常被 `try-catch` 静默吞掉，用户点击安装失败时看不到任何错误提示，现在返回 `Result<Unit>` 并在 ViewModel 中将错误展示给用户
+3. **修复**：`UpdateViewModel.checkForUpdate()` 检测到缓存 APK 时未验证版本号，旧版 APK 直接显示为"下载完成"状态，现在使用 `PackageManager.getPackageArchiveInfo()` 读取缓存 APK 的 versionCode 与更新版本号比对，版本不匹配时删除旧文件并重新下载
+4. **修复**：`ApkDownloader` 缺少下载内容验证，服务器返回 HTML 错误页面时也会被当作 APK 保存，现在校验 Content-Type（拒绝 text/html/text/plain）、最小文件大小（>500KB）、APK 文件头魔数（PK\x03\x04）
+5. **修复**：`ApkDownloader` 当服务器不返回 Content-Length 时（`contentLength = -1`）进度回调永远不触发，UI 停留在 0%，现在每下载 64KB 报告一次进度（percent=-1 表示未知总大小）
+6. **优化**：`UpdateScreen` 下载进度条支持未知总大小模式，显示不确定进度条 + "X MB 已下载" 文案
+
+### 修改文件
+
+- `res/xml/file_paths.xml`（添加 `<external-files-path name="apk_files" path="apk/" />`）
+- `data/update/ApkInstaller.kt`（返回 `Result<Unit>` 替代静默吞异常，区分 IllegalArgumentException/ActivityNotFoundException 通用异常）
+- `data/update/ApkDownloader.kt`（新增 Content-Type 校验、最小文件大小校验、APK 魔数校验、未知 contentLength 进度报告）
+- `ui/update/UpdateViewModel.kt`（缓存 APK 版本号验证、安装失败错误反馈、APK 不存在错误反馈）
+- `ui/update/UpdateScreen.kt`（下载进度条支持未知总大小模式）
+- `app/build.gradle.kts`（versionCode 30100→30101，versionName 3.1.0→3.1.1）
+- `Product-Spec.md`（版本号 3.1.0→3.1.1）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
 ## [3.1.0] - 2026-05-20
 
 ### 变更类型：功能增强
