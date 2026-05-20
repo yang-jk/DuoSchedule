@@ -8,6 +8,35 @@
 
 ---
 
+## [3.1.0] - 2026-05-20
+
+### 变更类型：功能增强
+
+### 状态：已实现
+
+### 变更内容
+
+**重新梳理 Gitee 仓库与自动打包 APK 工作流**
+
+1. **新增**：`scripts/cleanup_gitee_update_repo.py` 脚本，用于清理 Gitee `su-zijie21/duoschedule-update` 仓库中除 `update.json` 以外的所有文件（该仓库错误上传了项目源代码）
+2. **重构**：`update_repo.py` 移除 `USE_GITEE` 环境变量依赖，改为自动检测 `GITEE_TOKEN` 是否存在来决定是否更新 Gitee `update.json`
+3. **新增**：`update_repo.py` 支持 `GITEE_RELEASE_SUCCESS` 环境变量，Gitee Release 创建失败时 Gitee `update.json` 的 downloadUrl 自动回退到 GitHub Release URL，避免用户获取到 404 下载链接
+4. **重构**：`release.yml` Gitee Release 步骤输出创建结果（`success=true/false`），传递给 `update_repo.py` 步骤
+5. **优化**：ServerChan 通知在 Gitee Release 失败时提示 downloadUrl 已回退到 GitHub
+6. **清理**：移除项目根目录残留的 `update.json` 文件，`.gitignore` 添加 `update.json` 条目
+
+### 修改文件
+
+- `scripts/cleanup_gitee_update_repo.py`（新增 Gitee 更新仓库清理脚本）
+- `scripts/update_repo.py`（移除 USE_GITEE 依赖，新增 GITEE_RELEASE_SUCCESS 联动逻辑）
+- `.github/workflows/release.yml`（Gitee Release 输出结果，传递给 update_repo.py，移除 USE_GITEE，ServerChan 通知增强）
+- `.gitignore`（添加 update.json 条目）
+- `app/build.gradle.kts`（versionCode 30003→30100，versionName 3.0.3→3.1.0）
+- `Product-Spec.md`（版本号 3.0.3→3.1.0）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
 ## [3.0.3] - 2026-05-20
 
 ### 变更类型：Bug修复
@@ -1954,6 +1983,6 @@
 
 ---
 
-**文档版本**：3.0.3
+**文档版本**：3.1.0
 
 **最后更新**：2026-05-20

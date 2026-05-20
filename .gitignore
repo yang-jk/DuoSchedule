@@ -36,6 +36,7 @@ release.jks
 *.logcat
 *.zip
 duoschedule-update-tmp/
+update.json
 fix-gradle-lock.bat
 AGENTS.md
 src/

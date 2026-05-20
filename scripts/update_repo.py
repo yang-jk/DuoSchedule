@@ -15,7 +15,7 @@ GITHUB_OWNER = os.environ.get('GITHUB_OWNER', 'yang-jk')
 GITEE_OWNER = os.environ.get('GITEE_OWNER', 'su-zijie21')
 GITHUB_TOKEN = os.environ.get('UPDATE_REPO_TOKEN', '')
 GITEE_TOKEN = os.environ.get('GITEE_TOKEN', '')
-USE_GITEE = os.environ.get('USE_GITEE', 'false').lower() == 'true'
+GITEE_RELEASE_SUCCESS = os.environ.get('GITEE_RELEASE_SUCCESS', 'true').lower() == 'true'
 
 def update_github(api_url, token, download_url):
     update_data = {
@@ -147,12 +147,21 @@ if GITHUB_TOKEN:
 else:
     print("UPDATE_REPO_TOKEN not set, skipping GitHub update")
 
-if USE_GITEE and GITEE_TOKEN:
+if GITEE_TOKEN:
     print("=" * 50)
     print("Updating Gitee...")
     gitee_api_url = f"https://gitee.com/api/v5/repos/{GITEE_OWNER}/duoschedule-update/contents/update.json"
+    github_download_url = f"https://github.com/{GITHUB_OWNER}/DuoSchedule/releases/download/{TAG_NAME}/DuoSchedule-{VERSION_NAME}.apk"
     gitee_download_url = f"https://gitee.com/{GITEE_OWNER}/duoschedule/releases/download/{TAG_NAME}/DuoSchedule-{VERSION_NAME}.apk"
-    gitee_success = update_gitee(gitee_api_url, GITEE_TOKEN, gitee_download_url)
+
+    if GITEE_RELEASE_SUCCESS:
+        effective_download_url = gitee_download_url
+        print(f"[Gitee] Gitee Release succeeded, using Gitee download URL")
+    else:
+        effective_download_url = github_download_url
+        print(f"[Gitee] Gitee Release failed, falling back to GitHub download URL")
+
+    gitee_success = update_gitee(gitee_api_url, GITEE_TOKEN, effective_download_url)
 
     if gitee_success:
         any_success = True
@@ -167,7 +176,7 @@ if USE_GITEE and GITEE_TOKEN:
     else:
         print("[Gitee] Failed to update, continuing...")
 else:
-    print("USE_GITEE is not set or GITEE_TOKEN is missing, skipping Gitee update")
+    print("GITEE_TOKEN is not set, skipping Gitee update")
 
 if not any_success:
     print("All platforms failed to update!")

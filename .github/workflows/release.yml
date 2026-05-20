@@ -135,6 +135,7 @@ jobs:
         run: |
           if [ -z "$GITEE_TOKEN" ]; then
             echo "GITEE_TOKEN not configured, skipping Gitee release"
+            echo "success=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -156,6 +157,7 @@ jobs:
           if [ -z "$RELEASE_ID" ]; then
             echo "Failed to create Gitee release"
             echo "$RESPONSE"
+            echo "success=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -166,6 +168,7 @@ jobs:
             -F "file=@${APK_FILE}"
 
           echo "✅ APK uploaded to Gitee release"
+          echo "success=true" >> $GITHUB_OUTPUT
 
       - name: Update update.json via GitHub API
         id: update_repo
@@ -176,9 +179,9 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
           RELEASE_NOTES: ${{ steps.changelog.outputs.changelog }}
-          USE_GITEE: ${{ secrets.USE_GITEE }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           GITEE_OWNER: su-zijie21
+          GITEE_RELEASE_SUCCESS: ${{ steps.gitee_release.outputs.success }}
         run: python3 scripts/update_repo.py
 
       - name: Notify via ServerChan
@@ -191,6 +194,7 @@ jobs:
           RELEASE_OUTCOME: ${{ steps.release.outcome }}
           GITEE_RELEASE_OUTCOME: ${{ steps.gitee_release.outcome }}
           UPDATE_REPO_OUTCOME: ${{ steps.update_repo.outcome }}
+          GITEE_RELEASE_SUCCESS: ${{ steps.gitee_release.outputs.success }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ -z "$SERVERCHAN_URL" ]; then
@@ -231,9 +235,13 @@ jobs:
           release_status = os.environ['RELEASE_STATUS']
           gitee_release_status = os.environ['GITEE_RELEASE_STATUS']
           update_repo_status = os.environ['UPDATE_REPO_STATUS']
+          gitee_release_success = os.environ.get('GITEE_RELEASE_SUCCESS', '')
           run_url = os.environ['RUN_URL']
           title = os.environ['TITLE']
-          desp = f'版本: {version_name} ({version_code})  \nAPK 构建: {build_status}  \nGitHub Release: {release_status}  \nGitee Release: {gitee_release_status}  \n更新仓库: {update_repo_status}  \n\n构建详情: {run_url}'
+          desp = f'版本: {version_name} ({version_code})  \nAPK 构建: {build_status}  \nGitHub Release: {release_status}  \nGitee Release: {gitee_release_status}  \n更新仓库: {update_repo_status}  '
+          if gitee_release_success == 'false':
+              desp += f'  \n⚠️ Gitee Release 失败，downloadUrl 已回退到 GitHub  '
+          desp += f' \n\n构建详情: {run_url}'
           data = {
             'title': title,
             'desp': desp
