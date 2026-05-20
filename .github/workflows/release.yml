@@ -74,7 +74,7 @@ jobs:
           } >> $GITHUB_OUTPUT
 
       - name: Decode keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore
 
       - name: Build release APK
         id: build
