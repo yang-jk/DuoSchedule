@@ -92,7 +92,27 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        run: |
+          ./gradlew assembleRelease 2>&1 | tee build_output.log
+        continue-on-error: true
+
+      - name: 提取构建错误
+        if: failure() && steps.build.outcome == 'failure'
+        id: build_errors
+        run: |
+          ERRORS=$(grep -E '^(e: |w: |ERROR|FAILURE|> Task.*FAILED)' build_output.log | head -20 || true)
+          if [ -z "$ERRORS" ]; then
+            ERRORS=$(tail -30 build_output.log)
+          fi
+          {
+            echo "errors<<EOF"
+            echo "$ERRORS"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: 构建失败则终止
+        if: steps.build.outcome == 'failure'
+        run: exit 1
 
       - name: 重命名 APK 文件
         if: success()
@@ -204,6 +224,7 @@ jobs:
           GITEE_RELEASE_OUTCOME: ${{ steps.gitee_release.outcome }}
           UPDATE_REPO_OUTCOME: ${{ steps.update_repo.outcome }}
           GITEE_RELEASE_SUCCESS: ${{ steps.gitee_release.outputs.success }}
+          BUILD_ERRORS: ${{ steps.build_errors.outputs.errors }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ -z "$SERVERCHAN_URL" ]; then
@@ -245,11 +266,14 @@ jobs:
           gitee_release_status = os.environ['GITEE_RELEASE_STATUS']
           update_repo_status = os.environ['UPDATE_REPO_STATUS']
           gitee_release_success = os.environ.get('GITEE_RELEASE_SUCCESS', '')
+          build_errors = os.environ.get('BUILD_ERRORS', '')
           run_url = os.environ['RUN_URL']
           title = os.environ['TITLE']
           desp = f'版本: {version_name} ({version_code})  \nAPK 构建: {build_status}  \nGitHub Release: {release_status}  \nGitee Release: {gitee_release_status}  \n更新仓库: {update_repo_status}  '
           if gitee_release_success == 'false':
               desp += f'  \n⚠️ Gitee Release 失败，downloadUrl 已回退到 GitHub  '
+          if build_errors:
+              desp += f'  \n\n---  \n**构建错误:**  \n```\n{build_errors}\n```  '
           desp += f' \n\n构建详情: {run_url}'
           data = {
             'title': title,
