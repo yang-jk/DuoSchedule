@@ -11,8 +11,15 @@ VERSION_NAME = os.environ['VERSION_NAME']
 VERSION_CODE = int(os.environ['VERSION_CODE'])
 RELEASE_NOTES = os.environ.get('RELEASE_NOTES', '')
 TAG_NAME = f"v{VERSION_NAME}"
-DOWNLOAD_URL = f"https://github.com/{REPO_OWNER}/DuoSchedule/releases/download/{TAG_NAME}/DuoSchedule-{VERSION_NAME}.apk"
-API_BASE = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/update.json"
+
+USE_GITEE = os.environ.get('USE_GITEE', 'false').lower() == 'true'
+
+if USE_GITEE:
+    DOWNLOAD_URL = f"https://gitee.com/{REPO_OWNER}/DuoSchedule/releases/download/{TAG_NAME}/DuoSchedule-{VERSION_NAME}.apk"
+    API_BASE = f"https://gitee.com/api/v5/repos/{REPO_OWNER}/{REPO_NAME}/contents/update.json"
+else:
+    DOWNLOAD_URL = f"https://github.com/{REPO_OWNER}/DuoSchedule/releases/download/{TAG_NAME}/DuoSchedule-{VERSION_NAME}.apk"
+    API_BASE = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/update.json"
 
 update_data = {
     "latestVersion": VERSION_NAME,
@@ -68,7 +75,9 @@ except Exception as e:
     sys.exit(1)
 
 purge_url = f"https://purge.jsdelivr.net/gh/{REPO_OWNER}/{REPO_NAME}@main/update.json"
-print(f"Purging jsdelivr cache: {purge_url}")
+if USE_GITEE:
+    purge_url = f"https://gitee.com/{REPO_OWNER}/{REPO_NAME}/raw/main/update.json"
+print(f"Purging cache: {purge_url}")
 try:
     req = urllib.request.Request(purge_url)
     with urllib.request.urlopen(req, timeout=30) as resp:
