@@ -1,10 +1,14 @@
 package com.duoschedule.ui.theme
 
+import android.os.Build
+import android.view.RoundedCorner
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
@@ -438,6 +442,8 @@ fun getCourseColorByName(courseName: String): Color {
 
 val LocalDarkTheme = compositionLocalOf { false }
 
+val LocalDeviceCornerRadius = compositionLocalOf<Dp> { DeviceCornerDefaults.DefaultCornerRadius }
+
 val LocalBackdrop = compositionLocalOf<LayerBackdrop?> { null }
 
 @Composable
@@ -624,4 +630,61 @@ fun getWeekChipSelectedColor(): Color {
 fun getWeekChipUnselectedColor(): Color {
     val darkTheme = LocalDarkTheme.current
     return if (darkTheme) ScheduleColors.WeekChipUnselectedDark else ScheduleColors.WeekChipUnselectedLight
+}
+
+object DeviceCornerDefaults {
+    val DefaultCornerRadius = 0.dp
+}
+
+@Composable
+fun getRoundedCorner(): Dp {
+    val context = LocalContext.current
+    val density = LocalDensity.current
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val display = context.display ?: return DeviceCornerDefaults.DefaultCornerRadius
+        val topLeft = display.getRoundedCorner(RoundedCorner.POSITION_TOP_LEFT)?.radius ?: 0
+        val topRight = display.getRoundedCorner(RoundedCorner.POSITION_TOP_RIGHT)?.radius ?: 0
+        val bottomLeft = display.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_LEFT)?.radius ?: 0
+        val bottomRight = display.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_RIGHT)?.radius ?: 0
+        val maxPx = maxOf(topLeft, topRight, bottomLeft, bottomRight)
+        if (maxPx <= 0) return DeviceCornerDefaults.DefaultCornerRadius
+        return with(density) { maxPx.toDp() }
+    }
+
+    return DeviceCornerDefaults.DefaultCornerRadius
+}
+
+@Composable
+fun getRoundedCornerTop(): Dp {
+    val context = LocalContext.current
+    val density = LocalDensity.current
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val display = context.display ?: return DeviceCornerDefaults.DefaultCornerRadius
+        val topLeft = display.getRoundedCorner(RoundedCorner.POSITION_TOP_LEFT)?.radius ?: 0
+        val topRight = display.getRoundedCorner(RoundedCorner.POSITION_TOP_RIGHT)?.radius ?: 0
+        val maxPx = maxOf(topLeft, topRight)
+        if (maxPx <= 0) return DeviceCornerDefaults.DefaultCornerRadius
+        return with(density) { maxPx.toDp() }
+    }
+
+    return DeviceCornerDefaults.DefaultCornerRadius
+}
+
+@Composable
+fun getRoundedCornerBottom(): Dp {
+    val context = LocalContext.current
+    val density = LocalDensity.current
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val display = context.display ?: return DeviceCornerDefaults.DefaultCornerRadius
+        val bottomLeft = display.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_LEFT)?.radius ?: 0
+        val bottomRight = display.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_RIGHT)?.radius ?: 0
+        val maxPx = maxOf(bottomLeft, bottomRight)
+        if (maxPx <= 0) return DeviceCornerDefaults.DefaultCornerRadius
+        return with(density) { maxPx.toDp() }
+    }
+
+    return DeviceCornerDefaults.DefaultCornerRadius
 }

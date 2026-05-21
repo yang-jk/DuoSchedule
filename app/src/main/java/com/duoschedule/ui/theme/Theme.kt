@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.duoschedule.data.model.ThemeMode
 
 private val LightColorScheme = lightColorScheme(
@@ -109,7 +111,10 @@ fun DuoScheduleTheme(
         else -> LightColorScheme
     }
 
-    CompositionLocalProvider(LocalDarkTheme provides darkTheme) {
+    CompositionLocalProvider(
+        LocalDarkTheme provides darkTheme,
+        LocalDeviceCornerRadius provides getRoundedCorner()
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,

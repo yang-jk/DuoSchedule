@@ -6,6 +6,154 @@
 
 ---
 
+## [3.4.0] - 2026-05-23
+
+### 变更类型：功能增强
+
+### 状态：已实现
+
+### 变更内容
+
+**设备屏幕圆角适配**
+
+1. **新增**：`getRoundedCorner()`、`getRoundedCornerTop()`、`getRoundedCornerBottom()` Composable 函数，通过 Android 12+ `Display.getRoundedCorner()` API 获取设备屏幕圆角半径，低版本或不支持时回退到预设值 0.dp
+2. **新增**：`LocalDeviceCornerRadius` CompositionLocal，在 Theme 级别提供设备圆角值
+3. **增强**：底部导航栏 `LiquidBottomTabs` 外层容器添加设备底部圆角裁剪
+4. **增强**：`GlassBottomSheet` 底部圆角适配为设备屏幕底部圆角
+5. **增强**：`ScrollTopBlurOverlay` 顶部圆角适配为设备屏幕顶部圆角
+6. **增强**：所有页面（MainScreen、ScheduleScreen、SettingsScreen、DisplaySettingsScreen、NotificationSettingsScreen、ScheduleSettingsScreen、PeriodTimesSettingsScreen、DataManagementScreen、AboutScreen、ChangelogScreen、AcknowledgmentsScreen、LegalScreen、ImportPreviewScreen、CourseEditScreen）最外层容器添加设备圆角裁剪
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/theme/DesignTokens.kt`（新增 DeviceCornerDefaults、getRoundedCorner()、getRoundedCornerTop()、getRoundedCornerBottom()、LocalDeviceCornerRadius）
+- `app/src/main/java/com/duoschedule/ui/theme/Theme.kt`（DuoScheduleTheme 中提供 LocalDeviceCornerRadius）
+- `app/src/main/java/com/duoschedule/ui/theme/LiquidBottomTabs.kt`（底部导航栏圆角适配）
+- `app/src/main/java/com/duoschedule/ui/theme/GlassBottomSheet.kt`（底部弹窗圆角适配）
+- `app/src/main/java/com/duoschedule/ui/theme/Components.kt`（ScrollTopBlurOverlay 顶部圆角适配）
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（页面圆角适配）
+- `app/src/main/java/com/duoschedule/ui/schedule/ScheduleScreen.kt`（页面圆角适配）
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（页面圆角适配）
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（页面圆角适配）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（页面圆角适配）
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（页面圆角适配）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（页面圆角适配）
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（页面圆角适配）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（页面圆角适配）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（页面圆角适配）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（页面圆角适配）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（页面圆角适配）
+- `app/src/main/java/com/duoschedule/ui/settings/ImportPreviewScreen.kt`（页面圆角适配）
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（页面圆角适配）
+- `app/build.gradle.kts`（versionCode 30304→30400，versionName 3.3.4→3.4.0）
+- `Product-Spec.md`（版本号 3.3.4→3.4.0）
+
+---
+
+## [3.3.4] - 2026-05-23
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 rememberLayerBackdrop onDraw lambda 中 @Composable 调用编译错误**
+
+1. **修复**：所有使用 `rememberLayerBackdrop` 的页面，将 `MaterialTheme.colorScheme.background` 提取到 lambda 外部变量 `backgroundColor`，避免在非 @Composable 上下文（`ContentDrawScope`）中调用 @Composable 属性
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（提取 backgroundColor 变量）
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（提取 backgroundColor 变量）
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（提取 backgroundColor 变量）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（提取 backgroundColor 变量）
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（提取 backgroundColor 变量）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（提取 backgroundColor 变量）
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（提取 backgroundColor 变量）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（提取 backgroundColor 变量）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（提取 backgroundColor 变量）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（提取 backgroundColor 变量）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（提取 backgroundColor 变量）
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（提取 backgroundColor 变量，2处）
+- `app/build.gradle.kts`（versionCode 30303→30304，versionName 3.3.3→3.3.4）
+- `Product-Spec.md`（版本号 3.3.3→3.3.4）
+
+---
+
+## [3.3.3] - 2026-05-23
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 miuix-blur 模糊效果显示黑色色块的问题**
+
+1. **修复**：所有使用 `rememberLayerBackdrop()` 的页面滚动模糊区域，从无参调用改为传入 `onDraw` lambda，先绘制 `MaterialTheme.colorScheme.background` 背景色再绘制内容，避免透明区域被模糊后显示为黑色/深色色块
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（rememberLayerBackdrop 添加 onDraw lambda）
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（rememberLayerBackdrop 添加 onDraw lambda）
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（rememberLayerBackdrop 添加 onDraw lambda）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（rememberLayerBackdrop 添加 onDraw lambda）
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（rememberLayerBackdrop 添加 onDraw lambda）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（rememberLayerBackdrop 添加 onDraw lambda）
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（rememberLayerBackdrop 添加 onDraw lambda）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（rememberLayerBackdrop 添加 onDraw lambda）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（rememberLayerBackdrop 添加 onDraw lambda）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（rememberLayerBackdrop 添加 onDraw lambda）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（rememberLayerBackdrop 添加 onDraw lambda）
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（rememberLayerBackdrop 添加 onDraw lambda，2处）
+- `app/build.gradle.kts`（versionCode 30302→30303，versionName 3.3.2→3.3.3）
+- `Product-Spec.md`（版本号 3.3.2→3.3.3）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
+## [3.3.2] - 2026-05-23
+
+### 变更类型：功能优化
+
+### 状态：已实现
+
+### 变更内容
+
+**顶部模糊效果从 backdrop 库迁移到 miuix-blur 库**
+
+1. **新增**：添加 `miuix-blur-android:0.9.0` 依赖
+2. **重构**：`ScrollTopBlurOverlay` 组件从 `com.kyant.backdrop` 的 `drawBackdrop` + AGSL shader 实现迁移到 `miuix-blur` 的 `textureBlur` 实现
+3. **移除**：`PROGRESSIVE_BLUR_SHADER` AGSL 着色器常量（不再需要手动管理渐进模糊着色器）
+4. **移除**：`com.kyant.backdrop` 的 `Backdrop`、`drawBackdrop`、`blur`、`runtimeShaderEffect`、`vibrancy` 导入（仅 Components.kt 中 ScrollTopBlurOverlay 相关的）
+5. **变更**：`ScrollTopBlurOverlay` 的 `backdrop` 参数类型从 `com.kyant.backdrop.Backdrop` 改为 `top.yukonga.miuix.kmp.blur.LayerBackdrop`
+6. **变更**：所有调用 `ScrollTopBlurOverlay` 的页面的 `layerBackdrop` 和 `rememberLayerBackdrop` 导入从 `com.kyant.backdrop.backdrops` 切换到 `top.yukonga.miuix.kmp.blur`
+7. **优化**：使用 `isRenderEffectSupported()` 替代手动 API level 检查判断模糊能力
+8. **保留**：低 RAM 设备降级方案（简单渐变遮罩）
+9. **保留**：`AnimatedVisibility` + `fadeIn`/`fadeOut` 动画
+10. **保留**：`pointerInput(Unit) {}` 触摸穿透
+
+### 修改文件
+
+- `app/build.gradle.kts`（新增 miuix-blur 依赖，versionCode 30301→30302，versionName 3.3.1→3.3.2）
+- `app/src/main/java/com/duoschedule/ui/theme/Components.kt`（ScrollTopBlurOverlay 重写为 miuix-blur textureBlur 实现）
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（layerBackdrop/rememberLayerBackdrop 导入切换）
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（layerBackdrop/rememberLayerBackdrop 导入切换）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（layerBackdrop/rememberLayerBackdrop 导入切换，移除未使用的 emptyBackdrop 导入）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（layerBackdrop/rememberLayerBackdrop 导入切换）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（layerBackdrop/rememberLayerBackdrop 导入切换）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（layerBackdrop/rememberLayerBackdrop 导入切换）
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（layerBackdrop/rememberLayerBackdrop 导入切换）
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（layerBackdrop/rememberLayerBackdrop 导入切换）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（layerBackdrop/rememberLayerBackdrop 导入切换）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（layerBackdrop/rememberLayerBackdrop 导入切换）
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（layerBackdrop/rememberLayerBackdrop 导入切换）
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（layerBackdrop/rememberLayerBackdrop 导入切换）
+- `Product-Spec.md`（版本号 3.3.1→3.3.2）
+- `Product-Spec-CHANGELOG.md`（添加变更记录）
+
+---
+
 ## [3.3.1] - 2026-05-20
 
 ### 变更类型：功能优化

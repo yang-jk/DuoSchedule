@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -22,8 +23,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousRoundedRectangle
 
 data class OpenSourceLibrary(
@@ -47,7 +48,10 @@ val libraries = listOf(
 fun AcknowledgmentsScreen(
     onNavigateBack: () -> Unit
 ) {
+    val cornerRadius = LocalDeviceCornerRadius.current
+
     Scaffold(
+        modifier = Modifier.clip(RoundedCornerShape(cornerRadius)),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0),
         topBar = {
@@ -64,7 +68,11 @@ fun AcknowledgmentsScreen(
             )
         }
     ) { paddingValues ->
-        val scrollBackdrop = rememberLayerBackdrop()
+        val backgroundColor = MaterialTheme.colorScheme.background
+        val scrollBackdrop = rememberLayerBackdrop {
+            drawRect(backgroundColor)
+            drawContent()
+        }
         val scrollState = rememberScrollState()
 
         Box(

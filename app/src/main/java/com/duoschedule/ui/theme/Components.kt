@@ -2,7 +2,6 @@ package com.duoschedule.ui.theme
 
 import android.app.ActivityManager
 import android.content.Context
-import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,31 +11,33 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.runtimeShaderEffect
-import com.kyant.backdrop.effects.vibrancy
+import top.yukonga.miuix.kmp.blur.BlendColorEntry
+import top.yukonga.miuix.kmp.blur.BlurBlendMode
+import top.yukonga.miuix.kmp.blur.BlurColors
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
+import top.yukonga.miuix.kmp.blur.textureBlur
 
-private const val PROGRESSIVE_BLUR_SHADER = """
-uniform shader content;
-uniform float2 size;
-layout(color) uniform half4 tint;
-uniform float tintIntensity;
+private val ColoredRegularLight = listOf(
+    BlendColorEntry(Color(0x803F3F3F), BlurBlendMode.Overlay),
+    BlendColorEntry(Color(0x1CE6E6E6), BlurBlendMode.PlusLighter),
+)
 
-half4 main(float2 coord) {
-    float blurAlpha = smoothstep(size.y, size.y * 0.3, coord.y);
-    float tintAlpha = smoothstep(size.y, size.y * 0.3, coord.y);
-    return mix(content.eval(coord) * blurAlpha, tint * tintAlpha, tintIntensity);
-}"""
+private val ColoredRegularDark = listOf(
+    BlendColorEntry(Color(0x70000000), BlurBlendMode.Overlay),
+    BlendColorEntry(Color(0x14000000), BlurBlendMode.SrcOver),
+)
 
 @Composable
 fun Separator(
@@ -86,15 +87,13 @@ fun ScrollTopGradientOverlay(
 @Composable
 fun ScrollTopBlurOverlay(
     modifier: Modifier = Modifier,
-    backdrop: Backdrop,
+    backdrop: LayerBackdrop,
     scrollOffset: Int = 0,
     blurHeight: Dp = 150.dp,
-    blurRadius: Dp = 25.dp
+    blurRadius: Dp = 80.dp
 ) {
-    val density = LocalDensity.current
     val darkTheme = LocalDarkTheme.current
-    val containerColor = if (darkTheme) Color(0xFF121212).copy(0.3f) else Color(0xFFFAFAFA).copy(0.3f)
-    val tintColor = if (darkTheme) Color(0xFF121212) else Color(0xFFFAFAFA)
+    val density = LocalDensity.current
 
     val context = LocalContext.current
     val isLowRamDevice = remember {
@@ -102,73 +101,70 @@ fun ScrollTopBlurOverlay(
         activityManager?.isLowRamDevice == true
     }
 
-    val blurModifier = if (!isLowRamDevice) {
-        modifier
-            .fillMaxWidth()
-            .height(blurHeight)
-            .drawBackdrop(
-                backdrop = backdrop,
-                shape = { RectangleShape },
-                effects = {
-                    vibrancy()
-                    blur(with(density) { blurRadius.toPx() })
-                    runtimeShaderEffect(
-                        "ProgressiveBlurAlphaMask",
-                        PROGRESSIVE_BLUR_SHADER,
-                        "content"
-                    ) {
-                        setFloatUniform("size", size.width, size.height)
-                        setColorUniform("tint", tintColor)
-                        setFloatUniform("tintIntensity", 0.3f)
-                    }
-                },
-                highlight = { null },
-                shadow = { null },
-                onDrawSurface = {
-                    drawRect(containerColor)
-                }
-            )
-    } else {
-        Modifier
-    }
+    val canBlur = isRuntimeShaderSupported() && !isLowRamDevice
+    val blurRadiusPx = with(density) { blurRadius.toPx() }
+
+    val deviceTopCorner = getRoundedCornerTop()
+    val topCornerShape = RoundedCornerShape(topStart = deviceTopCorner, topEnd = deviceTopCorner)
+
+    val blendColors = if (darkTheme) ColoredRegularDark else ColoredRegularLight
+    val fallbackColor = if (darkTheme) Color(0xFF121212).copy(alpha = 0.6f) else Color(0xFFFAFAFA).copy(alpha = 0.6f)
 
     AnimatedVisibility(
         visible = scrollOffset > 0,
         enter = fadeIn(),
         exit = fadeOut()
     ) {
-        Box(
-            modifier = when {
-                isLowRamDevice -> {
-                    modifier
-                        .fillMaxWidth()
-                        .height(blurHeight)
+        if (canBlur) {
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(blurHeight)
+                    .clip(topCornerShape)
+                    .textureBlur(
+                        backdrop = backdrop,
+                        shape = RectangleShape,
+                        blurRadius = blurRadiusPx,
+                        colors = BlurColors(
+                            blendColors = blendColors,
+                            saturation = 1.2f
+                        ),
+                        contentBlendMode = BlendMode.DstIn,
+                    )
+                    .pointerInput(Unit) {}
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    containerColor,
+                                    Color.White,
+                                    Color.White.copy(alpha = 0.9f),
+                                    Color.White.copy(alpha = 0.6f),
+                                    Color.White.copy(alpha = 0.3f),
                                     Color.Transparent
                                 )
                             )
                         )
-                        .pointerInput(Unit) {}
-                }
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
-                    blurModifier.pointerInput(Unit) {}
-                }
-                else -> {
-                    blurModifier
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    containerColor,
-                                    Color.Transparent
-                                )
-                            )
-                        )
-                        .pointerInput(Unit) {}
-                }
+                )
             }
-        )
+        } else {
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(blurHeight)
+                    .clip(topCornerShape)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                fallbackColor,
+                                Color.Transparent
+                            )
+                        )
+                    )
+                    .pointerInput(Unit) {}
+            )
+        }
     }
 }

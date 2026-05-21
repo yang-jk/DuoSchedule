@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -27,9 +28,8 @@ import com.duoschedule.R
 import com.duoschedule.ui.update.UpdateDialog
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
-import com.kyant.backdrop.backdrops.emptyBackdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousRoundedRectangle
 
 @Composable
@@ -44,11 +44,13 @@ fun AboutScreen(
     val versionName = packageInfo.versionName ?: "3.3.1"
     val versionCode = packageInfo.versionCode
     var showUpdateDialog by remember { mutableStateOf(false) }
+    val cornerRadius = LocalDeviceCornerRadius.current
 
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
 
     Scaffold(
+        modifier = Modifier.clip(RoundedCornerShape(cornerRadius)),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0),
         topBar = {
@@ -65,7 +67,11 @@ fun AboutScreen(
             )
         }
     ) { paddingValues ->
-        val scrollBackdrop = rememberLayerBackdrop()
+        val backgroundColor = MaterialTheme.colorScheme.background
+        val scrollBackdrop = rememberLayerBackdrop {
+            drawRect(backgroundColor)
+            drawContent()
+        }
         val scrollState = rememberScrollState()
         
         Box(

@@ -7,12 +7,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import com.kyant.capsule.ContinuousRoundedRectangle
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -23,6 +25,7 @@ import com.duoschedule.data.importexport.CsvFileType
 import com.duoschedule.data.importexport.ImportPreviewData
 import com.duoschedule.data.importexport.ScheduleSettingsExport
 import com.duoschedule.data.model.PersonType
+import com.duoschedule.ui.theme.LocalDeviceCornerRadius
 import com.duoschedule.ui.theme.LiquidGlassButton
 import com.duoschedule.ui.theme.LiquidGlassButtonStyle
 import com.duoschedule.ui.theme.LiquidToggle
@@ -151,7 +154,10 @@ fun ImportPreviewScreen(
         previewItems.addAll(items)
     }
 
+    val cornerRadius = LocalDeviceCornerRadius.current
+
     Scaffold(
+        modifier = Modifier.clip(RoundedCornerShape(cornerRadius)),
         contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(

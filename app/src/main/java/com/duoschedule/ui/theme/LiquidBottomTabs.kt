@@ -25,7 +25,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -57,6 +59,8 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.sign
+import com.duoschedule.ui.theme.LocalDeviceCornerRadius
+import com.duoschedule.ui.theme.getRoundedCornerBottom
 
 object LiquidBottomTabsSpec {
     val Height = 64.dp
@@ -100,9 +104,11 @@ fun LiquidBottomTabs(
         else LiquidBottomTabsSpec.ContentColorDark
 
     val tabsBackdrop = rememberLayerBackdrop()
+    val cornerRadius = getRoundedCornerBottom()
 
     BoxWithConstraints(
         modifier
+            .clip(RoundedCornerShape(bottomStart = cornerRadius, bottomEnd = cornerRadius))
             .navigationBarsPadding()
             .fillMaxWidth(),
         contentAlignment = Alignment.CenterStart

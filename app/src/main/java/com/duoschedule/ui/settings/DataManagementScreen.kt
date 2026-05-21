@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -14,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,8 +33,8 @@ import com.duoschedule.ui.theme.LiquidGlassButton
 import com.duoschedule.ui.theme.LiquidGlassButtonStyle
 import com.duoschedule.ui.theme.GlassBottomSheetDefaults
 import com.kyant.backdrop.backdrops.emptyBackdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -118,7 +120,10 @@ fun DataManagementScreen(
         }
     }
 
+    val cornerRadius = LocalDeviceCornerRadius.current
+
     Scaffold(
+        modifier = Modifier.clip(RoundedCornerShape(cornerRadius)),
         contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
@@ -154,7 +159,11 @@ fun DataManagementScreen(
     ) { paddingValues ->
         val deviceInfo = remember { FilePickerUtils.getDeviceInfo() }
 
-        val scrollBackdrop = rememberLayerBackdrop()
+        val backgroundColor = MaterialTheme.colorScheme.background
+        val scrollBackdrop = rememberLayerBackdrop {
+            drawRect(backgroundColor)
+            drawContent()
+        }
         val scrollState = rememberScrollState()
         Box(
             modifier = Modifier

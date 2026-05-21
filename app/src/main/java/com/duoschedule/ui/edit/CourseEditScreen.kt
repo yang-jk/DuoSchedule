@@ -48,8 +48,8 @@ import com.duoschedule.ui.theme.Separator
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.edit.CustomTimePickerBottomSheet
 import com.kyant.backdrop.backdrops.emptyBackdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -86,6 +86,7 @@ fun CourseEditScreen(
     var showCustomTimePicker by remember { mutableStateOf(false) }
 
     val darkTheme = LocalDarkTheme.current
+    val cornerRadius = LocalDeviceCornerRadius.current
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val labelsTertiary = getLabelsVibrantTertiary()
@@ -115,6 +116,7 @@ fun CourseEditScreen(
     var showTeacherSuggestions by remember { mutableStateOf(false) }
 
     Scaffold(
+        modifier = Modifier.clip(RoundedCornerShape(cornerRadius)),
         contentWindowInsets = WindowInsets(0),
         topBar = {
             CourseEditTopBar(
@@ -126,7 +128,11 @@ fun CourseEditScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-    val scrollBackdrop = rememberLayerBackdrop()
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val scrollBackdrop = rememberLayerBackdrop {
+        drawRect(backgroundColor)
+        drawContent()
+    }
     val lazyListState = rememberLazyListState()
     val scrollOffset by remember {
         derivedStateOf {
@@ -942,6 +948,7 @@ fun CourseEditContent(
     var showCustomTimePicker by remember { mutableStateOf(false) }
 
     val darkTheme = LocalDarkTheme.current
+    val deviceCornerRadius = LocalDeviceCornerRadius.current
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val labelsTertiary = getLabelsVibrantTertiary()
@@ -990,6 +997,7 @@ fun CourseEditContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .clip(RoundedCornerShape(deviceCornerRadius))
             .then(
                 if (sharedElementSourceKey.isNotEmpty()) {
                     sharedTransitionScope?.let { scope ->
@@ -1021,7 +1029,11 @@ fun CourseEditContent(
             },
             containerColor = MaterialTheme.colorScheme.background
         ) { paddingValues ->
-        val scrollBackdrop = rememberLayerBackdrop()
+        val backgroundColor = MaterialTheme.colorScheme.background
+        val scrollBackdrop = rememberLayerBackdrop {
+            drawRect(backgroundColor)
+            drawContent()
+        }
         val lazyListState = rememberLazyListState()
         val scrollOffset by remember {
             derivedStateOf {

@@ -254,6 +254,7 @@ fun ScheduleScreen(
     val labelsTertiary = getLabelsVibrantTertiary()
 
     val sharedTransitionScope = LocalSharedTransitionScope.current
+    val cornerRadius = LocalDeviceCornerRadius.current
 
     AnimatedContent(
         targetState = editTarget,
@@ -274,6 +275,7 @@ fun ScheduleScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .clip(RoundedCornerShape(cornerRadius))
     ) {
         Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
         Row(

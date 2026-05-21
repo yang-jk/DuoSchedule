@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import com.kyant.capsule.ContinuousRoundedRectangle
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -31,14 +32,15 @@ import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.TodayCourseDisplayMode
 import com.duoschedule.ui.edit.CoursePreviewBottomSheet
 import com.duoschedule.ui.main.components.*
+import com.duoschedule.ui.theme.LocalDeviceCornerRadius
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.theme.LiquidGlassButton
 import com.duoschedule.ui.theme.LiquidGlassButtonStyle
 import com.duoschedule.ui.theme.ScrollTopBlurOverlay
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -68,9 +70,14 @@ fun MainScreen(
         }
     }
 
-    val scrollBackdrop = rememberLayerBackdrop()
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val scrollBackdrop = rememberLayerBackdrop {
+        drawRect(backgroundColor)
+        drawContent()
+    }
     val scrollState = rememberScrollState()
-    Box(modifier = Modifier.fillMaxSize()) {
+    val cornerRadius = LocalDeviceCornerRadius.current
+    Box(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(cornerRadius))) {
         Column(
             modifier = Modifier
                 .fillMaxSize()

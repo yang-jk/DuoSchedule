@@ -15,6 +15,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.core.content.ContextCompat
@@ -34,8 +36,8 @@ import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.theme.ScrollTopBlurOverlay
 import com.kyant.backdrop.backdrops.emptyBackdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -176,7 +178,10 @@ fun NotificationSettingsScreen(
         }
     }
 
+    val cornerRadius = LocalDeviceCornerRadius.current
+
     Scaffold(
+        modifier = Modifier.clip(RoundedCornerShape(cornerRadius)),
         contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
@@ -210,7 +215,11 @@ fun NotificationSettingsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        val scrollBackdrop = rememberLayerBackdrop()
+        val backgroundColor = MaterialTheme.colorScheme.background
+        val scrollBackdrop = rememberLayerBackdrop {
+            drawRect(backgroundColor)
+            drawContent()
+        }
         val scrollState = rememberScrollState()
         Box(
             modifier = Modifier
