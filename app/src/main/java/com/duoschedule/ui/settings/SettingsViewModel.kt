@@ -303,7 +303,6 @@ class SettingsViewModel @Inject constructor(
     fun setPersonSemesterStart(personType: PersonType, date: LocalDate) {
         viewModelScope.launch {
             repository.setSemesterStartDate(personType, date)
-            repository.setManualWeekOverride(personType, false)
             val totalWeeks = repository.getTotalWeeks(personType).first()
             val calculatedWeek = repository.calculateCurrentWeek(date, totalWeeks)
             repository.setCurrentWeek(personType, calculatedWeek)
@@ -313,7 +312,6 @@ class SettingsViewModel @Inject constructor(
     fun setPersonTotalWeeks(personType: PersonType, weeks: Int) {
         viewModelScope.launch {
             repository.setTotalWeeks(personType, weeks)
-            repository.setManualWeekOverride(personType, false)
             val startDate = repository.getSemesterStartDate(personType).first()
             val calculatedWeek = repository.calculateCurrentWeek(startDate, weeks)
             repository.setCurrentWeek(personType, calculatedWeek)
@@ -322,8 +320,12 @@ class SettingsViewModel @Inject constructor(
 
     fun setPersonCurrentWeek(personType: PersonType, week: Int) {
         viewModelScope.launch {
-            repository.setManualWeekOverride(personType, true)
+            val startDate = repository.getSemesterStartDate(personType).first()
+            val totalWeeks = repository.getTotalWeeks(personType).first()
+            val newStartDate = repository.calculateSemesterStartDateFromWeek(week, startDate, totalWeeks)
+            repository.setSemesterStartDate(personType, newStartDate)
             repository.setCurrentWeek(personType, week)
+            notificationManager.scheduleReminderNotifications()
         }
     }
 

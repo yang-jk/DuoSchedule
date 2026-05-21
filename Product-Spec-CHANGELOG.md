@@ -6,46 +6,32 @@
 
 ---
 
-## [3.4.0] - 2026-05-23
+## [3.3.5] - 2026-05-25
 
-### 变更类型：功能增强
+### 变更类型：Bug修复
 
 ### 状态：已实现
 
 ### 变更内容
 
-**设备屏幕圆角适配**
+**修复周次自动更新与通知周次不同步：移除 manualWeekOverride 机制，实现周次与开学时间双向同步**
 
-1. **新增**：`getRoundedCorner()`、`getRoundedCornerTop()`、`getRoundedCornerBottom()` Composable 函数，通过 Android 12+ `Display.getRoundedCorner()` API 获取设备屏幕圆角半径，低版本或不支持时回退到预设值 0.dp
-2. **新增**：`LocalDeviceCornerRadius` CompositionLocal，在 Theme 级别提供设备圆角值
-3. **增强**：底部导航栏 `LiquidBottomTabs` 外层容器添加设备底部圆角裁剪
-4. **增强**：`GlassBottomSheet` 底部圆角适配为设备屏幕底部圆角
-5. **增强**：`ScrollTopBlurOverlay` 顶部圆角适配为设备屏幕顶部圆角
-6. **增强**：所有页面（MainScreen、ScheduleScreen、SettingsScreen、DisplaySettingsScreen、NotificationSettingsScreen、ScheduleSettingsScreen、PeriodTimesSettingsScreen、DataManagementScreen、AboutScreen、ChangelogScreen、AcknowledgmentsScreen、LegalScreen、ImportPreviewScreen、CourseEditScreen）最外层容器添加设备圆角裁剪
+1. **移除**：`manualWeekOverride` 手动覆盖标记机制（DataStore 键、get/set 方法、Repository 透传方法、所有引用点），该机制导致周次无法随时间自然推进
+2. **新增**：`calculateSemesterStartDateFromWeek()` 反算方法，根据目标周次反算开学时间
+3. **重构**：`setPersonCurrentWeek()` 修改周次时自动反算并更新开学时间，同时触发通知重新调度
+4. **简化**：`MainViewModel` 和 `ScheduleViewModel` 的 `personACurrentWeek/personBCurrentWeek` 从 combine 多流计算写回简化为直接读取 DataStore 存储值
+5. **简化**：`DuoScheduleApp.updateCurrentWeekIfNeeded()` 移除覆盖标记检查，始终以计算值为准更新，周次变更后触发通知重新调度
 
 ### 修改文件
 
-- `app/src/main/java/com/duoschedule/ui/theme/DesignTokens.kt`（新增 DeviceCornerDefaults、getRoundedCorner()、getRoundedCornerTop()、getRoundedCornerBottom()、LocalDeviceCornerRadius）
-- `app/src/main/java/com/duoschedule/ui/theme/Theme.kt`（DuoScheduleTheme 中提供 LocalDeviceCornerRadius）
-- `app/src/main/java/com/duoschedule/ui/theme/LiquidBottomTabs.kt`（底部导航栏圆角适配）
-- `app/src/main/java/com/duoschedule/ui/theme/GlassBottomSheet.kt`（底部弹窗圆角适配）
-- `app/src/main/java/com/duoschedule/ui/theme/Components.kt`（ScrollTopBlurOverlay 顶部圆角适配）
-- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（页面圆角适配）
-- `app/src/main/java/com/duoschedule/ui/schedule/ScheduleScreen.kt`（页面圆角适配）
-- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（页面圆角适配）
-- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（页面圆角适配）
-- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（页面圆角适配）
-- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（页面圆角适配）
-- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（页面圆角适配）
-- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（页面圆角适配）
-- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（页面圆角适配）
-- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（页面圆角适配）
-- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（页面圆角适配）
-- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（页面圆角适配）
-- `app/src/main/java/com/duoschedule/ui/settings/ImportPreviewScreen.kt`（页面圆角适配）
-- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（页面圆角适配）
-- `app/build.gradle.kts`（versionCode 30304→30400，versionName 3.3.4→3.4.0）
-- `Product-Spec.md`（版本号 3.3.4→3.4.0）
+- `app/src/main/java/com/duoschedule/data/local/SettingsDataStore.kt`（移除 manualWeekOverride，新增 calculateSemesterStartDateFromWeek）
+- `app/src/main/java/com/duoschedule/data/repository/CourseRepository.kt`（移除 manualWeekOverride 透传，新增 calculateSemesterStartDateFromWeek 透传）
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsViewModel.kt`（setPersonCurrentWeek 双向同步+通知重新调度，移除 setManualWeekOverride 调用）
+- `app/src/main/java/com/duoschedule/ui/main/MainViewModel.kt`（personACurrentWeek/personBCurrentWeek 简化为直接读取）
+- `app/src/main/java/com/duoschedule/ui/schedule/ScheduleViewModel.kt`（personACurrentWeek/personBCurrentWeek 简化为直接读取）
+- `app/src/main/java/com/duoschedule/DuoScheduleApp.kt`（updateCurrentWeekIfNeeded 移除覆盖标记检查，添加通知重新调度）
+- `app/build.gradle.kts`（versionCode 30304→30305，versionName 3.3.4→3.3.5）
+- `Product-Spec.md`（版本号 3.3.4→3.3.5）
 
 ---
 

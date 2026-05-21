@@ -43,9 +43,6 @@ class SettingsDataStore @Inject constructor(
         private val PERSON_A_CURRENT_WEEK = intPreferencesKey("person_a_current_week")
         private val PERSON_B_CURRENT_WEEK = intPreferencesKey("person_b_current_week")
         
-        private val PERSON_A_MANUAL_WEEK_OVERRIDE = booleanPreferencesKey("person_a_manual_week_override")
-        private val PERSON_B_MANUAL_WEEK_OVERRIDE = booleanPreferencesKey("person_b_manual_week_override")
-        
         private val PERSON_A_TOTAL_PERIODS = intPreferencesKey("person_a_total_periods")
         private val PERSON_B_TOTAL_PERIODS = intPreferencesKey("person_b_total_periods")
         
@@ -110,11 +107,6 @@ class SettingsDataStore @Inject constructor(
     fun getCurrentWeek(personType: PersonType): Flow<Int> = context.dataStore.data.map { preferences ->
         val key = if (personType == PersonType.PERSON_A) PERSON_A_CURRENT_WEEK else PERSON_B_CURRENT_WEEK
         preferences[key] ?: 1
-    }
-
-    fun getManualWeekOverride(personType: PersonType): Flow<Boolean> = context.dataStore.data.map { preferences ->
-        val key = if (personType == PersonType.PERSON_A) PERSON_A_MANUAL_WEEK_OVERRIDE else PERSON_B_MANUAL_WEEK_OVERRIDE
-        preferences[key] ?: false
     }
 
     fun getTotalPeriods(personType: PersonType): Flow<Int> = context.dataStore.data.map { preferences ->
@@ -252,13 +244,6 @@ class SettingsDataStore @Inject constructor(
         context.dataStore.edit { preferences ->
             val key = if (personType == PersonType.PERSON_A) PERSON_A_CURRENT_WEEK else PERSON_B_CURRENT_WEEK
             preferences[key] = week
-        }
-    }
-
-    suspend fun setManualWeekOverride(personType: PersonType, override: Boolean) {
-        context.dataStore.edit { preferences ->
-            val key = if (personType == PersonType.PERSON_A) PERSON_A_MANUAL_WEEK_OVERRIDE else PERSON_B_MANUAL_WEEK_OVERRIDE
-            preferences[key] = override
         }
     }
 
@@ -446,12 +431,15 @@ class SettingsDataStore @Inject constructor(
     }
 
     fun calculateCurrentWeek(startDate: LocalDate, totalWeeks: Int): Int {
-        // 找到开学日期所在周的周一，作为第一周的起点
         val firstWeekMonday = startDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        // 计算从第一个周一到今天经过了多少天
         val days = ChronoUnit.DAYS.between(firstWeekMonday, LocalDate.now())
-        // 计算当前周次（至少为 1，最多为 totalWeeks）
         return ((days / 7) + 1).toInt().coerceIn(1, totalWeeks)
+    }
+
+    fun calculateSemesterStartDateFromWeek(desiredWeek: Int, currentStartDate: LocalDate, totalWeeks: Int): LocalDate {
+        val currentCalculatedWeek = calculateCurrentWeek(currentStartDate, totalWeeks)
+        val weekDiff = desiredWeek - currentCalculatedWeek
+        return currentStartDate.minusWeeks(weekDiff.toLong())
     }
 
     fun getWeekDates(semesterStartDate: LocalDate, currentWeek: Int): List<LocalDate> {

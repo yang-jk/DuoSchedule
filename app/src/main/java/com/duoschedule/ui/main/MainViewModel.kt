@@ -45,35 +45,11 @@ class MainViewModel @Inject constructor(
     val personBName: StateFlow<String> = repository.getPersonBName()
         .stateIn(viewModelScope, SharingStarted.Eagerly, "Ta")
 
-    val personACurrentWeek: StateFlow<Int> = combine(
-        repository.getCurrentWeek(PersonType.PERSON_A),
-        repository.getSemesterStartDate(PersonType.PERSON_A),
-        repository.getTotalWeeks(PersonType.PERSON_A),
-        repository.getManualWeekOverride(PersonType.PERSON_A)
-    ) { storedWeek, startDate, totalWeeks, manualOverride ->
-        val calculated = repository.calculateCurrentWeek(startDate, totalWeeks)
-        if (storedWeek != calculated && !manualOverride) {
-            viewModelScope.launch {
-                repository.setCurrentWeek(PersonType.PERSON_A, calculated)
-            }
-        }
-        if (manualOverride) storedWeek else calculated
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, 1)
+    val personACurrentWeek: StateFlow<Int> = repository.getCurrentWeek(PersonType.PERSON_A)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 1)
 
-    val personBCurrentWeek: StateFlow<Int> = combine(
-        repository.getCurrentWeek(PersonType.PERSON_B),
-        repository.getSemesterStartDate(PersonType.PERSON_B),
-        repository.getTotalWeeks(PersonType.PERSON_B),
-        repository.getManualWeekOverride(PersonType.PERSON_B)
-    ) { storedWeek, startDate, totalWeeks, manualOverride ->
-        val calculated = repository.calculateCurrentWeek(startDate, totalWeeks)
-        if (storedWeek != calculated && !manualOverride) {
-            viewModelScope.launch {
-                repository.setCurrentWeek(PersonType.PERSON_B, calculated)
-            }
-        }
-        if (manualOverride) storedWeek else calculated
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, 1)
+    val personBCurrentWeek: StateFlow<Int> = repository.getCurrentWeek(PersonType.PERSON_B)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 1)
 
     val todayCourseDisplayMode: StateFlow<TodayCourseDisplayMode> = repository.getTodayCourseDisplayMode()
         .stateIn(viewModelScope, SharingStarted.Eagerly, TodayCourseDisplayMode.BOTH)

@@ -4,7 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -44,13 +43,10 @@ fun AboutScreen(
     val versionName = packageInfo.versionName ?: "3.3.1"
     val versionCode = packageInfo.versionCode
     var showUpdateDialog by remember { mutableStateOf(false) }
-    val cornerRadius = LocalDeviceCornerRadius.current
-
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
 
     Scaffold(
-        modifier = Modifier.clip(RoundedCornerShape(cornerRadius)),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0),
         topBar = {

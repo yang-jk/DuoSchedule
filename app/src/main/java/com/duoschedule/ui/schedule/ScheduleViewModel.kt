@@ -9,7 +9,6 @@ import com.duoschedule.notification.AlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.shareIn
@@ -79,37 +78,13 @@ class ScheduleViewModel @Inject constructor(
     }
 
     private val personACurrentWeek: StateFlow<Int> = getCachedFlow("personACurrentWeek") {
-        combine(
-            repository.getCurrentWeek(PersonType.PERSON_A),
-            repository.getSemesterStartDate(PersonType.PERSON_A),
-            repository.getTotalWeeks(PersonType.PERSON_A),
-            repository.getManualWeekOverride(PersonType.PERSON_A)
-        ) { storedWeek, startDate, totalWeeks, manualOverride ->
-            val calculated = repository.calculateCurrentWeek(startDate, totalWeeks)
-            if (storedWeek != calculated && !manualOverride) {
-                viewModelScope.launch {
-                    repository.setCurrentWeek(PersonType.PERSON_A, calculated)
-                }
-            }
-            if (manualOverride) storedWeek else calculated
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, 1)
+        repository.getCurrentWeek(PersonType.PERSON_A)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, 1)
     }
 
     private val personBCurrentWeek: StateFlow<Int> = getCachedFlow("personBCurrentWeek") {
-        combine(
-            repository.getCurrentWeek(PersonType.PERSON_B),
-            repository.getSemesterStartDate(PersonType.PERSON_B),
-            repository.getTotalWeeks(PersonType.PERSON_B),
-            repository.getManualWeekOverride(PersonType.PERSON_B)
-        ) { storedWeek, startDate, totalWeeks, manualOverride ->
-            val calculated = repository.calculateCurrentWeek(startDate, totalWeeks)
-            if (storedWeek != calculated && !manualOverride) {
-                viewModelScope.launch {
-                    repository.setCurrentWeek(PersonType.PERSON_B, calculated)
-                }
-            }
-            if (manualOverride) storedWeek else calculated
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, 1)
+        repository.getCurrentWeek(PersonType.PERSON_B)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, 1)
     }
 
     private val personATotalWeeks: StateFlow<Int> = getCachedFlow("personATotalWeeks") {

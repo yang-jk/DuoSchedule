@@ -59,9 +59,6 @@ class CourseRepository @Inject constructor(
     fun getCurrentWeek(personType: PersonType): Flow<Int> = 
         settingsDataStore.getCurrentWeek(personType)
 
-    fun getManualWeekOverride(personType: PersonType): Flow<Boolean> =
-        settingsDataStore.getManualWeekOverride(personType)
-
     fun getTotalPeriods(personType: PersonType): Flow<Int> = 
         settingsDataStore.getTotalPeriods(personType)
 
@@ -137,9 +134,6 @@ class CourseRepository @Inject constructor(
     suspend fun setCurrentWeek(personType: PersonType, week: Int) = 
         settingsDataStore.setCurrentWeek(personType, week)
 
-    suspend fun setManualWeekOverride(personType: PersonType, override: Boolean) =
-        settingsDataStore.setManualWeekOverride(personType, override)
-
     suspend fun setTotalPeriods(personType: PersonType, periods: Int) = 
         settingsDataStore.setTotalPeriods(personType, periods)
 
@@ -202,6 +196,9 @@ class CourseRepository @Inject constructor(
 
     fun calculateCurrentWeek(startDate: LocalDate, totalWeeks: Int): Int = 
         settingsDataStore.calculateCurrentWeek(startDate, totalWeeks)
+
+    fun calculateSemesterStartDateFromWeek(desiredWeek: Int, currentStartDate: LocalDate, totalWeeks: Int): LocalDate =
+        settingsDataStore.calculateSemesterStartDateFromWeek(desiredWeek, currentStartDate, totalWeeks)
 
     fun getWeekDates(semesterStartDate: LocalDate, currentWeek: Int): List<LocalDate> =
         settingsDataStore.getWeekDates(semesterStartDate, currentWeek)

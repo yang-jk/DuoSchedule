@@ -213,11 +213,9 @@ class DuoScheduleApp : Application(), Configuration.Provider {
             val personBTotalWeeks = settingsDataStore.getTotalWeeks(PersonType.PERSON_B).first()
             val personACurrentWeek = settingsDataStore.getCurrentWeek(PersonType.PERSON_A).first()
             val personBCurrentWeek = settingsDataStore.getCurrentWeek(PersonType.PERSON_B).first()
-            val personAManualOverride = settingsDataStore.getManualWeekOverride(PersonType.PERSON_A).first()
-            val personBManualOverride = settingsDataStore.getManualWeekOverride(PersonType.PERSON_B).first()
             
-            Log.i("DuoScheduleApp", "我开学日期: $personAStartDate, 总周数: $personATotalWeeks, 当前周: $personACurrentWeek, 手动覆盖: $personAManualOverride")
-            Log.i("DuoScheduleApp", "Ta开学日期: $personBStartDate, 总周数: $personBTotalWeeks, 当前周: $personBCurrentWeek, 手动覆盖: $personBManualOverride")
+            Log.i("DuoScheduleApp", "我开学日期: $personAStartDate, 总周数: $personATotalWeeks, 当前周: $personACurrentWeek")
+            Log.i("DuoScheduleApp", "Ta开学日期: $personBStartDate, 总周数: $personBTotalWeeks, 当前周: $personBCurrentWeek")
             Log.i("DuoScheduleApp", "今天日期: ${java.time.LocalDate.now()}")
             
             val calculatedWeekA = settingsDataStore.calculateCurrentWeek(personAStartDate, personATotalWeeks)
@@ -225,14 +223,22 @@ class DuoScheduleApp : Application(), Configuration.Provider {
             
             Log.i("DuoScheduleApp", "计算得到我周次: $calculatedWeekA, Ta周次: $calculatedWeekB")
             
-            if (calculatedWeekA != personACurrentWeek && !personAManualOverride) {
+            var weekChanged = false
+
+            if (calculatedWeekA != personACurrentWeek) {
                 Log.i("DuoScheduleApp", "自动更新我的当前周次: $personACurrentWeek -> $calculatedWeekA")
                 settingsDataStore.setCurrentWeek(PersonType.PERSON_A, calculatedWeekA)
+                weekChanged = true
             }
-            
-            if (calculatedWeekB != personBCurrentWeek && !personBManualOverride) {
+
+            if (calculatedWeekB != personBCurrentWeek) {
                 Log.i("DuoScheduleApp", "自动更新Ta的当前周次: $personBCurrentWeek -> $calculatedWeekB")
                 settingsDataStore.setCurrentWeek(PersonType.PERSON_B, calculatedWeekB)
+                weekChanged = true
+            }
+
+            if (weekChanged) {
+                rescheduleNotifications("week_updated")
             }
         } catch (e: Exception) {
             Log.e("DuoScheduleApp", "Failed to update current week", e)

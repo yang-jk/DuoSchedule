@@ -11,7 +11,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -104,9 +103,6 @@ fun ScrollTopBlurOverlay(
     val canBlur = isRuntimeShaderSupported() && !isLowRamDevice
     val blurRadiusPx = with(density) { blurRadius.toPx() }
 
-    val deviceTopCorner = getRoundedCornerTop()
-    val topCornerShape = RoundedCornerShape(topStart = deviceTopCorner, topEnd = deviceTopCorner)
-
     val blendColors = if (darkTheme) ColoredRegularDark else ColoredRegularLight
     val fallbackColor = if (darkTheme) Color(0xFF121212).copy(alpha = 0.6f) else Color(0xFFFAFAFA).copy(alpha = 0.6f)
 
@@ -120,7 +116,6 @@ fun ScrollTopBlurOverlay(
                 modifier = modifier
                     .fillMaxWidth()
                     .height(blurHeight)
-                    .clip(topCornerShape)
                     .textureBlur(
                         backdrop = backdrop,
                         shape = RectangleShape,
@@ -154,7 +149,6 @@ fun ScrollTopBlurOverlay(
                 modifier = modifier
                     .fillMaxWidth()
                     .height(blurHeight)
-                    .clip(topCornerShape)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
