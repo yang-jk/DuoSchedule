@@ -174,10 +174,15 @@ jobs:
 
           APK_FILE="app/build/outputs/apk/release/DuoSchedule-${VERSION_NAME}.apk"
           TAG="v${VERSION_NAME}"
+          GITEE_API="https://gitee.com/api/v5/repos/su-zijie21/duoschedule"
 
-          curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/duoschedule/git/refs" \
-            -H "Content-Type: application/json" \
-            -d "{\"access_token\": \"${GITEE_TOKEN}\", \"ref\": \"refs/tags/${TAG}\", \"sha\": \"${{ github.sha }}\"}" 2>/dev/null || true
+          EXISTING_RELEASE=$(curl -s "${GITEE_API}/releases/tags/${TAG}?access_token=${GITEE_TOKEN}")
+          EXISTING_ID=$(echo "$EXISTING_RELEASE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
+
+          if [ -n "$EXISTING_ID" ]; then
+            echo "删除已存在的 Gitee Release: $EXISTING_ID"
+            curl -s -X DELETE "${GITEE_API}/releases/${EXISTING_ID}?access_token=${GITEE_TOKEN}" > /dev/null
+          fi
 
           JSON_BODY=$(python3 -c "
           import json, os
@@ -191,7 +196,7 @@ jobs:
           print(json.dumps(data, ensure_ascii=False))
           ")
 
-          RESPONSE=$(curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/duoschedule/releases" \
+          RESPONSE=$(curl -s -X POST "${GITEE_API}/releases" \
             -H "Content-Type: application/json" \
             -d "$JSON_BODY")
 
@@ -209,7 +214,7 @@ jobs:
 
           echo "Gitee Release 已创建: $RELEASE_ID"
 
-          UPLOAD_RESPONSE=$(curl -s -X POST "https://gitee.com/api/v5/repos/su-zijie21/duoschedule/releases/${RELEASE_ID}/attach_files" \
+          UPLOAD_RESPONSE=$(curl -s -X POST "${GITEE_API}/releases/${RELEASE_ID}/attach_files" \
             -F "access_token=${GITEE_TOKEN}" \
             -F "file=@${APK_FILE}")
 
