@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -48,10 +47,7 @@ val libraries = listOf(
 fun AcknowledgmentsScreen(
     onNavigateBack: () -> Unit
 ) {
-    val cornerRadius = LocalDeviceCornerRadius.current
-
     Scaffold(
-        modifier = Modifier.clip(RoundedCornerShape(cornerRadius)),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0),
         topBar = {

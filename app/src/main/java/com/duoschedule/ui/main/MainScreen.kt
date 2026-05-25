@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import com.kyant.capsule.ContinuousRoundedRectangle
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -32,7 +31,6 @@ import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.TodayCourseDisplayMode
 import com.duoschedule.ui.edit.CoursePreviewBottomSheet
 import com.duoschedule.ui.main.components.*
-import com.duoschedule.ui.theme.LocalDeviceCornerRadius
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.theme.LiquidGlassButton
 import com.duoschedule.ui.theme.LiquidGlassButtonStyle
@@ -76,8 +74,7 @@ fun MainScreen(
         drawContent()
     }
     val scrollState = rememberScrollState()
-    val cornerRadius = LocalDeviceCornerRadius.current
-    Box(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(cornerRadius))) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()

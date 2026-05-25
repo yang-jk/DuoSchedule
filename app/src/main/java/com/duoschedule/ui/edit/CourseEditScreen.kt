@@ -85,7 +85,6 @@ fun CourseEditScreen(
     var showCustomTimePicker by remember { mutableStateOf(false) }
 
     val darkTheme = LocalDarkTheme.current
-    val cornerRadius = LocalDeviceCornerRadius.current
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val labelsTertiary = getLabelsVibrantTertiary()
@@ -115,7 +114,6 @@ fun CourseEditScreen(
     var showTeacherSuggestions by remember { mutableStateOf(false) }
 
     Scaffold(
-        modifier = Modifier.clip(RoundedCornerShape(cornerRadius)),
         contentWindowInsets = WindowInsets(0),
         topBar = {
             CourseEditTopBar(
@@ -947,7 +945,6 @@ fun CourseEditContent(
     var showCustomTimePicker by remember { mutableStateOf(false) }
 
     val darkTheme = LocalDarkTheme.current
-    val deviceCornerRadius = LocalDeviceCornerRadius.current
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val labelsTertiary = getLabelsVibrantTertiary()
@@ -996,7 +993,6 @@ fun CourseEditContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(deviceCornerRadius))
             .then(
                 if (sharedElementSourceKey.isNotEmpty()) {
                     sharedTransitionScope?.let { scope ->

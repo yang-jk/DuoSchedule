@@ -6,6 +6,86 @@
 
 ---
 
+## [3.4.2] - 2026-05-25
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复设备屏幕圆角适配回退不完整导致编译错误**
+
+1. **修复**：14个文件仍引用已移除的 `LocalDeviceCornerRadius`、`getRoundedCornerBottom()`、`RoundedCornerShape` 导致编译失败
+2. **移除**：所有页面 Scaffold/Box/Column 上的 `Modifier.clip(RoundedCornerShape(cornerRadius))` 设备圆角裁剪
+3. **移除**：所有页面中的 `val cornerRadius = LocalDeviceCornerRadius.current` 变量声明
+4. **移除**：不再需要的 `import androidx.compose.foundation.shape.RoundedCornerShape`、`import androidx.compose.ui.draw.clip`、`import com.duoschedule.ui.theme.LocalDeviceCornerRadius`
+5. **恢复**：`GlassBottomSheet` 底部圆角从 `getRoundedCornerBottom()` 恢复为 `GlassBottomSheetDefaults.CornerRadiusBottom`
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（移除2处 LocalDeviceCornerRadius 引用和2处 clip 调用）
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（移除 LocalDeviceCornerRadius 引用、RoundedCornerShape 导入和 clip 调用）
+- `app/src/main/java/com/duoschedule/ui/schedule/ScheduleScreen.kt`（移除 LocalDeviceCornerRadius 引用和 clip 调用）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（移除设备圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（移除设备圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（移除设备圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（移除设备圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/ImportPreviewScreen.kt`（移除设备圆角裁剪和 LocalDeviceCornerRadius 导入）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（移除设备圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（移除设备圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（移除设备圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（移除设备圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（移除设备圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/theme/GlassBottomSheet.kt`（恢复默认底部圆角）
+- `app/src/main/java/com/duoschedule/ui/theme/Theme.kt`（移除 LocalDeviceCornerRadius CompositionLocalProvider）
+- `app/src/main/java/com/duoschedule/ui/theme/LiquidBottomTabs.kt`（移除底部圆角裁剪和 LocalDeviceCornerRadius/getRoundedCornerBottom 导入）
+- `app/build.gradle.kts`（versionCode 30401→30402，versionName 3.4.1→3.4.2）
+
+---
+
+## [3.4.1] - 2026-05-24
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**回退设备屏幕圆角适配功能**
+
+1. **移除**：`getRoundedCorner()`、`getRoundedCornerTop()`、`getRoundedCornerBottom()` Composable 函数及 `DeviceCornerDefaults`、`LocalDeviceCornerRadius`
+2. **移除**：底部导航栏 `LiquidBottomTabs` 的设备底部圆角裁剪
+3. **移除**：`GlassBottomSheet` 的设备底部圆角适配
+4. **移除**：`ScrollTopBlurOverlay` 的设备顶部圆角适配
+5. **移除**：所有页面最外层容器的设备圆角裁剪
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/theme/DesignTokens.kt`（移除 DeviceCornerDefaults、getRoundedCorner()、getRoundedCornerTop()、getRoundedCornerBottom()、LocalDeviceCornerRadius）
+- `app/src/main/java/com/duoschedule/ui/theme/Theme.kt`（移除 LocalDeviceCornerRadius CompositionLocalProvider）
+- `app/src/main/java/com/duoschedule/ui/theme/LiquidBottomTabs.kt`（移除底部圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/theme/GlassBottomSheet.kt`（恢复默认底部圆角）
+- `app/src/main/java/com/duoschedule/ui/theme/Components.kt`（移除 ScrollTopBlurOverlay 顶部圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（移除页面圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/schedule/ScheduleScreen.kt`（移除页面圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（移除页面圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（移除页面圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（移除页面圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（移除页面圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（移除页面圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（移除页面圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（移除页面圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（移除页面圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（移除页面圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（移除页面圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/settings/ImportPreviewScreen.kt`（移除页面圆角裁剪）
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（移除页面圆角裁剪）
+- `app/build.gradle.kts`（versionCode 30305→30401，versionName 3.3.5→3.4.1）
+- `Product-Spec.md`（版本号 3.3.5→3.4.1）
+
+---
+
 ## [3.3.5] - 2026-05-25
 
 ### 变更类型：Bug修复
@@ -2361,6 +2441,6 @@
 
 ---
 
-**文档版本**：3.3.1
+**文档版本**：3.4.2
 
-**最后更新**：2026-05-20
+**最后更新**：2026-05-25

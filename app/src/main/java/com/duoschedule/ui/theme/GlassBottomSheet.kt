@@ -60,12 +60,11 @@ fun GlassBottomSheet(
         )
     }
 
-    val deviceBottomCorner = getRoundedCornerBottom()
     val shape = ContinuousRoundedRectangle(
         topStart = GlassBottomSheetDefaults.CornerRadiusTop,
         topEnd = GlassBottomSheetDefaults.CornerRadiusTop,
-        bottomStart = deviceBottomCorner,
-        bottomEnd = deviceBottomCorner
+        bottomStart = GlassBottomSheetDefaults.CornerRadiusBottom,
+        bottomEnd = GlassBottomSheetDefaults.CornerRadiusBottom
     )
 
     ModalBottomSheet(

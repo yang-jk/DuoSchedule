@@ -112,8 +112,7 @@ fun DuoScheduleTheme(
     }
 
     CompositionLocalProvider(
-        LocalDarkTheme provides darkTheme,
-        LocalDeviceCornerRadius provides getRoundedCorner()
+        LocalDarkTheme provides darkTheme
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
