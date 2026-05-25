@@ -166,6 +166,8 @@ jobs:
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
           CHANGELOG: ${{ steps.changelog.outputs.changelog }}
         run: |
+          set +e
+
           if [ -z "$GITEE_TOKEN" ]; then
             echo "GITEE_TOKEN 未配置，跳过 Gitee 发布"
             echo "success=false" >> $GITHUB_OUTPUT
@@ -176,14 +178,19 @@ jobs:
           TAG="v${VERSION_NAME}"
           GITEE_API="https://gitee.com/api/v5/repos/su-zijie21/duoschedule"
 
-          EXISTING_RELEASE=$(curl -s "${GITEE_API}/releases/tags/${TAG}?access_token=${GITEE_TOKEN}")
-          EXISTING_ID=$(echo "$EXISTING_RELEASE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
+          echo "检查已存在的 Gitee Release..."
+          EXISTING_RELEASE=$(curl -sf "${GITEE_API}/releases/tags/${TAG}?access_token=${GITEE_TOKEN}" 2>/dev/null || echo "")
+          EXISTING_ID=""
+          if [ -n "$EXISTING_RELEASE" ]; then
+            EXISTING_ID=$(echo "$EXISTING_RELEASE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || echo "")
+          fi
 
           if [ -n "$EXISTING_ID" ]; then
             echo "删除已存在的 Gitee Release: $EXISTING_ID"
-            curl -s -X DELETE "${GITEE_API}/releases/${EXISTING_ID}?access_token=${GITEE_TOKEN}" > /dev/null
+            curl -sf -X DELETE "${GITEE_API}/releases/${EXISTING_ID}?access_token=${GITEE_TOKEN}" > /dev/null 2>&1 || true
           fi
 
+          echo "创建 Gitee Release..."
           JSON_BODY=$(python3 -c "
           import json, os
           data = {
@@ -200,7 +207,7 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$JSON_BODY")
 
-          RELEASE_ID=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
+          RELEASE_ID=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || echo "")
 
           if [ -z "$RELEASE_ID" ]; then
             echo "Gitee Release 创建失败"
@@ -214,6 +221,7 @@ jobs:
 
           echo "Gitee Release 已创建: $RELEASE_ID"
 
+          echo "上传 APK 到 Gitee Release..."
           UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${GITEE_API}/releases/${RELEASE_ID}/attach_files" \
             -F "access_token=${GITEE_TOKEN}" \
             -F "file=@${APK_FILE}")
