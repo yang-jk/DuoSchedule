@@ -25,7 +25,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,19 +53,21 @@ import com.duoschedule.ui.theme.Separator
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.edit.CustomTimePickerBottomSheet
 import com.kyant.backdrop.backdrops.emptyBackdrop
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import dev.chrisbanes.haze.hazeSource
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.platform.LocalDensity
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val ContainerTransformSpring: SpringSpec<Dp> = spring(dampingRatio = 0.9f, stiffness = 600f)
 private val MicroTween: TweenSpec<Float> = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CourseEditScreen(
     courseId: Long?,
@@ -113,23 +121,7 @@ fun CourseEditScreen(
     var showCourseNameSuggestions by remember { mutableStateOf(false) }
     var showTeacherSuggestions by remember { mutableStateOf(false) }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            CourseEditTopBar(
-                isEditing = state.isEditing,
-                onNavigateBack = onNavigateBack,
-                onDelete = { showDeleteDialog = true },
-                onSave = viewModel::saveCourse
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-    val backgroundColor = MaterialTheme.colorScheme.background
-    val scrollBackdrop = rememberLayerBackdrop {
-        drawRect(backgroundColor)
-        drawContent()
-    }
+    val hazeState = rememberHazeState()
     val lazyListState = rememberLazyListState()
     val scrollOffset by remember {
         derivedStateOf {
@@ -140,13 +132,48 @@ fun CourseEditScreen(
             }
         }
     }
-    Box(modifier = Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding())) {
+    val scrollProgress by remember { derivedStateOf { (scrollOffset.toFloat() / 300f).coerceIn(0f, 1f) } }
+    val blurActive = scrollProgress >= 0.5f
+    val barColor = if (blurActive) Color.Transparent else if (scrollProgress >= 0.5f) MiuixTheme.colorScheme.surface else Color.Transparent
+
+    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    Scaffold(
+        topBar = {
+            BlurredBar(null, blurActive) {
+                SmallTopAppBar(
+                    title = if (state.isEditing) "编辑课程" else "添加课程",
+                    scrollBehavior = MiuixScrollBehavior(),
+                    color = barColor,
+                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)),
+                    defaultWindowInsetsPadding = false,
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "返回")
+                        }
+                    },
+                    actions = {
+                        if (state.isEditing) {
+                            IconButton(onClick = { showDeleteDialog = true }) {
+                                Icon(Icons.Default.Delete, contentDescription = "删除", tint = SemanticColors.ErrorLight)
+                            }
+                        }
+                        IconButton(onClick = viewModel::saveCourse) {
+                            Icon(Icons.Default.Check, contentDescription = "保存", tint = Color.White)
+                        }
+                    },
+                )
+            }
+        },
+    ) { innerPadding ->
+    Box(modifier = Modifier.hazeSource(hazeState)) {
         LazyColumn(
             state = lazyListState,
             modifier = Modifier
-                .fillMaxSize()
-                .layerBackdrop(scrollBackdrop),
-            contentPadding = PaddingValues(top = Spacing.md, bottom = Spacing.iOS26.groupSpacing + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                .fillMaxSize(),
+            contentPadding = PaddingValues(
+                top = innerPadding.calculateTopPadding() + Spacing.md,
+                bottom = Spacing.iOS26.groupSpacing + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            ),
             verticalArrangement = Arrangement.spacedBy(Spacing.lg)
         ) {
             item {
@@ -229,7 +256,7 @@ fun CourseEditScreen(
                 Spacer(modifier = Modifier.height(Spacing.xxl))
             }
         }
-        ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollOffset)
+    }
     }
     }
 
@@ -287,74 +314,6 @@ fun CourseEditScreen(
             dismissText = "取消"
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CourseEditTopBar(
-    isEditing: Boolean,
-    onNavigateBack: () -> Unit,
-    onDelete: () -> Unit,
-    onSave: () -> Unit
-) {
-    val labelsPrimary = getLabelsVibrantPrimary()
-    
-    TopAppBar(
-        title = { 
-            Text(
-                text = if (isEditing) "编辑课程" else "添加课程",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
-                color = labelsPrimary
-            ) 
-        },
-        navigationIcon = {
-            GlassSymbolIconButton(
-                onClick = onNavigateBack,
-                style = GlassSymbolButtonStyle.NonTinted,
-                buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
-                contentPadding = PaddingValues(start = Spacing.sm)
-            ) {
-                Icon(
-                    Icons.Default.ArrowBack, 
-                    contentDescription = "返回",
-                    tint = labelsPrimary
-                )
-            }
-        },
-        actions = {
-            if (isEditing) {
-                GlassSymbolIconButton(
-                    onClick = onDelete,
-                    style = GlassSymbolButtonStyle.NonTinted,
-                    buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize
-                ) {
-                    Icon(
-                        Icons.Default.Delete, 
-                        contentDescription = "删除",
-                        tint = SemanticColors.ErrorLight
-                    )
-                }
-                Spacer(modifier = Modifier.width(Spacing.xs))
-            }
-            GlassSymbolIconButton(
-                onClick = onSave,
-                style = GlassSymbolButtonStyle.Tinted,
-                buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize
-            ) {
-                Icon(
-                    Icons.Default.Check, 
-                    contentDescription = "保存",
-                    tint = Color.White
-                )
-            }
-            Spacer(modifier = Modifier.width(Spacing.sm))
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background
-        )
-    )
 }
 
 @Composable
@@ -917,7 +876,7 @@ private fun formatWeekRanges(weeks: Set<Int>): String {
     return if (weeks.size == 1) "第${result}周" else "${result}周"
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CourseEditContent(
     courseId: Long?,
@@ -990,6 +949,22 @@ fun CourseEditContent(
         label = "edit_corner"
     )
 
+    val hazeState = rememberHazeState()
+    val lazyListState = rememberLazyListState()
+    val scrollOffset by remember {
+        derivedStateOf {
+            if (lazyListState.firstVisibleItemIndex > 0) {
+                lazyListState.firstVisibleItemScrollOffset + 1
+            } else {
+                lazyListState.firstVisibleItemScrollOffset
+            }
+        }
+    }
+    val scrollProgress by remember { derivedStateOf { (scrollOffset.toFloat() / 300f).coerceIn(0f, 1f) } }
+    val blurActive = scrollProgress >= 0.5f
+    val barColor = if (blurActive) Color.Transparent else if (scrollProgress >= 0.5f) MiuixTheme.colorScheme.surface else Color.Transparent
+
+    CompositionLocalProvider(LocalHazeState provides hazeState) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -1013,39 +988,42 @@ fun CourseEditContent(
             .clip(ContinuousRoundedRectangle(cornerRadius.coerceAtLeast(0.dp)))
     ) {
         Scaffold(
-            contentWindowInsets = WindowInsets(0),
             topBar = {
-                CourseEditTopBar(
-                    isEditing = state.isEditing,
-                    onNavigateBack = onNavigateBack,
-                    onDelete = { showDeleteDialog = true },
-                    onSave = viewModel::saveCourse
-                )
-            },
-            containerColor = MaterialTheme.colorScheme.background
-        ) { paddingValues ->
-        val backgroundColor = MaterialTheme.colorScheme.background
-        val scrollBackdrop = rememberLayerBackdrop {
-            drawRect(backgroundColor)
-            drawContent()
-        }
-        val lazyListState = rememberLazyListState()
-        val scrollOffset by remember {
-            derivedStateOf {
-                if (lazyListState.firstVisibleItemIndex > 0) {
-                    lazyListState.firstVisibleItemScrollOffset + 1
-                } else {
-                    lazyListState.firstVisibleItemScrollOffset
+                BlurredBar(null, blurActive) {
+                    SmallTopAppBar(
+                        title = if (state.isEditing) "编辑课程" else "添加课程",
+                        scrollBehavior = MiuixScrollBehavior(),
+                        color = barColor,
+                        titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)),
+                        defaultWindowInsetsPadding = false,
+                        navigationIcon = {
+                            IconButton(onClick = onNavigateBack) {
+                                Icon(Icons.Outlined.ArrowBack, contentDescription = "返回")
+                            }
+                        },
+                        actions = {
+                            if (state.isEditing) {
+                                IconButton(onClick = { showDeleteDialog = true }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "删除", tint = SemanticColors.ErrorLight)
+                                }
+                            }
+                            IconButton(onClick = viewModel::saveCourse) {
+                                Icon(Icons.Default.Check, contentDescription = "保存", tint = Color.White)
+                            }
+                        },
+                    )
                 }
-            }
-        }
-        Box(modifier = Modifier.fillMaxSize().padding(top = paddingValues.calculateTopPadding())) {
+            },
+        ) { innerPadding ->
+        Box(modifier = Modifier.hazeSource(hazeState)) {
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .layerBackdrop(scrollBackdrop),
-                contentPadding = PaddingValues(top = Spacing.md, bottom = Spacing.iOS26.groupSpacing + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                    .fillMaxSize(),
+                contentPadding = PaddingValues(
+                    top = innerPadding.calculateTopPadding() + Spacing.md,
+                    bottom = Spacing.iOS26.groupSpacing + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                ),
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg)
             ) {
                 item {
@@ -1128,9 +1106,9 @@ fun CourseEditContent(
                     Spacer(modifier = Modifier.height(Spacing.xxl))
                 }
             }
-            ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollOffset)
         }
         }
+    }
     }
 
     if (showWeekPicker) {

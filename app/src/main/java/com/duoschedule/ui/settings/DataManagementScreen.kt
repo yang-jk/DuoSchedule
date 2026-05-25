@@ -8,12 +8,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -24,15 +27,7 @@ import com.duoschedule.data.importexport.ImportPreviewData
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
-import com.duoschedule.ui.theme.ScrollTopBlurOverlay
-import com.duoschedule.ui.theme.LocalBackdrop
-import com.duoschedule.ui.theme.LiquidGlassColors
-import com.duoschedule.ui.theme.LiquidGlassButton
-import com.duoschedule.ui.theme.LiquidGlassButtonStyle
-import com.duoschedule.ui.theme.GlassBottomSheetDefaults
 import com.kyant.backdrop.backdrops.emptyBackdrop
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -42,11 +37,15 @@ import androidx.compose.ui.platform.LocalDensity
 import com.kyant.capsule.ContinuousRoundedRectangle
 import com.duoschedule.util.FilePickerUtils
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import dev.chrisbanes.haze.hazeSource
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DataManagementScreen(
     onNavigateBack: () -> Unit,
@@ -118,64 +117,45 @@ fun DataManagementScreen(
         }
     }
 
+    val hazeState = rememberHazeState()
+    val scrollState = rememberScrollState()
+    val scrollProgress by remember { derivedStateOf { (scrollState.value.toFloat() / 300f).coerceIn(0f, 1f) } }
+    val blurActive = scrollProgress >= 0.5f
+    val barColor = if (blurActive) Color.Transparent else if (scrollProgress >= 0.5f) MiuixTheme.colorScheme.surface else Color.Transparent
+
+    CompositionLocalProvider(LocalHazeState provides hazeState) {
     Scaffold(
-        contentWindowInsets = WindowInsets(0),
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        text = "数据管理",
-                        color = labelsPrimary,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    ) 
-                },
-                navigationIcon = {
-                    GlassSymbolIconButton(
-                        onClick = onNavigateBack,
-                        style = GlassSymbolButtonStyle.NonTinted,
-                        buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
-                        contentPadding = PaddingValues(start = Spacing.sm)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack, 
-                            contentDescription = "返回",
-                            tint = labelsPrimary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+            BlurredBar(null, blurActive) {
+                SmallTopAppBar(
+                    title = "数据管理",
+                    scrollBehavior = MiuixScrollBehavior(),
+                    color = barColor,
+                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)),
+                    defaultWindowInsetsPadding = false,
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "返回")
+                        }
+                    },
                 )
-            )
+            }
         },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
+    ) { innerPadding ->
         val deviceInfo = remember { FilePickerUtils.getDeviceInfo() }
 
-        val backgroundColor = MaterialTheme.colorScheme.background
-        val scrollBackdrop = rememberLayerBackdrop {
-            drawRect(backgroundColor)
-            drawContent()
-        }
-        val scrollState = rememberScrollState()
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = paddingValues.calculateTopPadding())
-        ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .layerBackdrop(scrollBackdrop),
-            verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
-        ) {
+        Box(modifier = Modifier.hazeSource(hazeState)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
+            ) {
             Spacer(modifier = Modifier.height(Spacing.sm))
             
             if (deviceInfo.isMiuiDevice) {
-                val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+                val miuiBackdrop = LocalBackdrop.current ?: emptyBackdrop()
                 val darkTheme = LocalDarkTheme.current
                 val density = LocalDensity.current
 
@@ -210,7 +190,7 @@ fun DataManagementScreen(
                         .fillMaxWidth()
                         .padding(horizontal = Spacing.lg)
                         .drawBackdrop(
-                            backdrop = backdrop,
+                            backdrop = miuiBackdrop,
                             shape = { ContinuousRoundedRectangle(16.dp) },
                             effects = {
                                 vibrancy()
@@ -490,10 +470,9 @@ fun DataManagementScreen(
 
             Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             Spacer(modifier = Modifier.weight(1f))
+            }
         }
-
-        ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollState.value)
-        }
+    }
     }
 
     if (isLoading) {

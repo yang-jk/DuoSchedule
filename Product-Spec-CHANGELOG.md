@@ -6,6 +6,125 @@
 
 ---
 
+## [3.7.0] - 2026-05-27
+
+### 变更类型：UI 重构
+
+### 状态：已实现
+
+### 变更内容
+
+**迁移模糊效果从 layerBackdrop/rememberBlurBackdrop 到 Haze 库的 hazeSource/HazeState 模式**
+
+1. **替换**：所有页面（除 AboutScreen 的 AboutContent）的 `rememberBlurBackdrop()` → `rememberHazeState()`，使用 Haze 库管理模糊状态
+2. **替换**：所有页面的 `Modifier.layerBackdrop(backdrop)` → `Modifier.hazeSource(hazeState)`，使用 Haze 的 hazeSource 提供模糊源
+3. **替换**：所有页面的 `BlurredBar(backdrop, blurActive)` → `BlurredBar(null, blurActive)`，BlurredBar 通过 LocalHazeState 获取 HazeState
+4. **新增**：所有页面添加 `CompositionLocalProvider(LocalHazeState provides hazeState)` 包裹 Scaffold，使 BlurredBar 能通过 CompositionLocal 访问 HazeState
+5. **简化**：`blurActive` 条件从 `backdrop != null && scrollProgress >= 0.5f` 简化为 `scrollProgress >= 0.5f`（HazeState 始终非空）
+6. **保留**：AboutScreen 的 AboutContent 函数中的 `backdrop`/`textureBlur` 引用保持不变（用于 logo 和卡片模糊效果）
+7. **替换导入**：`import top.yukonga.miuix.kmp.blur.layerBackdrop` → `import dev.chrisbanes.haze.hazeSource`（AboutScreen 保留两者）
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（迁移到 Haze）
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（迁移到 Haze）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（迁移到 Haze）
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（迁移到 Haze）
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（迁移到 Haze，含 CourseEditScreen 和 CourseEditContent 两个函数）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（迁移到 Haze）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（迁移到 Haze）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（迁移到 Haze）
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（迁移到 Haze）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（迁移到 Haze）
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（迁移到 Haze）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（AboutScreen 函数迁移到 Haze，AboutContent 函数保留 backdrop/textureBlur）
+- `app/build.gradle.kts`（版本号 3.6.0→3.7.0，versionCode 30600→30700）
+
+---
+
+## [3.6.0] - 2026-05-27
+
+### 变更类型：UI 重构
+
+### 状态：已实现
+
+### 变更内容
+
+**统一模糊效果为 BlurredBar + SmallTopAppBar 方式 + 修复关于页面卡片样式**
+
+1. **替换**：所有页面的 `rememberLayerBackdrop` → `rememberBlurBackdrop()`，统一模糊背景创建方式
+2. **替换**：所有页面的 `ScrollTopBlurOverlay` → `BlurredBar` + `SmallTopAppBar`，使用 Miuix 风格顶部栏
+3. **替换**：Material3 `Scaffold` → Miuix `Scaffold`，统一页面结构
+4. **新增**：滚动时顶部栏标题随滚动进度渐显（scrollProgress > 0.35f 时开始显示）
+5. **新增**：滚动时顶部栏毛玻璃效果自动激活
+6. **修复**：关于页面卡片 textureBlur 移除 `contentBlendMode = DstIn`，改为实心毛玻璃（与 legado 一致）
+7. **修复**：关于页面卡片模糊参数改为 `mutableFloatStateOf` 管理（与 legado 一致）
+8. **移除**：页面内手动标题 `Text` 组件（已由 SmallTopAppBar 的 title 参数替代）
+9. **移除**：`ScrollTopBlurOverlay` 和 `ScrollTopGradientOverlay` 组件
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（迁移到 BlurredBar）
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（迁移到 BlurredBar）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（迁移到 BlurredBar）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（迁移到 BlurredBar）
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（迁移到 BlurredBar）
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（迁移到 BlurredBar）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（迁移到 BlurredBar）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（迁移到 BlurredBar）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（迁移到 BlurredBar）
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（迁移到 BlurredBar）
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（迁移到 BlurredBar）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（修复卡片模糊参数）
+- `app/src/main/java/com/duoschedule/ui/theme/Components.kt`（删除 ScrollTopBlurOverlay/ScrollTopGradientOverlay）
+- `app/build.gradle.kts`（versionCode 30500→30600，versionName 3.5.0→3.6.0）
+- `Product-Spec.md`（版本号 3.5.0→3.6.0）
+
+---
+
+## [3.5.0] - 2026-05-27
+
+### 变更类型：功能新增
+
+### 状态：已实现
+
+### 变更内容
+
+**MIUIX 风格关于页面 + 渐变模糊效果**
+
+1. **新增**：Miuix UI 和 Miuix Preference 依赖（miuix-ui-android:0.9.0, miuix-preference-android:0.9.0）
+2. **新增**：`DeviceType` 枚举类，区分 PHONE/PAD 设备类型
+3. **新增**：`OS3_BG_FRAG` 着色器常量，包含完整的 OS3 渐变效果 GLSL 片段着色器代码
+4. **新增**：`BgEffectConfig` 配置对象，定义亮色/暗色模式下的 OS3 配色方案和动画参数
+5. **新增**：`BgEffectPainter` 画笔类，封装 RuntimeShader 渲染逻辑
+6. **新增**：`bgEffectDraw` Modifier 扩展函数，基于 DrawModifierNode 实现 60fps 动画循环
+7. **新增**：`BgEffectBackground` 可组合函数，提供开箱即用的动态渐变背景容器
+8. **新增**：`ColorBlendToken` 对象，定义毛玻璃效果的颜色混合配置
+9. **新增**：`rememberBlurBackdrop()` 辅助函数，统一创建 LayerBackdrop
+10. **新增**：`BlurredBar` 可组合函数，顶部栏毛玻璃效果
+11. **重写**：`AboutScreen` 从 Material3 风格完全重写为 MIUIX 风格
+12. **新增**：顶部栏毛玻璃效果（`BlurredBar`），滚动时自动激活模糊
+13. **新增**：OS3 动态渐变背景效果（`BgEffectBackground`），滚动时渐隐
+14. **新增**：Logo 区域滚动动画（图标、应用名、版本号分别以不同进度淡出缩小）
+15. **新增**：应用名文字渐变模糊效果（`textureBlur` + `logoBlend` + `DstIn`）
+16. **新增**：卡片渐变模糊效果（`textureBlur` + `cardBlend` + `DstIn`）
+17. **替换**：`SettingsSection` + `SettingsNavigationRow` → Miuix `Card` + `ArrowPreference`
+
+### 修改文件
+
+- `app/build.gradle.kts`（添加 miuix-ui、miuix-preference 依赖，versionCode 30402→30500，versionName 3.4.2→3.5.0）
+- `app/src/main/java/com/duoschedule/ui/theme/DeviceType.kt`（新增）
+- `app/src/main/java/com/duoschedule/ui/theme/OS3BgFrag.kt`（新增）
+- `app/src/main/java/com/duoschedule/ui/theme/BgEffectConfig.kt`（新增）
+- `app/src/main/java/com/duoschedule/ui/theme/BgEffectPainter.kt`（新增）
+- `app/src/main/java/com/duoschedule/ui/theme/BgEffectModifier.kt`（新增）
+- `app/src/main/java/com/duoschedule/ui/theme/BgEffectBackground.kt`（新增）
+- `app/src/main/java/com/duoschedule/ui/theme/Components.kt`（新增 ColorBlendToken、rememberBlurBackdrop、BlurredBar）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（重写为 MIUIX 风格）
+- `Product-Spec.md`（版本号 3.4.1→3.5.0）
+
+---
+
 ## [3.4.2] - 2026-05-25
 
 ### 变更类型：Bug修复
@@ -2441,6 +2560,6 @@
 
 ---
 
-**文档版本**：3.4.2
+**文档版本**：3.5.0
 
-**最后更新**：2026-05-25
+**最后更新**：2026-05-27

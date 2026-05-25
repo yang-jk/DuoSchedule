@@ -5,7 +5,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -13,47 +16,47 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import dev.chrisbanes.haze.hazeSource
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun LegalScreen(
     onNavigateBack: () -> Unit
 ) {
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0),
-        topBar = {
-            TopAppBar(
-                title = { Text("法律信息") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "返回")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
-            )
-        }
-    ) { paddingValues ->
-        val backgroundColor = MaterialTheme.colorScheme.background
-        val scrollBackdrop = rememberLayerBackdrop {
-            drawRect(backgroundColor)
-            drawContent()
-        }
-        val scrollState = rememberScrollState()
+    val hazeState = rememberHazeState()
+    val scrollState = rememberScrollState()
+    val scrollProgress by remember { derivedStateOf { (scrollState.value.toFloat() / 300f).coerceIn(0f, 1f) } }
+    val blurActive = scrollProgress >= 0.5f
+    val barColor = if (blurActive) Color.Transparent else if (scrollProgress >= 0.5f) MiuixTheme.colorScheme.surface else Color.Transparent
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = paddingValues.calculateTopPadding())
-        ) {
+    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    Scaffold(
+        topBar = {
+            BlurredBar(null, blurActive) {
+                SmallTopAppBar(
+                    title = "法律信息",
+                    scrollBehavior = MiuixScrollBehavior(),
+                    color = barColor,
+                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)),
+                    defaultWindowInsetsPadding = false,
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "返回")
+                        }
+                    },
+                )
+            }
+        },
+    ) { innerPadding ->
+        Box(modifier = Modifier.hazeSource(hazeState)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-                    .layerBackdrop(scrollBackdrop)
+                    .padding(innerPadding)
             ) {
                 SettingsSection(title = "用户协议") {
                     Column(modifier = Modifier.padding(horizontal = Spacing.lg)) {
@@ -113,9 +116,8 @@ fun LegalScreen(
 
                 Spacer(modifier = Modifier.height(LiquidBottomTabsSpec.Height + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp))
             }
-
-            ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollState.value)
         }
+    }
     }
 }
 

@@ -4,24 +4,30 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
-import com.duoschedule.ui.theme.ScrollTopBlurOverlay
 import com.kyant.backdrop.backdrops.emptyBackdrop
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import dev.chrisbanes.haze.hazeSource
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.rememberDatePickerState
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleSettingsScreen(
     onNavigateBack: () -> Unit,
@@ -48,60 +54,39 @@ fun ScheduleSettingsScreen(
     var showPersonAPeriodsDialog by remember { mutableStateOf(false) }
     var showPersonBPeriodsDialog by remember { mutableStateOf(false) }
 
-    val labelsPrimary = getLabelsVibrantPrimary()
+    val hazeState = rememberHazeState()
+    val scrollState = rememberScrollState()
+    val scrollProgress by remember { derivedStateOf { (scrollState.value.toFloat() / 300f).coerceIn(0f, 1f) } }
+    val blurActive = scrollProgress >= 0.5f
+    val barColor = if (blurActive) Color.Transparent else if (scrollProgress >= 0.5f) MiuixTheme.colorScheme.surface else Color.Transparent
 
+    CompositionLocalProvider(LocalHazeState provides hazeState) {
     Scaffold(
-        contentWindowInsets = WindowInsets(0),
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        text = "课表设置",
-                        color = labelsPrimary,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    ) 
-                },
-                navigationIcon = {
-                    GlassSymbolIconButton(
-                        onClick = onNavigateBack,
-                        style = GlassSymbolButtonStyle.NonTinted,
-                        buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
-                        contentPadding = PaddingValues(start = Spacing.sm)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack, 
-                            contentDescription = "返回",
-                            tint = labelsPrimary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+            BlurredBar(null, blurActive) {
+                SmallTopAppBar(
+                    title = "课表设置",
+                    scrollBehavior = MiuixScrollBehavior(),
+                    color = barColor,
+                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)),
+                    defaultWindowInsetsPadding = false,
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "返回")
+                        }
+                    },
                 )
-            )
+            }
         },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        val backgroundColor = MaterialTheme.colorScheme.background
-        val scrollBackdrop = rememberLayerBackdrop {
-            drawRect(backgroundColor)
-            drawContent()
-        }
-        val scrollState = rememberScrollState()
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = paddingValues.calculateTopPadding())
-        ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .layerBackdrop(scrollBackdrop),
-            verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
-        ) {
+    ) { innerPadding ->
+        Box(modifier = Modifier.hazeSource(hazeState)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
+            ) {
             Spacer(modifier = Modifier.height(Spacing.sm))
 
             SettingsSection(title = if (singleModeEnabled) "课表设置" else "我的课表设置") {
@@ -196,10 +181,9 @@ fun ScheduleSettingsScreen(
 
             Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             Spacer(modifier = Modifier.weight(1f))
+            }
         }
-
-        ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollState.value)
-        }
+    }
     }
 
     if (showPersonBSemesterStartDialog) {
@@ -227,9 +211,9 @@ fun ScheduleSettingsScreen(
     }
 
     if (showPersonBTotalWeeksDialog) {
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         NumberInputAlert(
-            backdrop = backdrop,
+            backdrop = dialogBackdrop,
             title = "学期总周数",
             label = "请输入学期总周数",
             initialValue = personBTotalWeeks,
@@ -243,9 +227,9 @@ fun ScheduleSettingsScreen(
     }
 
     if (showPersonATotalWeeksDialog) {
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         NumberInputAlert(
-            backdrop = backdrop,
+            backdrop = dialogBackdrop,
             title = "学期总周数",
             label = "请输入学期总周数",
             initialValue = personATotalWeeks,
@@ -259,9 +243,9 @@ fun ScheduleSettingsScreen(
     }
 
     if (showPersonBCurrentWeekDialog) {
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         NumberInputAlert(
-            backdrop = backdrop,
+            backdrop = dialogBackdrop,
             title = "当前周次",
             label = "请输入当前周次",
             initialValue = personBCurrentWeek,
@@ -275,9 +259,9 @@ fun ScheduleSettingsScreen(
     }
 
     if (showPersonACurrentWeekDialog) {
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         NumberInputAlert(
-            backdrop = backdrop,
+            backdrop = dialogBackdrop,
             title = "当前周次",
             label = "请输入当前周次",
             initialValue = personACurrentWeek,
@@ -291,9 +275,9 @@ fun ScheduleSettingsScreen(
     }
 
     if (showPersonBPeriodsDialog) {
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         NumberInputAlert(
-            backdrop = backdrop,
+            backdrop = dialogBackdrop,
             title = "每天节数",
             label = "请输入每天节数",
             initialValue = personBPeriodsPerDay,
@@ -307,9 +291,9 @@ fun ScheduleSettingsScreen(
     }
 
     if (showPersonAPeriodsDialog) {
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         NumberInputAlert(
-            backdrop = backdrop,
+            backdrop = dialogBackdrop,
             title = "每天节数",
             label = "请输入每天节数",
             initialValue = personAPeriodsPerDay,
@@ -331,12 +315,11 @@ private fun DatePickerDialog(
     onConfirm: (LocalDate) -> Unit
 ) {
     var selectedDate by remember { mutableStateOf(initialDate) }
-    val labelsPrimary = getLabelsVibrantPrimary()
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
     )
 
-    DatePickerDialog(
+    androidx.compose.material3.DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             LiquidGlassButton(

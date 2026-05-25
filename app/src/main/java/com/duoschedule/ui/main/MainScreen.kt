@@ -34,11 +34,15 @@ import com.duoschedule.ui.main.components.*
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.theme.LiquidGlassButton
 import com.duoschedule.ui.theme.LiquidGlassButtonStyle
-import com.duoschedule.ui.theme.ScrollTopBlurOverlay
+import com.duoschedule.ui.theme.BlurredBar
+import com.duoschedule.ui.theme.rememberBlurBackdrop
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import dev.chrisbanes.haze.hazeSource
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -68,51 +72,82 @@ fun MainScreen(
         }
     }
 
-    val backgroundColor = MaterialTheme.colorScheme.background
-    val scrollBackdrop = rememberLayerBackdrop {
-        drawRect(backgroundColor)
-        drawContent()
-    }
     val scrollState = rememberScrollState()
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .layerBackdrop(scrollBackdrop),
-            verticalArrangement = Arrangement.spacedBy(Spacing.md)
-        ) {
-            Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+    val topAppBarScrollBehavior = MiuixScrollBehavior()
 
-            HeaderSection(
-                viewModel = viewModel,
-                singleModeEnabled = singleModeEnabled
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.xl - Spacing.md))
-
-            CurrentCourseCard(
-                personAState = personACurrentCourse,
-                personBState = personBCurrentCourse,
-                singleModeEnabled = singleModeEnabled,
-                modifier = Modifier.padding(horizontal = Spacing.lg)
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.lg - Spacing.md))
-
-            TodayScheduleSection(
-                viewModel = viewModel,
-                singleModeEnabled = singleModeEnabled,
-                onCourseClick = { course, personType ->
-                    selectedCourse = course
-                    selectedCoursePersonType = personType
-                }
-            )
-
-            Spacer(modifier = Modifier.height(LiquidBottomTabsSpec.Height + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()))
+    val scrollProgress by remember {
+        derivedStateOf {
+            (scrollState.value.toFloat() / 300f).coerceIn(0f, 1f)
         }
+    }
 
-        ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollState.value)
+    val hazeState = rememberHazeState()
+    val blurActive = scrollProgress > 0f
+    val barColor = if (blurActive) {
+        Color.Transparent
+    } else {
+        if (scrollProgress > 0f) MiuixTheme.colorScheme.surface else Color.Transparent
+    }
+
+    val today = remember { LocalDate.now() }
+    val dateFormatter = DateTimeFormatter.ofPattern("M月d日 EEEE")
+    val dateText = today.format(dateFormatter)
+
+    val topBarTitle = if (scrollProgress > 0.35f) dateText else ""
+
+    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    Scaffold(
+        topBar = {
+            BlurredBar(null, blurActive) {
+                SmallTopAppBar(
+                    title = topBarTitle,
+                    scrollBehavior = topAppBarScrollBehavior,
+                    color = barColor,
+                    titleColor = MiuixTheme.colorScheme.onSurface.copy(
+                        alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
+                    ),
+                    defaultWindowInsetsPadding = false,
+                )
+            }
+        },
+    ) { innerPadding ->
+        Box(modifier = Modifier.hazeSource(hazeState)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(top = innerPadding.calculateTopPadding()),
+                verticalArrangement = Arrangement.spacedBy(Spacing.md)
+            ) {
+                HeaderSection(
+                    viewModel = viewModel,
+                    singleModeEnabled = singleModeEnabled
+                )
+
+                Spacer(modifier = Modifier.height(Spacing.xl - Spacing.md))
+
+                CurrentCourseCard(
+                    personAState = personACurrentCourse,
+                    personBState = personBCurrentCourse,
+                    singleModeEnabled = singleModeEnabled,
+                    modifier = Modifier.padding(horizontal = Spacing.lg)
+                )
+
+                Spacer(modifier = Modifier.height(Spacing.lg - Spacing.md))
+
+                TodayScheduleSection(
+                    viewModel = viewModel,
+                    singleModeEnabled = singleModeEnabled,
+                    onCourseClick = { course, personType ->
+                        selectedCourse = course
+                        selectedCoursePersonType = personType
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(LiquidBottomTabsSpec.Height + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()))
+            }
+        }
+    }
     }
 
     if (showPreview && selectedCourse != null) {

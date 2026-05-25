@@ -16,28 +16,29 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.notification.SilentModeType
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
-import com.duoschedule.ui.theme.ScrollTopBlurOverlay
 import com.kyant.backdrop.backdrops.emptyBackdrop
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import kotlinx.coroutines.delay
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import dev.chrisbanes.haze.hazeSource
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationSettingsScreen(
     onNavigateBack: () -> Unit,
@@ -115,8 +116,6 @@ fun NotificationSettingsScreen(
         }
     }
 
-    val labelsPrimary = getLabelsVibrantPrimary()
-
     LaunchedEffect(Unit) {
         val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         isIgnoringBatteryOptimizations = powerManager.isIgnoringBatteryOptimizations(context.packageName)
@@ -176,58 +175,39 @@ fun NotificationSettingsScreen(
         }
     }
 
+    val hazeState = rememberHazeState()
+    val scrollState = rememberScrollState()
+    val scrollProgress by remember { derivedStateOf { (scrollState.value.toFloat() / 300f).coerceIn(0f, 1f) } }
+    val blurActive = scrollProgress >= 0.5f
+    val barColor = if (blurActive) Color.Transparent else if (scrollProgress >= 0.5f) MiuixTheme.colorScheme.surface else Color.Transparent
+
+    CompositionLocalProvider(LocalHazeState provides hazeState) {
     Scaffold(
-        contentWindowInsets = WindowInsets(0),
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        text = "通知设置",
-                        color = labelsPrimary,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    ) 
-                },
-                navigationIcon = {
-                    GlassSymbolIconButton(
-                        onClick = onNavigateBack,
-                        style = GlassSymbolButtonStyle.NonTinted,
-                        buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
-                        contentPadding = PaddingValues(start = Spacing.sm)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack, 
-                            contentDescription = "返回",
-                            tint = labelsPrimary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+            BlurredBar(null, blurActive) {
+                SmallTopAppBar(
+                    title = "通知设置",
+                    scrollBehavior = MiuixScrollBehavior(),
+                    color = barColor,
+                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)),
+                    defaultWindowInsetsPadding = false,
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "返回")
+                        }
+                    },
                 )
-            )
+            }
         },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        val backgroundColor = MaterialTheme.colorScheme.background
-        val scrollBackdrop = rememberLayerBackdrop {
-            drawRect(backgroundColor)
-            drawContent()
-        }
-        val scrollState = rememberScrollState()
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = paddingValues.calculateTopPadding())
-        ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .layerBackdrop(scrollBackdrop),
-            verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
-        ) {
+    ) { innerPadding ->
+        Box(modifier = Modifier.hazeSource(hazeState)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
+            ) {
             Spacer(modifier = Modifier.height(Spacing.sm))
 
             if (!notificationEnabled || !hasNotificationPermission) {
@@ -607,19 +587,18 @@ fun NotificationSettingsScreen(
 
             Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             Spacer(modifier = Modifier.weight(1f))
+            }
         }
-
-        ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollState.value)
-        }
+    }
     }
 
     if (showReminderDialog) {
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         SettingsOptionDialog(
             title = "课前提醒时间",
             options = listOf(5, 10, 15, 20, 30),
             selectedOption = reminderMinutesBefore,
-            backdrop = backdrop,
+            backdrop = dialogBackdrop,
             optionLabel = { "${it} 分钟" },
             onDismiss = { showReminderDialog = false },
             onConfirm = { minutes ->
@@ -635,13 +614,13 @@ fun NotificationSettingsScreen(
         } catch (e: Exception) {
             SilentModeType.VIBRATE
         }
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         
         SettingsOptionDialog(
             title = "静音模式",
             options = SilentModeType.entries.toList(),
             selectedOption = currentModeType,
-            backdrop = backdrop,
+            backdrop = dialogBackdrop,
             optionLabel = { it.displayName },
             onDismiss = { showSilentModeDialog = false },
             onConfirm = { modeType ->
@@ -652,12 +631,12 @@ fun NotificationSettingsScreen(
     }
 
     if (showSilentAdvanceDialog) {
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         SettingsOptionDialog(
             title = "静音提前时间",
             options = listOf(1, 2, 3, 5, 10),
             selectedOption = autoSilentAdvanceTime,
-            backdrop = backdrop,
+            backdrop = dialogBackdrop,
             optionLabel = { "${it} 分钟" },
             onDismiss = { showSilentAdvanceDialog = false },
             onConfirm = { minutes ->
@@ -668,7 +647,7 @@ fun NotificationSettingsScreen(
     }
 
     if (showDebugLogDialog) {
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         AlertDialog(
             onDismissRequest = { showDebugLogDialog = false },
             title = { Text("调度日志") },
@@ -736,7 +715,7 @@ fun NotificationSettingsScreen(
     }
 
     if (showScheduledAlarmsDialog) {
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         AlertDialog(
             onDismissRequest = { showScheduledAlarmsDialog = false },
             title = { Text("已调度闹钟") },
@@ -792,12 +771,12 @@ fun NotificationSettingsScreen(
     }
 
     if (showDurationPickerDialog) {
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         SettingsOptionDialog(
             title = "选择测试时长",
             options = listOf(1, 2, 3, 5, 10, 45),
             selectedOption = 5,
-            backdrop = backdrop,
+            backdrop = dialogBackdrop,
             optionLabel = { "${it} 分钟" },
             onDismiss = { showDurationPickerDialog = false },
             onConfirm = { minutes ->

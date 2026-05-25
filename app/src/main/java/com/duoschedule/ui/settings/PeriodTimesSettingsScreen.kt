@@ -5,23 +5,30 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
-import com.duoschedule.ui.theme.ScrollTopBlurOverlay
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import dev.chrisbanes.haze.hazeSource
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PeriodTimesSettingsScreen(
     personType: PersonType,
@@ -36,8 +43,6 @@ fun PeriodTimesSettingsScreen(
     var hasChanges by remember { mutableStateOf(false) }
     var editingIndex by remember { mutableStateOf<Int?>(null) }
     var lastTotalPeriods by remember { mutableStateOf<Int?>(null) }
-    
-    val labelsPrimary = getLabelsVibrantPrimary()
     
     val timePickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
@@ -61,39 +66,39 @@ fun PeriodTimesSettingsScreen(
         lastTotalPeriods = totalPeriods
     }
     
+    val hazeState = rememberHazeState()
+    val lazyListState = rememberLazyListState()
+    val scrollOffset by remember {
+        derivedStateOf {
+            if (lazyListState.firstVisibleItemIndex > 0) {
+                lazyListState.firstVisibleItemScrollOffset + 1
+            } else {
+                lazyListState.firstVisibleItemScrollOffset
+            }
+        }
+    }
+    val scrollProgress by remember { derivedStateOf { (scrollOffset.toFloat() / 300f).coerceIn(0f, 1f) } }
+    val blurActive = scrollProgress >= 0.5f
+    val barColor = if (blurActive) Color.Transparent else if (scrollProgress >= 0.5f) MiuixTheme.colorScheme.surface else Color.Transparent
+
+    CompositionLocalProvider(LocalHazeState provides hazeState) {
     Scaffold(
-        contentWindowInsets = WindowInsets(0),
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        text = "${personName}的时间设置",
-                        color = labelsPrimary,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    ) 
-                },
-                navigationIcon = {
-                    GlassSymbolIconButton(
-                        onClick = onNavigateBack,
-                        style = GlassSymbolButtonStyle.NonTinted,
-                        buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
-                        contentPadding = PaddingValues(start = Spacing.sm)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack, 
-                            contentDescription = "返回",
-                            tint = labelsPrimary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+            BlurredBar(null, blurActive) {
+                SmallTopAppBar(
+                    title = "${personName}的时间设置",
+                    scrollBehavior = MiuixScrollBehavior(),
+                    color = barColor,
+                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)),
+                    defaultWindowInsetsPadding = false,
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "返回")
+                        }
+                    },
                 )
-            )
+            }
         },
-        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (hasChanges) {
                 BottomAppBar(
@@ -113,33 +118,14 @@ fun PeriodTimesSettingsScreen(
                 }
             }
         }
-    ) { paddingValues ->
-        val backgroundColor = MaterialTheme.colorScheme.background
-        val scrollBackdrop = rememberLayerBackdrop {
-            drawRect(backgroundColor)
-            drawContent()
-        }
-        val lazyListState = rememberLazyListState()
-        val scrollOffset by remember {
-            derivedStateOf {
-                if (lazyListState.firstVisibleItemIndex > 0) {
-                    lazyListState.firstVisibleItemScrollOffset + 1
-                } else {
-                    lazyListState.firstVisibleItemScrollOffset
-                }
-            }
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = paddingValues.calculateTopPadding())
-        ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .layerBackdrop(scrollBackdrop),
-            verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
-        ) {
+    ) { innerPadding ->
+        Box(modifier = Modifier.hazeSource(hazeState)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
+            ) {
             Spacer(modifier = Modifier.height(Spacing.sm))
 
             SettingsFooter(
@@ -170,10 +156,9 @@ fun PeriodTimesSettingsScreen(
 
             Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             Spacer(modifier = Modifier.weight(1f))
+            }
         }
-
-        ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollOffset)
-        }
+    }
     }
     
     editingIndex?.let { index ->

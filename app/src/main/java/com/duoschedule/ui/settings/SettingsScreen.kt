@@ -11,7 +11,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,10 +29,12 @@ import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.ThemeMode
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
-import com.duoschedule.ui.theme.ScrollTopBlurOverlay
 import com.kyant.backdrop.backdrops.emptyBackdrop
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import dev.chrisbanes.haze.hazeSource
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun SettingsScreen(
@@ -80,46 +85,34 @@ fun SettingsScreen(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsTertiary = getLabelsVibrantTertiary()
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0)
-    ) { paddingValues ->
-    val backgroundColor = MaterialTheme.colorScheme.background
-    val scrollBackdrop = rememberLayerBackdrop {
-        drawRect(backgroundColor)
-        drawContent()
-    }
+    val hazeState = rememberHazeState()
     val scrollState = rememberScrollState()
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = paddingValues.calculateTopPadding())
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .layerBackdrop(scrollBackdrop),
+    val scrollProgress by remember { derivedStateOf { (scrollState.value.toFloat() / 300f).coerceIn(0f, 1f) } }
+    val blurActive = scrollProgress >= 0.5f
+    val barColor = if (blurActive) Color.Transparent else if (scrollProgress >= 0.5f) MiuixTheme.colorScheme.surface else Color.Transparent
+
+    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    Scaffold(
+        topBar = {
+            BlurredBar(null, blurActive) {
+                SmallTopAppBar(
+                    title = "设置",
+                    scrollBehavior = MiuixScrollBehavior(),
+                    color = barColor,
+                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)),
+                    defaultWindowInsetsPadding = false,
+                )
+            }
+        },
+    ) { innerPadding ->
+        Box(modifier = Modifier.hazeSource(hazeState)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(innerPadding),
                 verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
             ) {
-            Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
-
-            Text(
-                text = "设置",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = labelsPrimary,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = Spacing.lg,
-                        end = Spacing.lg,
-                        top = Spacing.lg,
-                        bottom = Spacing.xs
-                    )
-            )
-
             SettingsSection(title = "用户与身份") {
                 SettingsToggleRow(
                     title = "单人模式",
@@ -258,15 +251,14 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(Spacing.xl))
             Spacer(modifier = Modifier.height(LiquidBottomTabsSpec.Height + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()))
             }
-
-            ScrollTopBlurOverlay(backdrop = scrollBackdrop, scrollOffset = scrollState.value)
         }
+    }
     }
 
     if (showPersonADialog) {
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         TextInputAlert(
-            backdrop = backdrop,
+            backdrop = dialogBackdrop,
             title = "我的名称",
             label = "请输入我的名称",
             initialValue = personAName,
@@ -280,9 +272,9 @@ fun SettingsScreen(
     }
 
     if (showPersonBDialog) {
-        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
         TextInputAlert(
-            backdrop = backdrop,
+            backdrop = dialogBackdrop,
             title = "Ta的名称",
             label = "请输入Ta的名称",
             initialValue = personBName,
