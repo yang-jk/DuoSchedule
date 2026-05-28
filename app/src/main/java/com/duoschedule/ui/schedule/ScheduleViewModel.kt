@@ -1,4 +1,4 @@
-package com.duoschedule.ui.schedule
+﻿package com.duoschedule.ui.schedule
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

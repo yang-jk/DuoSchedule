@@ -1,4 +1,4 @@
-package com.duoschedule.ui.theme
+﻿package com.duoschedule.ui.theme
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing

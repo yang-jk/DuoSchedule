@@ -1,4 +1,4 @@
-package com.duoschedule.ui.navigation
+﻿package com.duoschedule.ui.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home

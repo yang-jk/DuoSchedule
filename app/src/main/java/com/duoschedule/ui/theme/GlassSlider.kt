@@ -2,7 +2,6 @@ package com.duoschedule.ui.theme
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -55,7 +54,7 @@ fun GlassSlider(
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     backdrop: Backdrop
 ) {
-    val isLightTheme = !isSystemInDarkTheme()
+    val isLightTheme = !LocalDarkTheme.current
     val accentColor =
         if (isLightTheme) Color(0xFF0088FF)
         else Color(0xFF0091FF)

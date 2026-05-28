@@ -1,4 +1,4 @@
-package com.duoschedule.ui.edit
+﻿package com.duoschedule.ui.edit
 
 import android.app.Application
 import android.util.Log

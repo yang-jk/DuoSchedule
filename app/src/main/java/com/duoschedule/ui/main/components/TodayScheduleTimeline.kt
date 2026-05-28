@@ -1,4 +1,4 @@
-package com.duoschedule.ui.main.components
+﻿package com.duoschedule.ui.main.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode

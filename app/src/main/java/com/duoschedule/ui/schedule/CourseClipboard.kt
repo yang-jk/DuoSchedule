@@ -1,4 +1,4 @@
-package com.duoschedule.ui.schedule
+﻿package com.duoschedule.ui.schedule
 
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType

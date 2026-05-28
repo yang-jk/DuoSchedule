@@ -1,4 +1,4 @@
-package com.duoschedule.ui.theme
+﻿package com.duoschedule.ui.theme
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

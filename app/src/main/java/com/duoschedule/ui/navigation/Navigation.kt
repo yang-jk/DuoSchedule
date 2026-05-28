@@ -1,4 +1,4 @@
-package com.duoschedule.ui.navigation
+﻿package com.duoschedule.ui.navigation
 
 import android.net.Uri
 import androidx.compose.animation.*
@@ -22,6 +22,7 @@ import com.duoschedule.ui.edit.CourseEditScreen
 import com.duoschedule.ui.main.MainScreen
 import com.duoschedule.ui.schedule.ScheduleScreen
 import com.duoschedule.ui.settings.*
+import com.duoschedule.ui.sync.SyncSettingsScreen
 import com.duoschedule.ui.theme.BackgroundsLight
 import com.duoschedule.ui.theme.BackgroundsDark
 import com.duoschedule.ui.theme.LocalDarkTheme
@@ -148,6 +149,7 @@ fun DuoScheduleNavGraph(
                 onNavigateToDisplaySettings = { navController.navigate("settings/display") },
                 onNavigateToDataManagement = { navController.navigate("settings/data") },
                 onNavigateToNotificationSettings = { navController.navigate("settings/notification") },
+                onNavigateToSyncSettings = { navController.navigate("settings/sync") },
                 onNavigateToAbout = { navController.navigate("settings/about") }
             )
         }
@@ -202,6 +204,12 @@ fun DuoScheduleNavGraph(
                     pendingImportData = importData
                     navController.navigate("settings/import-preview")
                 }
+            )
+        }
+
+        composable("settings/sync") {
+            SyncSettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

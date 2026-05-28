@@ -1,4 +1,4 @@
-package com.duoschedule.ui.schedule
+﻿package com.duoschedule.ui.schedule
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent

@@ -6,6 +6,728 @@
 
 ---
 
+## [4.6.3] - 2026-05-29
+
+### 变更类型：Bug 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 SegmentedControl 首次加载时异常触发滑块动画**
+
+1. **修复**：将 `hasInitialized` 标记替换为 `userInteracted`，只有用户真正点击选项时才启用滑块动画，数据加载导致的位置变化一律 snapTo 直接定位，避免首次加载时滑块从错误位置滑动到正确位置
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/ui/theme/SegmentedControl.kt`（hasInitialized → userInteracted，点击回调中设置标记）
+- `app/build.gradle.kts`（versionCode 40602→40603，versionName 4.6.2→4.6.3）
+- `Product-Spec.md`（版本号 4.6.2→4.6.3）
+
+---
+
+## [4.6.2] - 2026-05-29
+
+### 变更类型：UI 优化
+
+### 状态：已实现
+
+### 变更内容
+
+**首页移除 TopAppBar，内容区直接从状态栏下方开始**
+
+1. **移除**：首页 `SmallTopAppBar` 及其滚动吸顶效果（滚动时淡入日期标题），内容区改为 `statusBarsPadding()` 让出系统状态栏空间，日期和周次信息更贴近顶部
+2. **清理**：移除 `MiuixScrollBehavior`、`scrollProgress`、`BlurredBar` 等相关变量和未使用的 import
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（移除 topBar，内容区改用 statusBarsPadding）
+- `app/build.gradle.kts`（versionCode 40601→40602，versionName 4.6.1→4.6.2）
+- `Product-Spec.md`（版本号 4.6.1→4.6.2）
+
+---
+
+## [4.6.1] - 2026-05-29
+
+### 变更类型：Bug 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 `firstVisibleScrollOffset` 属性名拼写错误**
+
+1. **修复**：将 `LazyListState.firstVisibleScrollOffset`（不存在的属性）更正为 `firstVisibleItemScrollOffset`，共 4 处
+2. **涉及**：CourseEditScreen（2 处）、PeriodTimesSettingsScreen（1 处）、AboutScreen（1 处）
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（`firstVisibleScrollOffset` → `firstVisibleItemScrollOffset`，2 处）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（`firstVisibleScrollOffset` → `firstVisibleItemScrollOffset`）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（`firstVisibleScrollOffset` → `firstVisibleItemScrollOffset`）
+- `app/build.gradle.kts`（versionCode 40600→40601，versionName 4.6.0→4.6.1）
+
+---
+
+## [4.6.0] - 2026-05-29
+
+### 变更类型：UI 优化
+
+### 状态：已实现
+
+### 变更内容
+
+**顶栏模糊效果滚动感知优化**
+
+1. **优化**：所有子页面的顶栏模糊效果（BlurredBar）增加滚动感知，页面未滚动时禁用模糊，滚动后启用模糊，减少不必要的性能开销
+2. **涉及**：SettingsScreen、AboutScreen、CourseEditScreen（两个 composable）、SyncSettingsScreen、AcknowledgmentsScreen、LegalScreen、ChangelogScreen、DataManagementScreen、PeriodTimesSettingsScreen、ScheduleSettingsScreen、NotificationSettingsScreen、DisplaySettingsScreen 共 12 个页面的 13 处 BlurredBar 调用
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（新增 `blurEnabled` 变量，BlurredBar 增加 `enabled = blurEnabled`）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（新增 `blurEnabled` 变量，BlurredBar 增加 `enabled = blurEnabled`）
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（CourseEditScreen 和 CourseEditContent 各新增 `blurEnabled`/`editBlurEnabled` 变量，BlurredBar 增加 `enabled` 参数）
+- `app/src/main/java/com/duoschedule/ui/sync/SyncSettingsScreen.kt`（新增 `blurEnabled` 变量，BlurredBar 增加 `enabled = blurEnabled`）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（新增 `blurEnabled` 变量，BlurredBar 增加 `enabled = blurEnabled`）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（新增 `blurEnabled` 变量，BlurredBar 增加 `enabled = blurEnabled`）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（新增 `blurEnabled` 变量，BlurredBar 增加 `enabled = blurEnabled`）
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（新增 `blurEnabled` 变量，BlurredBar 增加 `enabled = blurEnabled`）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（新增 `blurEnabled` 变量，BlurredBar 增加 `enabled = blurEnabled`）
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（新增 `blurEnabled` 变量，BlurredBar 增加 `enabled = blurEnabled`）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（新增 `blurEnabled` 变量，BlurredBar 增加 `enabled = blurEnabled`）
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（新增 `blurEnabled` 变量，BlurredBar 增加 `enabled = blurEnabled`）
+- `app/build.gradle.kts`（versionCode 40500→40600，versionName 4.5.0→4.6.0）
+
+---
+
+## [4.5.0] - 2026-05-29
+
+### 变更类型：UI 优化
+
+### 状态：已实现
+
+### 变更内容
+
+**移除顶栏 Miuix 模糊效果**
+
+1. **优化**：移除首页顶栏的 Miuix blur 模糊效果（`miuixBackdrop`），改用 `backdrop = null`，仅保留 Kyant backdrop 和 Haze 效果，减少不必要的模糊层叠加
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（移除 `miuixBackdrop`、`backgroundColor` 变量定义，`BlurredBar` backdrop 改为 null，移除 `.layerBackdrop(miuixBackdrop)`，移除 miuix blur imports）
+- `app/build.gradle.kts`（versionCode 40403→40500，versionName 4.4.3→4.5.0）
+
+---
+
+## [4.4.3] - 2026-05-29
+
+### 变更类型：UI 优化
+
+### 状态：已实现
+
+### 变更内容
+
+**首页周次信息改为平行两行显示**
+
+1. **优化**：首页顶部周次信息从单行水平排列（`xxx第x周 · yyy第y周`）改为两行垂直排列，每人一行独立显示，各自带有日历图标，提升可读性
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（HeaderSection 周次布局从 Row 改为 Column，每行独立 Row 包含图标和文本）
+- `app/build.gradle.kts`（versionCode 40402→40403，versionName 4.4.2→4.4.3）
+- `Product-Spec.md`（版本号 4.4.2→4.4.3）
+
+---
+
+## [4.4.2] - 2026-05-29
+
+### 变更类型：BUG 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**补充修复遗漏的 rememberLayerBackdrop() onDraw lambda**
+
+4.4.1 版本中遗漏了6处 `rememberLayerBackdrop()` 调用未添加 `onDraw` lambda，导致这些页面的模糊效果仍存在透明区域颜色渗透问题：
+
+- `MainScreen.kt`：1处
+- `SettingsScreen.kt`：1处
+- `AboutScreen.kt`：1处
+- `CourseEditScreen.kt`：2处（CourseEditScreen 和 CourseEditContent）
+- `SyncSettingsScreen.kt`：1处
+
+每处修改：
+- 在 `rememberLayerBackdrop()` 调用前添加 `val backgroundColor = MaterialTheme.colorScheme.surface`
+- 将 `rememberLayerBackdrop()` 改为 `rememberLayerBackdrop { drawRect(backgroundColor); drawContent() }`
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（含 CourseEditScreen 和 CourseEditContent 两处）
+- `app/src/main/java/com/duoschedule/ui/sync/SyncSettingsScreen.kt`
+
+- `app/build.gradle.kts`（versionCode 40401→40402，versionName 4.4.1→4.4.2）
+- `Product-Spec.md`（version 4.4.0→4.4.2）
+
+---
+
+## [4.4.1] - 2026-05-29
+
+### 变更类型：BUG 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 Miuix LayerBackdrop 模糊时透明区域颜色渗透问题**
+
+为所有屏幕页面的 `rememberLayerBackdrop()` 添加 `onDraw` lambda，在绘制内容前先绘制不透明背景色（`MaterialTheme.colorScheme.surface`），避免模糊效果中透明区域（如无背景的文字）导致颜色渗透：
+
+- 在 `rememberLayerBackdrop()` 调用前添加 `val backgroundColor = MaterialTheme.colorScheme.surface`
+- 将 `rememberLayerBackdrop()` 改为 `rememberLayerBackdrop { drawRect(backgroundColor); drawContent() }`
+- 为 AboutScreen.kt 补充 `import androidx.compose.material3.MaterialTheme`
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（含 CourseEditScreen 和 CourseEditContent 两处）
+- `app/src/main/java/com/duoschedule/ui/sync/SyncSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`
+
+---
+
+## [4.4.0] - 2026-05-29
+
+### 变更类型：功能增强
+
+### 状态：已实现
+
+### 变更内容
+
+**将 BlurredBar 的 backdrop 从 kyant LayerBackdrop 迁移到 Miuix LayerBackdrop**
+
+将所有屏幕页面的 BlurredBar 顶栏模糊效果的 backdrop 从 kyant 的 LayerBackdrop 切换为 Miuix 的 LayerBackdrop，同时保留 kyant 的 contentBackdrop 用于底部导航栏：
+
+- 为每个屏幕添加 Miuix 的 `rememberLayerBackdrop()` 创建 `miuixBackdrop`
+- BlurredBar 的 backdrop 参数从 `contentBackdrop`（kyant）改为 `miuixBackdrop`（Miuix）
+- 内容 Box 的 Modifier 链上同时挂载 `kyantLayerBackdrop(contentBackdrop)` 和 `layerBackdrop(miuixBackdrop)`
+- 使用 import alias（`kyantLayerBackdrop` / `kyantRememberLayerBackdrop`）区分 kyant 和 Miuix 同名函数
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（含 CourseEditScreen 和 CourseEditContent 两个 Composable）
+- `app/src/main/java/com/duoschedule/ui/sync/SyncSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`
+
+---
+
+## [4.3.3] - 2026-05-29
+
+### 变更类型：BUG 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复深色模式下背景显示白色的问题**
+
+当用户手动设置深色模式而系统处于浅色模式时，Miuix 组件（Scaffold、SmallTopAppBar 等）和部分代码仍使用系统主题判断，导致背景显示白色：
+
+- 在 `MainActivity.kt` 中使用 `MiuixTheme(colors = ...)` 包裹内容，使 Miuix 组件跟随应用的深色模式设置
+- 将 `BgEffectBackground.kt` 中的 `isSystemInDarkTheme()` 替换为 `LocalDarkTheme.current`
+- 将 `AboutScreen.kt` 中的 `isSystemInDarkTheme()` 替换为 `LocalDarkTheme.current`
+- 将 `GlassSlider.kt` 中的 `isSystemInDarkTheme()` 替换为 `LocalDarkTheme.current`
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/MainActivity.kt`（添加 MiuixTheme 包裹）
+- `app/src/main/java/com/duoschedule/ui/theme/BgEffectBackground.kt`（替换 isSystemInDarkTheme）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（替换 isSystemInDarkTheme）
+- `app/src/main/java/com/duoschedule/ui/theme/GlassSlider.kt`（替换 isSystemInDarkTheme）
+
+---
+
+## [4.3.2] - 2026-05-28
+
+### 变更类型：BUG 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**重构顶栏模糊效果：从 Haze 软件渲染迁移到 kyant drawBackdrop + blur 硬件加速模糊**
+
+Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感），迁移到项目已有的 kyant `drawBackdrop` + `blur` 方案。该方案基于 `RuntimeShader` 硬件加速，与项目中 LiquidGlass 组件（GlassCard 等）使用同一套渲染管线，效果更接近系统级毛玻璃：
+
+- 移除 `hazeEffect` + `blurEffect` + `HazeMaterials.thick()`：Haze 软件渲染模糊
+- 改用 `Modifier.drawBackdrop(backdrop, shape, effects = { colorControls + blur(80.dp) }, onDrawSurface = { drawRect(tint) })`：kyant 硬件加速模糊
+- `blur(80.dp.toPx())`：对齐 AOSP 推荐的毛玻璃模糊半径（80px）
+- `colorControls(brightness, saturation = 1.3f)`：增强色彩饱和度，让模糊区域更有质感
+- `onDrawSurface` 绘制半透明 tint 层：浅色主题白色 70% 不透明度，深色主题黑色 70% 不透明度
+- 保留 `hazeState` 参数签名（兼容现有调用点），但 BlurredBar 内部不再使用 Haze
+- 移除不再需要的 `lightBarBlendColors`/`darkBarBlendColors`、`BlurColors`/`textureBlur` import
+
+### 修改文件
+
+- `app/build.gradle.kts`（versionCode 40301→40302，versionName 4.3.1→4.3.2）
+- `Product-Spec.md`（version 4.3.0→4.3.2）
+- `app/src/main/java/com/duoschedule/ui/theme/Components.kt`（BlurredBar 从 Haze 迁移到 drawBackdrop + blur + 清理无用变量和 import）
+
+---
+
+## [4.3.1] - 2026-05-28
+
+### 变更类型：BUG 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复顶栏模糊效果渐进出现的问题**
+
+原实现中 `BlurredBar` 通过 `blurEnabled` 参数条件性启用模糊，导致模糊效果随滚动渐进出现。修改为始终启用模糊效果，配合 `backgroundColor` 提供一致的毛玻璃视觉：
+
+- 移除 `BlurredBar` 的 `blurEnabled` 参数，模糊效果始终以最大强度（20dp）渲染
+- 添加 `backgroundColor = surfaceColor.copy(alpha = 0.7f)` 确保无内容在顶栏后方时也有毛玻璃效果
+- 移除 `TopBarBlurState` 和 `rememberTopBarBlurState`（不再需要）
+- 清理所有页面中 `blurState`、`blurActive`、`barColor`、`scrollProgress` 等不再使用的变量
+- `SmallTopAppBar` 的 `color` 统一改为 `Color.Transparent`
+
+### 修改文件
+
+- `app/build.gradle.kts`（versionCode 40300→40301，versionName 4.3.0→4.3.1）
+- `Product-Spec-CHANGELOG.md`（新增 4.3.1 变更记录）
+- `app/src/main/java/com/duoschedule/ui/theme/Components.kt`
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/sync/SyncSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`
+
+---
+
+## [4.3.0] - 2026-05-28
+
+### 变更类型：BUG 修复 + 重构
+
+### 状态：已实现
+
+### 变更内容
+
+**1. 修复 BlurredBar 模糊色调不适配深色模式**
+
+修复 BlurredBar 在深色模式下使用固定白色 tint 导致模糊区域发白的问题。现在根据 `LocalDarkTheme` 自动切换：
+- 浅色模式：`Color.White.copy(alpha = 0.1f)`（保持原有行为）
+- 深色模式：`Color.Black.copy(alpha = 0.2f)`（深色色调，避免白色泛光）
+
+**2. 新增 TopBarBlurState 统一顶栏模糊状态管理**
+
+新增 `TopBarBlurState` 数据类和 `rememberTopBarBlurState` 组合函数，替代 14 个页面中重复且不一致的 blurActive/barColor 计算逻辑：
+- `blurActive`：统一为 `scrollProgress >= 0.3f`（原 MainScreen 用 `> 0f`，设置页用 `>= 0.5f`，AboutScreen 用 `== 1f`）
+- `barColor`：统一为 `Color.Transparent`（修复原逻辑中 `scrollProgress >= 0.5f` 死分支永远不执行的问题）
+
+**3. 统一所有页面使用 rememberTopBarBlurState**
+
+将 MainScreen、SettingsScreen、DisplaySettingsScreen、NotificationSettingsScreen、ScheduleSettingsScreen、PeriodTimesSettingsScreen、DataManagementScreen、AboutScreen、ChangelogScreen、LegalScreen、AcknowledgmentsScreen、SyncSettingsScreen、CourseEditScreen（2 处）中的内联 blurActive/barColor 计算替换为 `rememberTopBarBlurState(scrollProgress)`。
+
+### 修改文件
+
+- `app/build.gradle.kts`（versionCode 40202→40300，versionName 4.2.2→4.3.0）
+- `Product-Spec-CHANGELOG.md`（新增 4.3.0 变更记录）
+- `app/src/main/java/com/duoschedule/ui/theme/Components.kt`（BlurredBar tint 适配深色主题；新增 TopBarBlurState 和 rememberTopBarBlurState）
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/sync/SyncSettingsScreen.kt`
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`
+
+---
+
+## [4.2.2] - 2026-05-28
+
+### 变更类型：BUG 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 Android Lint 检查发现的 12 个错误**
+
+1. **NewApi 错误修复（8 个）**：BgEffectPainter 及其相关方法（updateResolution、updateBoundIfNeeded、updatePresetIfNeeded、updateColors、updateAnimTime、updatePointsAnim、brush）标注 `@RequiresApi(33)`，在 BgEffectBackground 和 BgEffectModifier 中添加 `@SuppressLint("NewApi")` 注解，因为这些调用已被 `isRuntimeShaderSupported()` 运行时检查保护
+2. **RemoteViewLayout 错误修复（2 个）**：将 widget_today_courses 布局中的 `<View>` 替换为 `<ImageView>`，因为 RemoteViews 不允许使用 `View` 组件
+3. **NonObservableLocale 错误修复（1 个）**：将 NotificationSettingsScreen 中 `java.util.Locale.getDefault()` 替换为 `LocalLocale.current.platformLocale`，确保 Compose 重组时能正确响应 Locale 变化
+4. **UnspecifiedRegisterReceiverFlag 错误修复（1 个）**：将 FairRunReceiver.java 中的手动 API 版本分支注册替换为 `ContextCompat.registerReceiver()`，自动处理 RECEIVER_EXPORTED 标志
+
+### 修改文件
+
+- `app/build.gradle.kts`（versionCode 40201→40202，versionName 4.2.1→4.2.2）
+- `Product-Spec.md`（版本号 4.1.0→4.2.2）
+- `Product-Spec-CHANGELOG.md`（新增 4.2.2 变更记录）
+- `app/src/main/java/com/duoschedule/ui/theme/BgEffectBackground.kt`（添加 @SuppressLint("NewApi")）
+- `app/src/main/java/com/duoschedule/ui/theme/BgEffectModifier.kt`（添加 @SuppressLint("NewApi")）
+- `app/src/main/res/layout/widget_today_courses.xml`（View→ImageView）
+- `app/src/main/res/layout-night/widget_today_courses.xml`（View→ImageView）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（Locale.getDefault()→LocalLocale.current.platformLocale）
+- `app/src/main/java/com/duoschedule/notification/FairRunReceiver.java`（使用 ContextCompat.registerReceiver）
+
+---
+
+## [4.2.1] - 2026-05-28
+
+### 变更类型：BUG 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**优化法律信息页面布局**
+
+1. **移除 SettingsSection 大卡片包裹**：不再将所有条款挤在单个 GlassCard 中
+2. **每个条款使用独立 miuix Card**：形成清晰的视觉分组，Card 间距 8dp
+3. **条款标题视觉增强**：`titleSmall` + `SemiBold` + 主色，与内容文本形成层次
+4. **内容文本行高优化**：行高 1.6 倍，提升长文本阅读体验
+5. **子条款重设计**：左侧竖线指示器（3dp 宽、主色 30% 透明度、圆角）替代圆点前缀，子条款间使用 Separator 分隔
+6. **页面整体布局**：板块标题独立样式、引言区域不在 Card 内、水平 padding 20dp、板块间 32dp 间距
+7. **新增 LegalSectionWithSubSections 组件**：统一管理带子条款的条款卡片
+
+### 修改文件
+
+- `app/build.gradle.kts`（versionCode 40200→40201，versionName 4.2.0→4.2.1）
+- `Product-Spec-CHANGELOG.md`（新增 4.2.1 变更记录）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（完全重写布局和组件）
+
+---
+
+## [4.2.0] - 2026-05-28
+
+### 变更类型：小变更
+
+### 状态：已实现
+
+### 变更内容
+
+**依照法律要求重写用户协议和隐私政策**
+
+1. **用户协议重写**：从 3 条简略条款扩展为 9 条结构化条款，涵盖服务说明、开源许可、用户义务、知识产权、免责声明、责任限制、协议修改、法律适用与争议解决、联系方式
+2. **隐私政策重写**：从 4 条简略条款扩展为 10 条结构化条款，涵盖信息收集原则、不收集的信息清单、权限使用详述（7 项权限逐一说明）、数据使用方式、数据存储与安全、第三方服务（更新检查/WebDAV/教务导入）、用户权利（查阅/更正/删除/导出/撤回同意）、未成年人保护、政策更新、联系方式
+3. **新增 LegalSubSection 组件**：用于嵌套子条款渲染（权限详情、第三方服务详情），左缩进 + 圆点前缀样式
+4. **协议文本注明最后更新日期和联系方式**：GitHub Issues 作为联系渠道
+
+### 修改文件
+
+- `app/build.gradle.kts`（versionCode 40100→40200，versionName 4.1.0→4.2.0）
+- `Product-Spec-CHANGELOG.md`（新增 4.2.0 变更记录）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（完全重写法律文本内容，新增 LegalSubSection 组件）
+
+---
+
+## [4.1.0] - 2026-05-28
+
+### 变更类型：小变更
+
+### 状态：已实现
+
+### 变更内容
+
+**补齐液态玻璃组件透过效果**
+
+1. **BlurredBar**：添加 `backdrop: Backdrop? = null` 参数，当 backdrop 不为 null 时通过 `CompositionLocalProvider(LocalBackdrop provides backdrop)` 提供给子组件，使顶栏玻璃按钮能透过显示下方内容
+2. **各 Screen 内容区域**：在所有使用 BlurredBar + GlassSymbolIconButton 的 Screen 中，添加 `layerBackdrop(contentBackdrop)` 修饰符到 hazeSource Box，并将 contentBackdrop 传递给 BlurredBar
+3. **GlassAlert 取消按钮**：移除 `.clip(Capsule()).background(containerColor.copy(0.2f))`，替换为 `drawBackdrop` 玻璃效果
+4. **GlassAlert 确认按钮**：移除 `.clip(Capsule()).background(...)`，替换为 `drawBackdrop` 玻璃效果，使用 `BlendMode.Hue` 色调叠加
+5. **GlassTextField 背景**：移除 `Modifier.background(backgroundColor, shape)`，替换为 `drawBackdrop` 玻璃效果
+6. **SegmentedControl 外层容器**：移除 `.clip().background(backgroundColor)`，替换为 `drawBackdrop` 玻璃效果
+
+### 修改文件
+
+- `app/build.gradle.kts`（versionCode 40002→40100，versionName 4.0.2→4.1.0）
+- `Product-Spec-CHANGELOG.md`（新增 4.1.0 变更记录）
+- `app/src/main/java/com/duoschedule/ui/theme/Components.kt`（BlurredBar 添加 backdrop 参数）
+- `app/src/main/java/com/duoschedule/ui/theme/LiquidGlass.kt`（GlassAlert 按钮、GlassTextField 背景替换为 drawBackdrop）
+- `app/src/main/java/com/duoschedule/ui/theme/SegmentedControl.kt`（外层容器替换为 drawBackdrop）
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（添加 LayerBackdrop 支持）
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（添加 LayerBackdrop 支持）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（添加 LayerBackdrop 支持，import alias）
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（添加 LayerBackdrop 支持）
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（添加 LayerBackdrop 支持）
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（添加 LayerBackdrop 支持）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（添加 LayerBackdrop 支持）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（添加 LayerBackdrop 支持）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（添加 LayerBackdrop 支持）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（添加 LayerBackdrop 支持）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（添加 LayerBackdrop 支持）
+- `app/src/main/java/com/duoschedule/ui/sync/SyncSettingsScreen.kt`（添加 LayerBackdrop 支持）
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（两处 BlurredBar 添加 LayerBackdrop 支持）
+
+---
+
+## [4.0.2] - 2026-05-28
+
+### 变更类型：BUG 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**BlurredBar 组件替换 CupertinoMaterials 为 HazeBlurStyle**
+
+1. **移除**：`CupertinoMaterials.thin()` 引用，不再依赖 haze-blur-materials 模块的 Cupertino 风格预设
+2. **替换**：使用 `HazeBlurStyle(blurRadius = 20.dp, colorEffects = listOf(HazeColorEffect.tint(Color.White.copy(alpha = 0.1f))))` 自定义模糊风格
+3. **修改**：`endIntensity` 从 `0.02f` 改为 `0f`，实现完全透明的渐变终点
+4. **移除**：BlurredBar 的 `.padding(bottom = 24.dp)` 修饰符
+5. **更新**：import 部分，移除 `CupertinoMaterials`，添加 `HazeBlurStyle` 和 `HazeColorEffect`
+
+### 修改文件
+
+- `app/build.gradle.kts`（versionCode 40000→40002，versionName 4.0.0→4.0.2）
+- `Product-Spec-CHANGELOG.md`（版本号 4.0.1→4.0.2）
+- `app/src/main/java/com/duoschedule/ui/theme/Components.kt`（BlurredBar 组件重写模糊风格实现）
+
+---
+
+## [4.0.1] - 2026-05-28
+
+### 变更类型：BUG 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 BlurredBar 适配导致的编译错误**
+
+1. **修复**：CourseEditScreen.kt 移除 CompositionLocalProvider 时误删闭合大括号，导致函数体未正确关闭，后续所有函数变为 local function，private 修饰符不可用，CourseEditContent 等引用无法解析
+2. **修复**：AboutScreen.kt 仍引用已移除的 `rememberBlurBackdrop()`，替换为 miuix 的 `rememberLayerBackdrop` API（`top.yukonga.miuix.kmp.blur.rememberLayerBackdrop`），返回正确的 `LayerBackdrop` 类型
+3. **修复**：ConflictResolutionDialog.kt 缺少 `import androidx.compose.ui.unit.dp`
+4. **连带修复**：ScheduleScreen.kt 中 `CourseEditContent` 未解析引用（因 CourseEditScreen.kt 结构修复后自动解决）
+
+### 修改文件
+
+- `app/build.gradle.kts`（versionCode 40000→40001，versionName 4.0.0→4.0.1）
+- `Product-Spec.md`（版本号 4.0.0→4.0.1）
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（补全 CourseEditScreen 函数 Scaffold content lambda 的闭合大括号）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（替换 rememberBlurBackdrop 为 miuix rememberLayerBackdrop，添加 LayerBackdrop/rememberLayerBackdrop 导入）
+- `app/src/main/java/com/duoschedule/ui/sync/ConflictResolutionDialog.kt`（添加 dp 导入）
+
+---
+
+## [4.0.0] - 2026-05-28
+
+### 变更类型：BREAKING 变更
+
+### 状态：已实现
+
+### 变更内容
+
+**升级 Haze 模糊效果为通透 iOS 风格**
+
+1. **BREAKING**：升级 Haze 依赖从 1.7.2 → 2.0.0-alpha02，新增 `haze-blur` 模块依赖
+2. **重写**：BlurredBar 组件使用 Haze 2.x 的 `blurEffect {}` API，使用 `CupertinoMaterials.thin()` 作为默认模糊风格
+3. **优化**：设置 `noiseFactor = 0f` 去掉噪点（磨砂感），使用 `HazeProgressive.verticalGradient` 实现渐变过渡
+4. **移除**：`LocalHazeState` 和 `rememberHazeState()` 自定义封装，直接使用 Haze 原生 API
+5. **移除**：`textureBlur` fallback 分支（miuix-blur），Haze 2.x 已支持所有 Android 版本
+6. **移除**：所有页面中的 `CompositionLocalProvider(LocalHazeState provides hazeState)` 包裹层
+7. **修改**：`BlurredBar(null, blurActive)` 改为 `BlurredBar(hazeState, blurActive)`，直接传递 hazeState 参数
+
+### 修改文件
+
+- `app/build.gradle.kts`（升级 Haze 依赖，新增 haze-blur 模块，versionCode → 40000，versionName → 4.0.0）
+- `app/src/main/java/com/duoschedule/ui/theme/Components.kt`（重写 BlurredBar，移除 LocalHazeState/rememberHazeState/textureBlur）
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（移除 CompositionLocalProvider，适配新 BlurredBar）
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（同上）
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（同上）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（同上）
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（同上）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（同上）
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（同上）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（同上）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（同上）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（同上）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（同上）
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（同上，2处 BlurredBar）
+- `Product-Spec.md`（版本号 → 4.0.0）
+
+---
+
+## [3.10.1] - 2026-05-28
+
+### 变更类型：小变更
+
+### 状态：已实现
+
+### 变更内容
+
+**同步冲突对话框改用 Glass 设计语言**
+
+1. **替换**：将 Material3 `AlertDialog` 替换为项目自定义 `GlassConfirmDialog`，统一玻璃拟态风格
+2. **替换**：将 Material3 `Card` 替换为 `Separator` 分隔线布局，更贴合 iOS 风格
+3. **替换**：将 Material3 `RadioButton` 替换为 `GlassSelectableChip`，使用 `FlowRow` 排列选项
+4. **新增**：使用 `getLabelsVibrantPrimary/Secondary/Tertiary()` 替代 Material3 颜色
+5. **新增**：使用 `BrandColors.Primary` 作为选中颜色
+6. **新增**：`LaunchedEffect` 初始化所有非 BOTH_DELETED 项默认选择 KEEP_LOCAL
+7. **新增**：`CourseSummaryText` 组件根据选择动态显示课程摘要信息
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/sync/ConflictResolutionDialog.kt`（全面重写，Material3→Glass 设计语言）
+- `app/build.gradle.kts`（versionCode 31001→31100，versionName 3.10.1→3.11.0）
+
+---
+
+## [3.10.1] - 2026-05-28
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**适配新的 BlurredBar API**
+
+1. **移除**：移除 `com.duoschedule.ui.theme.rememberBlurBackdrop` 导入，改用 `dev.chrisbanes.haze.rememberHazeState`
+2. **移除**：移除 `CompositionLocalProvider(LocalHazeState provides hazeState)` 包裹，不再需要通过 CompositionLocal 传递 HazeState
+3. **修改**：将 `BlurredBar(null, blurActive)` 改为 `BlurredBar(hazeState, blurActive)`，直接传入 hazeState 参数
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（移除旧导入、移除 CompositionLocalProvider 包裹、BlurredBar 参数变更）
+- `app/build.gradle.kts`（versionCode 31000→31001，versionName 3.10.0→3.10.1）
+- `Product-Spec.md`（版本号 3.10.0→3.10.1）
+
+---
+
+## [3.10.0] - 2026-05-28
+
+### 变更类型：新增功能
+
+### 状态：已实现
+
+### 变更内容
+
+**新增同步冲突解决对话框（ConflictResolutionDialog）**
+
+1. **新增**：创建 `ConflictResolutionDialog` 组件，用于在同步检测到冲突时展示冲突课程列表并让用户选择解决方案
+2. **支持四种冲突类型**：双方修改（BOTH_MODIFIED）、本地删除云端修改（LOCAL_DELETED_CLOUD_MODIFIED）、本地修改云端删除（LOCAL_MODIFIED_CLOUD_DELETED）、双方删除（BOTH_DELETED）
+3. **支持三种解决选项**：保留本地（KEEP_LOCAL）、保留云端（KEEP_CLOUD）、保留两者（KEEP_BOTH）
+4. **根据冲突类型显示不同的选项组合**：双方修改时显示三个选项，单方删除时显示两个选项，双方删除时仅提示
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/sync/ConflictResolutionDialog.kt`（新增文件）
+- `app/build.gradle.kts`（versionCode 30900→31000，versionName 3.9.0→3.10.0）
+- `Product-Spec.md`（版本号 3.9.0→3.10.0）
+
+---
+
+## [3.9.0] - 2026-05-28
+
+### 变更类型：功能优化
+
+### 状态：已实现
+
+### 变更内容
+
+**移除二级界面 SmallTopAppBar 标题文字**
+
+1. **移除**：将所有二级界面 SmallTopAppBar 的 title 设为空字符串 ""，仅保留返回按钮和操作按钮，titleColor 渐变逻辑和 barColor 逻辑不变
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（title "显示设置" → ""）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（title "通知设置" → ""）
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（title "课表设置" → ""）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（title "${personName}的时间设置" → ""）
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（title "数据管理" → ""）
+- `app/src/main/java/com/duoschedule/ui/settings/LegalScreen.kt`（title "法律信息" → ""）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（title "更新日志" → ""）
+- `app/src/main/java/com/duoschedule/ui/settings/AcknowledgmentsScreen.kt`（title "开源致谢" → ""）
+- `app/src/main/java/com/duoschedule/ui/settings/AboutScreen.kt`（title "关于" → ""）
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（2处 title "编辑课程"/"添加课程" → ""）
+- `app/build.gradle.kts`（versionCode 30801→30900，versionName 3.8.1→3.9.0）
+- `Product-Spec.md`（版本号 3.8.1→3.9.0）
+
+---
+
+## [3.8.1] - 2026-05-28
+
+### 变更类型：功能优化
+
+### 状态：已实现
+
+### 变更内容
+
+**设置页面添加页面内大标题**
+
+1. **新增**：SettingsScreen 页面内容顶部添加"设置"大标题（headlineLarge 加粗），未滚动时标题始终可见，上滑时顶栏标题渐显并伴随模糊效果
+
+### 修改文件
+
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（添加页面内"设置"大标题）
+- `app/build.gradle.kts`（versionCode 30800→30801，versionName 3.8.0→3.8.1）
+- `Product-Spec.md`（版本号 3.8.0→3.8.1）
+
+---
+
+## [3.8.0] - 2026-05-28
+
+### 变更类型：功能优化
+
+### 状态：已实现
+
+### 变更内容
+
+**更新日志仅保留 app 本身相关条目，移除 CI/Git/GitHub/Gitee 相关条目**
+
+1. **移除**：删除 8 个纯 CI/Git/GitHub/Gitee 相关的版本条目（3.2.4, 3.2.3, 3.1.0, 3.0.3, 3.0.1, 3.0.0, 1.16.0, 1.15.0），这些条目仅涉及 GitHub Actions 工作流、Gitee 镜像、阿里云镜像源、jsDelivr CDN、ServerChan 通知等与 app 本身无关的变更
+2. **修改**：1.16.3 条目摘要从"修复应用内更新安装 APK 崩溃 + 优化更新日志和 ServerChan 通知格式"改为"修复应用内更新安装 APK 崩溃"，去掉 ServerChan 通知部分
+3. **重新生成**：运行 generate_changelog.py 重新生成 ChangelogData.kt，app 内更新日志页面不再显示 CI 相关条目
+
+### 修改文件
+
+- `Product-Spec-CHANGELOG.md`（删除 8 个 CI 相关条目，修改 1.16.3 摘要）
+- `app/src/main/java/com/duoschedule/ui/settings/ChangelogData.kt`（重新生成，从 74 条减少到 66 条）
+- `app/build.gradle.kts`（versionCode 30600→30800，versionName 3.6.0→3.8.0）
+- `Product-Spec.md`（版本号 3.6.0→3.8.0）
+
+---
+
 ## [3.7.0] - 2026-05-27
 
 ### 变更类型：UI 重构
@@ -410,61 +1132,6 @@
 
 ---
 
-## [3.2.4] - 2026-05-20
-
-### 变更类型：Bug修复
-
-### 状态：已实现
-
-### 变更内容
-
-**更新日志自动生成与国内源配置优化**
-
-1. **新增**：创建 `scripts/generate_changelog.py` 脚本，从 Product-Spec-CHANGELOG.md 自动解析版本条目生成 ChangelogData.kt，app 内更新日志不再手动维护
-2. **新增**：CI 工作流（release.yml）构建前自动运行生成脚本，确保更新日志始终与变更记录同步
-3. **新增**：CI 构建时自动切换 Gradle 下载源为官方源、移除阿里云镜像配置，本地开发保留国内源加速
-4. **修复**：生成脚本中摘要文本包含双引号时未转义导致 Kotlin 编译失败
-5. **修复**：恢复 settings.gradle.kts 中的阿里云镜像配置和 gradle-wrapper.properties 的腾讯云镜像，本地构建使用国内源加速
-6. **修复**：删除旧的 `~/.gradle/init.gradle`（与 FAIL_ON_PROJECT_REPOS 冲突），改为在 settings.gradle.kts 中直接配置阿里云镜像
-
-### 修改文件
-
-- `scripts/generate_changelog.py`（新增，更新日志自动生成脚本）
-- `app/src/main/java/com/duoschedule/ui/settings/ChangelogScreen.kt`（移除硬编码数据，使用生成的 ChangelogData）
-- `.github/workflows/release.yml`（新增生成脚本步骤、源切换步骤、阿里云移除步骤，步骤名改中文）
-- `settings.gradle.kts`（恢复阿里云镜像配置）
-- `gradle/wrapper/gradle-wrapper.properties`（恢复腾讯云 Gradle distribution 镜像）
-- `.gitignore`（添加 ChangelogData.kt）
-- `app/build.gradle.kts`（versionCode 30203→30204，versionName 3.2.3→3.2.4）
-- `Product-Spec.md`（版本号 3.2.3→3.2.4）
-- `Product-Spec-CHANGELOG.md`（添加变更记录）
-
----
-
-## [3.2.3] - 2026-05-20
-
-### 变更类型：Bug修复
-
-### 状态：已实现
-
-### 变更内容
-
-**修复 CI 构建失败：移除阿里云镜像配置**
-
-1. **修复**：移除 settings.gradle.kts 中的阿里云镜像源，阿里云镜像在 CI（GitHub Actions）上返回错误响应导致 Gradle 无法解析插件（如 KSP 2.3.6），干扰仓库回退机制
-2. **修复**：恢复 gradle-wrapper.properties 中 Gradle distribution 的原始下载地址（services.gradle.org），CI 环境可直接访问
-3. **说明**：本地开发如需国内镜像加速，请在 `~/.gradle/init.gradle` 中配置阿里云镜像
-
-### 修改文件
-
-- `settings.gradle.kts`（移除阿里云镜像源配置）
-- `gradle/wrapper/gradle-wrapper.properties`（恢复 Gradle 原始下载地址）
-- `app/build.gradle.kts`（versionCode 30202→30203，versionName 3.2.2→3.2.3）
-- `Product-Spec.md`（版本号 3.2.2→3.2.3）
-- `Product-Spec-CHANGELOG.md`（添加变更记录）
-
----
-
 ## [3.2.2] - 2026-05-20
 
 ### 变更类型：功能优化
@@ -585,60 +1252,6 @@
 
 ---
 
-## [3.1.0] - 2026-05-20
-
-### 变更类型：功能增强
-
-### 状态：已实现
-
-### 变更内容
-
-**重新梳理 Gitee 仓库与自动打包 APK 工作流**
-
-1. **新增**：`scripts/cleanup_gitee_update_repo.py` 脚本，用于清理 Gitee `su-zijie21/duoschedule-update` 仓库中除 `update.json` 以外的所有文件（该仓库错误上传了项目源代码）
-2. **重构**：`update_repo.py` 移除 `USE_GITEE` 环境变量依赖，改为自动检测 `GITEE_TOKEN` 是否存在来决定是否更新 Gitee `update.json`
-3. **新增**：`update_repo.py` 支持 `GITEE_RELEASE_SUCCESS` 环境变量，Gitee Release 创建失败时 Gitee `update.json` 的 downloadUrl 自动回退到 GitHub Release URL，避免用户获取到 404 下载链接
-4. **重构**：`release.yml` Gitee Release 步骤输出创建结果（`success=true/false`），传递给 `update_repo.py` 步骤
-5. **优化**：ServerChan 通知在 Gitee Release 失败时提示 downloadUrl 已回退到 GitHub
-6. **清理**：移除项目根目录残留的 `update.json` 文件，`.gitignore` 添加 `update.json` 条目
-
-### 修改文件
-
-- `scripts/cleanup_gitee_update_repo.py`（新增 Gitee 更新仓库清理脚本）
-- `scripts/update_repo.py`（移除 USE_GITEE 依赖，新增 GITEE_RELEASE_SUCCESS 联动逻辑）
-- `.github/workflows/release.yml`（Gitee Release 输出结果，传递给 update_repo.py，移除 USE_GITEE，ServerChan 通知增强）
-- `.gitignore`（添加 update.json 条目）
-- `app/build.gradle.kts`（versionCode 30003→30100，versionName 3.0.3→3.1.0）
-- `Product-Spec.md`（版本号 3.0.3→3.1.0）
-- `Product-Spec-CHANGELOG.md`（添加变更记录）
-
----
-
-## [3.0.3] - 2026-05-20
-
-### 变更类型：Bug修复
-
-### 状态：已实现
-
-### 变更内容
-
-**修复 Gitee API 认证方式错误 + jsDelivr CDN 缓存刷新**
-
-1. **修复**：update_repo.py 对 Gitee API 使用了 GitHub 的 `Authorization: token` 头认证，但 Gitee API 需要使用 `access_token` 查询参数和请求体字段认证，导致 Gitee update.json 更新一直失败
-2. **新增**：update_repo.py 更新 GitHub update.json 后自动刷新 jsDelivr CDN 缓存（访问 purge.jsdelivr.net），避免 app 从 CDN 获取到过时的更新信息
-3. **重构**：update_repo.py 拆分为 `update_github()` 和 `update_gitee()` 两个独立函数，分别使用各自平台正确的认证方式
-4. **修复**：Gitee Release 仓库名大小写错误，代码中写的是 `DuoSchedule`（大写），实际 Gitee 仓库名为 `duoschedule`（全小写），导致 downloadUrl 指向不存在的仓库
-
-### 修改文件
-
-- `scripts/update_repo.py`（拆分 GitHub/Gitee 更新函数，修复 Gitee 认证方式，新增 jsDelivr CDN 缓存刷新，修复 Gitee 仓库名大小写）
-- `.github/workflows/release.yml`（Gitee Release API URL 仓库名 DuoSchedule → duoschedule）
-- `app/build.gradle.kts`（versionCode 30002→30003，versionName 3.0.2→3.0.3）
-- `Product-Spec.md`（版本号 3.0.2→3.0.3）
-- `Product-Spec-CHANGELOG.md`（添加变更记录）
-
----
-
 ## [3.0.2] - 2026-05-20
 
 ### 变更类型：Bug修复
@@ -663,61 +1276,6 @@
 
 ---
 
-## [3.0.1] - 2026-05-20
-
-### 变更类型：Bug修复
-
-### 状态：已实现
-
-### 变更内容
-
-**修复 GitHub Actions 构建流程 + 添加 Gitee 镜像发布**
-
-1. **修复**：修正 GitHub Actions 工作流中的版本号验证公式，与实际使用的公式 `MAJOR × 10000 + MINOR × 100 + PATCH` 保持一致
-2. **修复**：修复 GitHub Actions 构建时密钥库路径错误，解决 `validateSigningRelease` 任务失败问题
-3. **新增**：添加 Gitee 镜像支持，应用发布时自动上传 APK 到 Gitee Release 并更新 `update.json`，国内用户可从 Gitee 快速获取更新
-4. **新增**：应用内更新检查支持双服务器故障转移（优先 Gitee，失败时自动切换到 GitHub CDN）
-5. **优化**：ServerChan 通知增加 Gitee Release 状态追踪
-
-### 修改文件
-
-- `app/build.gradle.kts`（versionCode 116003→30001，versionName 1.16.3→3.0.1）
-- `.github/workflows/release.yml`（修正版本号验证公式；修复密钥库路径；新增 Gitee Release 步骤；通知增加 Gitee 状态）
-- `scripts/update_repo.py`（重写为支持 Gitee API 更新 update.json）
-- `app/src/main/java/com/duoschedule/data/update/AppUpdateChecker.kt`（添加双服务器故障转移机制）
-- `Product-Spec-CHANGELOG.md`（统一版本号计算公式，添加变更记录）
-
----
-
----
-
-## [3.0.0] - 2026-05-20
-
-### 变更类型：重大变更
-
-### 状态：已实现
-
-### 变更内容
-
-**统一版本号计算规则 + 修复 GitHub Actions 构建签名错误**
-
-1. **BREAKING**：版本号计算公式统一为 `versionCode = MAJOR × 10000 + MINOR × 100 + PATCH`，确保 versionCode 与 versionName 视觉对应关系直观（如 3.0.0 → 30000，12.12.12 → 121212）
-2. **修复**：修正 GitHub Actions 工作流中的版本号验证公式，与实际使用的公式保持一致
-3. **修复**：修复 GitHub Actions 构建时密钥库路径错误（`app/app/keystore` → `app/keystore`），解决 `validateSigningRelease` 任务失败问题
-4. **新增**：添加 Gitee 镜像支持，应用发布时自动更新 Gitee `update.json`（需要配置 `USE_GITEE=true` 和 `GITEE_TOKEN`），国内用户可从 Gitee 快速获取更新；应用内更新检查支持双服务器故障转移（优先 Gitee，失败时自动切换到 GitHub CDN）
-
-### 修改文件
-
-- `app/build.gradle.kts`（versionCode 更新为 30000，versionName 更新为 3.0.0）
-- `.github/workflows/release.yml`（修正版本号验证错误消息中的公式；修复密钥库路径配置）
-- `scripts/update_repo.py`（添加 Gitee 镜像支持）
-- `app/src/main/java/com/duoschedule/data/update/AppUpdateChecker.kt`（添加双服务器故障转移机制，优先 Gitee）
-- `Product-Spec-CHANGELOG.md`（统一版本号计算公式，添加本次变更记录）
-
----
-
----
-
 ## [1.16.3] - 2026-05-19
 
 ### 变更类型：Bug修复
@@ -726,72 +1284,18 @@
 
 ### 变更内容
 
-**修复应用内更新安装 APK 崩溃 + 优化更新日志和 ServerChan 通知格式**
+**修复应用内更新安装 APK 崩溃**
 
 1. **修复**：AndroidManifest.xml 添加 REQUEST_INSTALL_PACKAGES 权限声明，修复安装 APK 时 SecurityException 崩溃
-2. **优化**：changelog 提取去除 Markdown 特征（加粗标记、标题符号、变更类型/内容标签），输出纯文本
-3. **优化**：ServerChan 通知使用 Markdown 兼容换行（行尾双空格），确保正确分行显示
 
 ### 修改文件
 
 - `AndroidManifest.xml`（新增 REQUEST_INSTALL_PACKAGES 权限声明）
-- `.github/workflows/release.yml`（优化 changelog 提取和 ServerChan 通知格式）
 - `app/build.gradle.kts`（versionCode 116001→116003，versionName 1.16.1→1.16.3）
 - `Product-Spec.md`（版本号 1.16.1→1.16.3）
 - `Product-Spec-CHANGELOG.md`（更新变更记录）
 
 ---
-
----
-
-## [1.16.0] - 2026-05-19
-
-### 变更类型：功能增强
-
-### 状态：已实现
-
-### 变更内容
-
-**重写 GitHub Actions 发布工作流与版本号计算规则**
-
-1. **BREAKING**：版本号计算公式从 `MAJOR × 10000 + MINOR × 1000 + PATCH` 改为 `MAJOR × 100000 + MINOR × 1000 + PATCH`，使 versionCode 与 versionName 视觉对应关系更直观（如 2.06.06 → 206006）
-2. **新增**：工作流自动从 versionName 计算 versionCode，并校验与 build.gradle.kts 中声明的一致，不一致时构建失败
-3. **优化**：将版本信息提取和 changelog 提取拆分为独立步骤，changelog 提取失败时使用默认文案兜底
-4. **优化**：GitHub Release 步骤和更新仓库步骤添加 step id，支持状态追踪
-5. **新增**：更新仓库步骤添加 `continue-on-error: true`，失败不阻塞后续通知
-6. **增强**：ServerChan 通知改为汇总模式，分别报告 APK 构建、Release 创建、更新仓库三个步骤的独立状态（✅成功/❌失败/⏭️跳过），包含版本号（versionName + versionCode）
-
-### 修改文件
-
-- `.github/workflows/release.yml`（重写工作流：新增 versionCode 校验、changelog 独立提取、ServerChan 汇总通知）
-- `app/build.gradle.kts`（versionCode 25000→116000，versionName 1.15.0→1.16.0）
-- `Product-Spec.md`（版本号 1.15.0→1.16.0，更新版本号计算公式）
-- `Product-Spec-CHANGELOG.md`（更新版本号计算公式 + 新增变更记录）
-
----
-
-## [1.15.0] - 2026-05-19
-
-### 变更类型：功能增强
-
-### 状态：已实现
-
-### 变更内容
-
-**GitHub Actions CI/CD 自动打包发布**
-
-1. **新增**：`.github/workflows/release.yml` GitHub Actions 工作流，当推送 `v*` 格式 tag 时自动触发
-2. **新增**：自动构建 release APK（签名、混淆），重命名为 `DuoSchedule-{版本号}.apk`
-3. **新增**：自动创建 GitHub Release，附带 APK 文件
-4. **新增**：自动更新 `yang-jk/duoschedule-update` 仓库的 `update.json`，使 app 内更新检查生效
-5. **修改**：`app/build.gradle.kts` 新增签名配置，支持从环境变量（CI）或 `key.properties`（本地）读取 keystore 信息
-
-### 修改文件
-
-- `.github/workflows/release.yml`（新增 GitHub Actions 工作流）
-- `app/build.gradle.kts`（新增 signingConfigs 和环境变量读取逻辑）
-- `Product-Spec.md`（版本号 1.14.6→1.15.0）
-- `Product-Spec-CHANGELOG.md`（更新变更记录）
 
 ---
 

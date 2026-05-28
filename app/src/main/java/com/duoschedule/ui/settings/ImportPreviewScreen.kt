@@ -1,4 +1,4 @@
-package com.duoschedule.ui.settings
+﻿package com.duoschedule.ui.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -165,7 +165,7 @@ fun ImportPreviewScreen(
                         buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
                         contentPadding = PaddingValues(start = Spacing.sm)
                     ) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = getLabelsVibrantPrimary())
+                        Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = getLabelsVibrantPrimary())
                     }
                 },
                 actions = {

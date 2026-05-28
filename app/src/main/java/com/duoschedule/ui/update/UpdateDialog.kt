@@ -1,4 +1,4 @@
-package com.duoschedule.ui.update
+﻿package com.duoschedule.ui.update
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

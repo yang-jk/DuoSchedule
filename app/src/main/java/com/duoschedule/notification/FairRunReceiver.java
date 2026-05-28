@@ -13,6 +13,8 @@ import android.os.Parcel;
 import android.os.RemoteException;
 import android.util.Log;
 
+import androidx.core.content.ContextCompat;
+
 import com.duoschedule.util.AppLog;
 
 /**
@@ -81,11 +83,7 @@ public class FairRunReceiver implements IBinder.DeathRecipient {
                 filter.addAction(ACTION_TRIM);
                 filter.addAction(ACTION_KILL);
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    context.registerReceiver(mReceiver, filter, null, mHandler, Context.RECEIVER_EXPORTED);
-                } else {
-                    context.registerReceiver(mReceiver, filter, null, mHandler);
-                }
+                ContextCompat.registerReceiver(context, mReceiver, filter, null, mHandler, ContextCompat.RECEIVER_EXPORTED);
 
                 mInitialized = true;
                 AppLog.i(TAG, "公平运行接收器已初始化");

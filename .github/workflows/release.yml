@@ -117,11 +117,14 @@ jobs:
       - name: 重命名 APK 文件
         if: success()
         run: |
-          mv app/build/outputs/apk/release/app-release-unsigned.apk \
-             app/build/outputs/apk/release/DuoSchedule-${{ steps.version.outputs.version_name }}.apk \
-             2>/dev/null || \
-          mv app/build/outputs/apk/release/app-release.apk \
-             app/build/outputs/apk/release/DuoSchedule-${{ steps.version.outputs.version_name }}.apk
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -1)
+          if [ -z "$APK_PATH" ]; then
+            echo "❌ 未找到 APK 文件"
+            ls -laR app/build/outputs/apk/release/ 2>/dev/null || echo "目录不存在"
+            exit 1
+          fi
+          echo "找到 APK: $APK_PATH"
+          mv "$APK_PATH" "app/build/outputs/apk/release/DuoSchedule-${{ steps.version.outputs.version_name }}.apk"
 
       - name: 创建或更新 Git 标签
         if: success()

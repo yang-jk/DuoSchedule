@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import com.duoschedule.ui.theme.GlassSymbolIconButton
+import com.duoschedule.ui.theme.GlassSymbolButtonStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -28,6 +30,10 @@ import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop as kyantRememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -41,6 +47,7 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.io.File
 import java.time.LocalDateTime
@@ -119,23 +126,28 @@ fun DataManagementScreen(
 
     val hazeState = rememberHazeState()
     val scrollState = rememberScrollState()
-    val scrollProgress by remember { derivedStateOf { (scrollState.value.toFloat() / 300f).coerceIn(0f, 1f) } }
-    val blurActive = scrollProgress >= 0.5f
-    val barColor = if (blurActive) Color.Transparent else if (scrollProgress >= 0.5f) MiuixTheme.colorScheme.surface else Color.Transparent
 
-    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    val contentBackdrop = kyantRememberLayerBackdrop()
+    val backgroundColor = MaterialTheme.colorScheme.surface
+    val miuixBackdrop = rememberLayerBackdrop {
+        drawRect(backgroundColor)
+        drawContent()
+    }
+
+    val blurEnabled = scrollState.value > 0
+
     Scaffold(
         topBar = {
-            BlurredBar(null, blurActive) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled) {
                 SmallTopAppBar(
                     title = "数据管理",
                     scrollBehavior = MiuixScrollBehavior(),
-                    color = barColor,
-                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)),
+                    color = Color.Transparent,
+                    titleColor = MiuixTheme.colorScheme.onSurface,
                     defaultWindowInsetsPadding = false,
                     navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "返回")
+                        GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
+                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
                         }
                     },
                 )
@@ -144,7 +156,7 @@ fun DataManagementScreen(
     ) { innerPadding ->
         val deviceInfo = remember { FilePickerUtils.getDeviceInfo() }
 
-        Box(modifier = Modifier.hazeSource(hazeState)) {
+        Box(modifier = Modifier.hazeSource(hazeState).kyantLayerBackdrop(contentBackdrop).layerBackdrop(miuixBackdrop)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -472,7 +484,6 @@ fun DataManagementScreen(
             Spacer(modifier = Modifier.weight(1f))
             }
         }
-    }
     }
 
     if (isLoading) {

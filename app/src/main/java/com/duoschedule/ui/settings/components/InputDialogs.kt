@@ -1,4 +1,4 @@
-package com.duoschedule.ui.settings.components
+﻿package com.duoschedule.ui.settings.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

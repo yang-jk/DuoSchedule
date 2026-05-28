@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import com.duoschedule.ui.theme.GlassSymbolIconButton
+import com.duoschedule.ui.theme.GlassSymbolButtonStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -53,10 +55,15 @@ import com.duoschedule.ui.theme.Separator
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.edit.CustomTimePickerBottomSheet
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop as kyantRememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -123,32 +130,28 @@ fun CourseEditScreen(
 
     val hazeState = rememberHazeState()
     val lazyListState = rememberLazyListState()
-    val scrollOffset by remember {
-        derivedStateOf {
-            if (lazyListState.firstVisibleItemIndex > 0) {
-                lazyListState.firstVisibleItemScrollOffset + 1
-            } else {
-                lazyListState.firstVisibleItemScrollOffset
-            }
-        }
-    }
-    val scrollProgress by remember { derivedStateOf { (scrollOffset.toFloat() / 300f).coerceIn(0f, 1f) } }
-    val blurActive = scrollProgress >= 0.5f
-    val barColor = if (blurActive) Color.Transparent else if (scrollProgress >= 0.5f) MiuixTheme.colorScheme.surface else Color.Transparent
 
-    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    val contentBackdrop = kyantRememberLayerBackdrop()
+    val backgroundColor = MaterialTheme.colorScheme.surface
+    val miuixBackdrop = rememberLayerBackdrop {
+        drawRect(backgroundColor)
+        drawContent()
+    }
+
+    val blurEnabled = lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0
+
     Scaffold(
         topBar = {
-            BlurredBar(null, blurActive) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled) {
                 SmallTopAppBar(
-                    title = if (state.isEditing) "编辑课程" else "添加课程",
+                    title = "编辑课程",
                     scrollBehavior = MiuixScrollBehavior(),
-                    color = barColor,
-                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)),
+                    color = Color.Transparent,
+                    titleColor = MiuixTheme.colorScheme.onSurface,
                     defaultWindowInsetsPadding = false,
                     navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.Outlined.ArrowBack, contentDescription = "返回")
+                        GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
+                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
                         }
                     },
                     actions = {
@@ -165,7 +168,7 @@ fun CourseEditScreen(
             }
         },
     ) { innerPadding ->
-    Box(modifier = Modifier.hazeSource(hazeState)) {
+    Box(modifier = Modifier.hazeSource(hazeState).kyantLayerBackdrop(contentBackdrop).layerBackdrop(miuixBackdrop)) {
         LazyColumn(
             state = lazyListState,
             modifier = Modifier
@@ -257,8 +260,6 @@ fun CourseEditScreen(
             }
         }
     }
-    }
-    }
 
     if (showWeekPicker) {
         WeekPickerBottomSheet(
@@ -313,6 +314,7 @@ fun CourseEditScreen(
             confirmText = "删除",
             dismissText = "取消"
         )
+    }
     }
 }
 
@@ -951,20 +953,16 @@ fun CourseEditContent(
 
     val hazeState = rememberHazeState()
     val lazyListState = rememberLazyListState()
-    val scrollOffset by remember {
-        derivedStateOf {
-            if (lazyListState.firstVisibleItemIndex > 0) {
-                lazyListState.firstVisibleItemScrollOffset + 1
-            } else {
-                lazyListState.firstVisibleItemScrollOffset
-            }
-        }
-    }
-    val scrollProgress by remember { derivedStateOf { (scrollOffset.toFloat() / 300f).coerceIn(0f, 1f) } }
-    val blurActive = scrollProgress >= 0.5f
-    val barColor = if (blurActive) Color.Transparent else if (scrollProgress >= 0.5f) MiuixTheme.colorScheme.surface else Color.Transparent
 
-    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    val editContentBackdrop = kyantRememberLayerBackdrop()
+    val editBackgroundColor = MaterialTheme.colorScheme.surface
+    val miuixBackdrop = rememberLayerBackdrop {
+        drawRect(editBackgroundColor)
+        drawContent()
+    }
+
+    val editBlurEnabled = lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -989,16 +987,16 @@ fun CourseEditContent(
     ) {
         Scaffold(
             topBar = {
-                BlurredBar(null, blurActive) {
+                BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = editBlurEnabled) {
                     SmallTopAppBar(
-                        title = if (state.isEditing) "编辑课程" else "添加课程",
+                        title = "编辑课程",
                         scrollBehavior = MiuixScrollBehavior(),
-                        color = barColor,
-                        titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)),
+                        color = Color.Transparent,
+                        titleColor = MiuixTheme.colorScheme.onSurface,
                         defaultWindowInsetsPadding = false,
                         navigationIcon = {
-                            IconButton(onClick = onNavigateBack) {
-                                Icon(Icons.Outlined.ArrowBack, contentDescription = "返回")
+                            GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
                             }
                         },
                         actions = {
@@ -1015,7 +1013,7 @@ fun CourseEditContent(
                 }
             },
         ) { innerPadding ->
-        Box(modifier = Modifier.hazeSource(hazeState)) {
+        Box(modifier = Modifier.hazeSource(hazeState).kyantLayerBackdrop(editContentBackdrop).layerBackdrop(miuixBackdrop)) {
             LazyColumn(
                 state = lazyListState,
                 modifier = Modifier
@@ -1108,7 +1106,6 @@ fun CourseEditContent(
             }
         }
         }
-    }
     }
 
     if (showWeekPicker) {

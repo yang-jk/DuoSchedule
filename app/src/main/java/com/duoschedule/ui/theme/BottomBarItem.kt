@@ -1,4 +1,4 @@
-package com.duoschedule.ui.theme
+﻿package com.duoschedule.ui.theme
 
 enum class BottomBarItem(
     val route: String,

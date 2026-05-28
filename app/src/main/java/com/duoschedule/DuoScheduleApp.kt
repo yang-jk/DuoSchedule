@@ -50,6 +50,9 @@ class DuoScheduleApp : Application(), Configuration.Provider {
     
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject
+    lateinit var syncManager: com.duoschedule.data.sync.SyncManager
     
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var timeChangeReceiver: TimeChangeReceiver? = null
@@ -110,6 +113,8 @@ class DuoScheduleApp : Application(), Configuration.Provider {
             checkAndRestoreRingerMode()
 
             rescheduleNotifications("app_start")
+            val syncResult = syncManager.sync()
+            Log.i("DuoScheduleApp", "Startup sync result: $syncResult")
         }
     }
     
@@ -165,6 +170,8 @@ class DuoScheduleApp : Application(), Configuration.Provider {
                 val hasOngoingCourse = notificationManager.checkAndShowOngoingNotification()
                 Log.i("DuoScheduleApp", "当前课程检查结果: hasOngoingCourse=$hasOngoingCourse")
                 rescheduleNotifications("enter_foreground")
+                val syncResult = syncManager.sync()
+                Log.i("DuoScheduleApp", "Foreground sync result: $syncResult")
             }
         }
         

@@ -64,14 +64,13 @@ fun <T> SegmentedControl(
     val spacingPx = with(density) { 4.dp.toPx().toInt() }
 
     val animatedOffset = remember { Animatable(-1f) }
-    var hasInitialized by remember { mutableStateOf(false) }
+    var userInteracted by remember { mutableStateOf(false) }
 
     LaunchedEffect(selectedIndex, itemWidthPx) {
         if (itemWidthPx > 0) {
             val targetOffset = selectedIndex * (itemWidthPx + spacingPx).toFloat()
-            if (!hasInitialized) {
+            if (!userInteracted) {
                 animatedOffset.snapTo(targetOffset)
-                hasInitialized = true
             } else {
                 animatedOffset.animateTo(
                     targetValue = targetOffset,
@@ -88,8 +87,21 @@ fun <T> SegmentedControl(
         modifier = modifier
             .fillMaxWidth()
             .height(32.dp)
-            .clip(ContinuousRoundedRectangle(100.dp))
-            .background(backgroundColor)
+            .drawBackdrop(
+                backdrop = backdrop,
+                shape = { ContinuousRoundedRectangle(100.dp) },
+                effects = {
+                    glassButtonEffects(
+                        density = density,
+                        blurRadius = 2.dp,
+                        lensRefractionHeight = 8.dp,
+                        lensRefractionAmount = 16.dp
+                    )
+                },
+                onDrawSurface = {
+                    drawRect(backgroundColor)
+                }
+            )
             .padding(2.dp)
     ) {
         if (itemWidthPx > 0 && options.isNotEmpty() && animatedOffset.value >= 0) {
@@ -136,6 +148,7 @@ fun <T> SegmentedControl(
                     label = option.label,
                     isSelected = isSelected,
                     onClick = {
+                        userInteracted = true
                         selectedIndex = index
                         onOptionSelected(option.value)
                     },

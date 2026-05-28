@@ -30,10 +30,15 @@ import com.duoschedule.data.model.ThemeMode
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop as kyantRememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -43,6 +48,7 @@ fun SettingsScreen(
     onNavigateToDisplaySettings: () -> Unit,
     onNavigateToDataManagement: () -> Unit,
     onNavigateToNotificationSettings: () -> Unit,
+    onNavigateToSyncSettings: () -> Unit = {},
     onNavigateToAbout: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -87,25 +93,30 @@ fun SettingsScreen(
 
     val hazeState = rememberHazeState()
     val scrollState = rememberScrollState()
-    val scrollProgress by remember { derivedStateOf { (scrollState.value.toFloat() / 300f).coerceIn(0f, 1f) } }
-    val blurActive = scrollProgress >= 0.5f
-    val barColor = if (blurActive) Color.Transparent else if (scrollProgress >= 0.5f) MiuixTheme.colorScheme.surface else Color.Transparent
 
-    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    val contentBackdrop = kyantRememberLayerBackdrop()
+    val backgroundColor = MaterialTheme.colorScheme.surface
+    val miuixBackdrop = rememberLayerBackdrop {
+        drawRect(backgroundColor)
+        drawContent()
+    }
+
+    val blurEnabled = scrollState.value > 0
+
     Scaffold(
         topBar = {
-            BlurredBar(null, blurActive) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled) {
                 SmallTopAppBar(
-                    title = "设置",
+                    title = "",
                     scrollBehavior = MiuixScrollBehavior(),
-                    color = barColor,
-                    titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f)),
+                    color = Color.Transparent,
+                    titleColor = MiuixTheme.colorScheme.onSurface,
                     defaultWindowInsetsPadding = false,
                 )
             }
         },
     ) { innerPadding ->
-        Box(modifier = Modifier.hazeSource(hazeState)) {
+        Box(modifier = Modifier.hazeSource(hazeState).kyantLayerBackdrop(contentBackdrop).layerBackdrop(miuixBackdrop)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -113,6 +124,17 @@ fun SettingsScreen(
                     .padding(innerPadding),
                 verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
             ) {
+            Text(
+                text = "设置",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = labelsPrimary,
+                modifier = Modifier
+                    .padding(horizontal = Spacing.lg)
+                    .padding(top = Spacing.sm)
+            )
+
             SettingsSection(title = "用户与身份") {
                 SettingsToggleRow(
                     title = "单人模式",
@@ -236,6 +258,16 @@ fun SettingsScreen(
                     iconBackgroundColor = IOSColors.Green,
                     onClick = onNavigateToDataManagement
                 )
+
+                Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
+
+                SettingsNavigationRow(
+                    title = "课表同步",
+                    subtitle = "通过云盘同步双人课表",
+                    icon = Icons.Outlined.Sync,
+                    iconBackgroundColor = IOSColors.Blue,
+                    onClick = onNavigateToSyncSettings
+                )
             }
 
             SettingsSection(title = "关于") {
@@ -252,7 +284,6 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(LiquidBottomTabsSpec.Height + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()))
             }
         }
-    }
     }
 
     if (showPersonADialog) {

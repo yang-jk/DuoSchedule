@@ -6,20 +6,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
+import dev.chrisbanes.haze.HazeState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import dev.chrisbanes.haze.HazeProgressive
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
+import androidx.compose.ui.zIndex
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurBlendMode
 import top.yukonga.miuix.kmp.blur.BlurColors
-import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import top.yukonga.miuix.kmp.blur.isRenderEffectSupported
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.BlurDefaults
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 
 @Composable
@@ -242,70 +238,48 @@ object ColorBlendToken {
 }
 
 @Composable
-fun rememberBlurBackdrop(): LayerBackdrop? {
-    if (!isRenderEffectSupported()) return null
-    val surfaceColor = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.surface
-    return rememberLayerBackdrop {
-        drawRect(surfaceColor)
-        drawContent()
-    }
-}
-
-val LocalHazeState = compositionLocalOf<HazeState?> { null }
-
-@Composable
-fun rememberHazeState(): HazeState {
-    return remember { HazeState() }
-}
-
-@Composable
 fun BlurredBar(
-    backdrop: LayerBackdrop?,
-    blurEnabled: Boolean,
+    hazeState: HazeState,
+    backdrop: Backdrop? = null,
+    enabled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    val hazeState = LocalHazeState.current
-    val surfaceColor = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.surface
+    val darkTheme = LocalDarkTheme.current
 
-    if (blurEnabled && hazeState != null) {
-        Box(
-            modifier = Modifier
-                .hazeEffect(
-                    state = hazeState,
-                    style = HazeStyle(
-                        backgroundColor = surfaceColor.copy(alpha = 0.35f),
-                        tint = HazeTint.Unspecified,
-                        blurRadius = 20.dp,
-                    ),
-                ) {
-                    progressive = HazeProgressive.verticalGradient(
-                        startIntensity = 1f,
-                        endIntensity = 0f,
-                    )
-                }
-        ) {
-            content()
-        }
-    } else if (blurEnabled && backdrop != null) {
-        Box {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .textureBlur(
-                        backdrop = backdrop,
-                        shape = RectangleShape,
-                        blurRadius = 80f,
-                    )
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(surfaceColor.copy(0.35f))
-                )
-            }
-            content()
-        }
+    val containerColor = if (darkTheme) {
+        Color(0x80121212)
     } else {
+        Color(0x80FAFAFA)
+    }
+
+    val blurColors = BlurDefaults.blurColors(
+        blendColors = listOf(
+            BlendColorEntry(containerColor, BlurBlendMode.SrcOver)
+        ),
+        saturation = 1.3f
+    )
+
+    Box(
+        modifier = Modifier
+            .zIndex(1f)
+            .then(
+                if (backdrop != null) {
+                    Modifier.textureBlur(
+                        backdrop = backdrop,
+                        shape = RoundedCornerShape(0.dp),
+                        blurRadiusX = 80f,
+                        blurRadiusY = 25f,
+                        noiseCoefficient = 0f,
+                        colors = blurColors,
+                        enabled = enabled,
+                    )
+                } else {
+                    Modifier
+                }
+            )
+    ) {
         content()
     }
 }
+
+

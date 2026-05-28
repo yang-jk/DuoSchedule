@@ -1,4 +1,4 @@
-package com.duoschedule.ui.settings.components
+﻿package com.duoschedule.ui.settings.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing

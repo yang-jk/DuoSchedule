@@ -1,4 +1,4 @@
-package com.duoschedule.ui.model
+﻿package com.duoschedule.ui.model
 
 import androidx.compose.runtime.Immutable
 import java.util.Locale

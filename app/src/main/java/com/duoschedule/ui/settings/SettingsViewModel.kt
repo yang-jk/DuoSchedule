@@ -1,4 +1,4 @@
-package com.duoschedule.ui.settings
+﻿package com.duoschedule.ui.settings
 
 import android.app.Application
 import android.content.Context

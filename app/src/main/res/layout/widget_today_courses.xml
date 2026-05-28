@@ -14,11 +14,12 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
-        <View
+        <ImageView
             android:id="@+id/person_indicator"
             android:layout_width="4dp"
             android:layout_height="14dp"
-            android:background="@color/person_a_color" />
+            android:background="@color/person_a_color"
+            android:contentDescription="@null" />
 
         <TextView
             android:id="@+id/widget_title"

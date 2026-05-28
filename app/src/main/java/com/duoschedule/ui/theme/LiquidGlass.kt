@@ -320,6 +320,8 @@ fun GlassTextField(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsTertiary = getLabelsVibrantTertiary()
     val darkTheme = LocalDarkTheme.current
+    val density = LocalDensity.current
+    val backdrop = LocalBackdrop.current ?: emptyBackdrop()
 
     BasicTextField(
         value = value,
@@ -351,9 +353,20 @@ fun GlassTextField(
                     .heightIn(min = 44.dp)
                     .then(
                         if (!transparentBackground) {
-                            Modifier.background(
-                                backgroundColor,
-                                ContinuousRoundedRectangle(BorderRadius.iOS26.container)
+                            Modifier.drawBackdrop(
+                                backdrop = backdrop,
+                                shape = { ContinuousRoundedRectangle(BorderRadius.iOS26.container) },
+                                effects = {
+                                    glassButtonEffects(
+                                        density = density,
+                                        blurRadius = 2.dp,
+                                        lensRefractionHeight = 8.dp,
+                                        lensRefractionAmount = 16.dp
+                                    )
+                                },
+                                onDrawSurface = {
+                                    drawRect(backgroundColor)
+                                }
                             )
                         } else {
                             Modifier
@@ -531,8 +544,16 @@ fun GlassAlert(
                 ) {
                     Row(
                         Modifier
-                            .clip(Capsule())
-                            .background(containerColor.copy(0.2f))
+                            .drawBackdrop(
+                                backdrop = backdrop,
+                                shape = { Capsule() },
+                                effects = {
+                                    glassButtonEffects(density)
+                                },
+                                onDrawSurface = {
+                                    drawRect(containerColor.copy(alpha = 0.4f))
+                                }
+                            )
                             .clickable { onDismissRequest() }
                             .height(48f.dp)
                             .weight(1f)
@@ -550,8 +571,18 @@ fun GlassAlert(
                     }
                     Row(
                         Modifier
-                            .clip(Capsule())
-                            .background(if (darkTheme) IOS26Colors.TintBlue else IOSColors.Blue)
+                            .drawBackdrop(
+                                backdrop = backdrop,
+                                shape = { Capsule() },
+                                effects = {
+                                    glassButtonEffects(density)
+                                },
+                                onDrawSurface = {
+                                    val tintColor = if (darkTheme) IOS26Colors.TintBlue else IOSColors.Blue
+                                    drawRect(tintColor, blendMode = BlendMode.Hue)
+                                    drawRect(tintColor.copy(alpha = 0.75f))
+                                }
+                            )
                             .clickable { onConfirm() }
                             .height(48f.dp)
                             .weight(1f)

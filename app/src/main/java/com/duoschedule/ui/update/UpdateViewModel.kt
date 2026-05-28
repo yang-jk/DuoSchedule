@@ -1,4 +1,4 @@
-package com.duoschedule.ui.update
+﻿package com.duoschedule.ui.update
 
 import android.content.Context
 import android.content.pm.PackageInfo

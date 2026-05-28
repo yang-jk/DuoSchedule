@@ -7,7 +7,9 @@ import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.ThemeMode
 import com.duoschedule.data.model.TodayCourseDisplayMode
 import com.duoschedule.notification.SilentModeType
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,7 +17,8 @@ import javax.inject.Singleton
 @Singleton
 class CourseRepository @Inject constructor(
     private val courseDao: CourseDao,
-    private val settingsDataStore: SettingsDataStore
+    private val settingsDataStore: SettingsDataStore,
+    private val syncManager: com.duoschedule.data.sync.SyncManager
 ) {
     fun getAllCourses(): Flow<List<Course>> = courseDao.getAllCourses()
 
@@ -30,18 +33,35 @@ class CourseRepository @Inject constructor(
 
     suspend fun getCourseById(id: Long): Course? = courseDao.getCourseById(id)
 
-    suspend fun insertCourse(course: Course): Long = courseDao.insertCourse(course)
+    suspend fun insertCourse(course: Course): Long {
+        GlobalScope.launch { syncManager.pushChanges() }
+        return courseDao.insertCourse(course)
+    }
 
-    suspend fun updateCourse(course: Course) = courseDao.updateCourse(course)
+    suspend fun updateCourse(course: Course) {
+        courseDao.updateCourse(course)
+        GlobalScope.launch { syncManager.pushChanges() }
+    }
 
-    suspend fun deleteCourse(course: Course) = courseDao.deleteCourse(course)
+    suspend fun deleteCourse(course: Course) {
+        courseDao.deleteCourse(course)
+        GlobalScope.launch { syncManager.pushChanges() }
+    }
 
-    suspend fun deleteCourseById(id: Long) = courseDao.deleteCourseById(id)
+    suspend fun deleteCourseById(id: Long) {
+        courseDao.deleteCourseById(id)
+        GlobalScope.launch { syncManager.pushChanges() }
+    }
 
-    suspend fun deleteCoursesByPerson(personType: PersonType) = 
+    suspend fun deleteCoursesByPerson(personType: PersonType) {
         courseDao.deleteCoursesByPerson(personType)
+        GlobalScope.launch { syncManager.pushChanges() }
+    }
 
-    suspend fun deleteAllCourses() = courseDao.deleteAllCourses()
+    suspend fun deleteAllCourses() {
+        courseDao.deleteAllCourses()
+        GlobalScope.launch { syncManager.pushChanges() }
+    }
 
     fun getCourseCountByPerson(personType: PersonType): Flow<Int> = 
         courseDao.getCourseCountByPerson(personType)

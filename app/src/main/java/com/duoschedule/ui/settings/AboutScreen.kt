@@ -4,7 +4,6 @@ package com.duoschedule.ui.settings
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,11 +22,17 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import com.duoschedule.ui.theme.GlassSymbolIconButton
+import com.duoschedule.ui.theme.GlassSymbolButtonStyle
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
+import com.duoschedule.ui.theme.rememberLayerBackdropWithBackground
+import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop as kyantRememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -52,9 +57,7 @@ import com.duoschedule.R
 import com.duoschedule.ui.theme.BgEffectBackground
 import com.duoschedule.ui.theme.BlurredBar
 import com.duoschedule.ui.theme.ColorBlendToken
-import com.duoschedule.ui.theme.LocalHazeState
-import com.duoschedule.ui.theme.rememberBlurBackdrop
-import com.duoschedule.ui.theme.rememberHazeState
+import com.duoschedule.ui.theme.LocalDarkTheme
 import com.duoschedule.ui.update.UpdateDialog
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -70,6 +73,7 @@ import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
@@ -113,38 +117,35 @@ fun AboutScreen(
     }
 
     val hazeState = rememberHazeState()
-    val blurActive = scrollProgress == 1f
-    val barColor = if (blurActive) {
-        Color.Transparent
-    } else {
-        if (scrollProgress == 1f) MiuixTheme.colorScheme.surface else Color.Transparent
+
+    val contentBackdrop = kyantRememberLayerBackdrop()
+    val backgroundColor = MaterialTheme.colorScheme.surface
+    val miuixBackdrop = rememberLayerBackdrop {
+        drawRect(backgroundColor)
+        drawContent()
     }
 
-    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    val blurEnabled = lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0
+
     Scaffold(
         topBar = {
-            BlurredBar(null, blurActive) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled) {
                 SmallTopAppBar(
                     title = "关于",
                     scrollBehavior = topAppBarScrollBehavior,
-                    color = barColor,
-                    titleColor = MiuixTheme.colorScheme.onSurface.copy(
-                        alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
-                    ),
+                    color = Color.Transparent,
+                    titleColor = MiuixTheme.colorScheme.onSurface,
                     defaultWindowInsetsPadding = false,
                     navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(
-                                Icons.Outlined.ArrowBack,
-                                contentDescription = "返回",
-                            )
+                        GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
+                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
                         }
                     },
                 )
             }
         },
     ) { innerPadding ->
-        Box(modifier = Modifier.hazeSource(hazeState)) {
+        Box(modifier = Modifier.hazeSource(hazeState).kyantLayerBackdrop(contentBackdrop).layerBackdrop(miuixBackdrop)) {
             AboutContent(
                 padding = innerPadding,
                 lazyListState = lazyListState,
@@ -156,7 +157,6 @@ fun AboutScreen(
                 onCheckUpdate = { showUpdateDialog = true },
             )
         }
-    }
     }
 
     if (showUpdateDialog) {
@@ -175,13 +175,13 @@ private fun AboutContent(
     onNavigateToAcknowledgments: () -> Unit,
     onCheckUpdate: () -> Unit,
 ) {
-    val backdrop = rememberBlurBackdrop()
+    val backdrop: LayerBackdrop? = rememberLayerBackdrop()
     var blurRadius by remember { mutableFloatStateOf(60f) }
     var noiseCoefficient by remember { mutableFloatStateOf(BlurDefaults.NoiseCoefficient) }
     var brightness by remember { mutableFloatStateOf(0f) }
     var contrast by remember { mutableFloatStateOf(1f) }
     var saturation by remember { mutableFloatStateOf(1f) }
-    val isInDark = isSystemInDarkTheme()
+    val isInDark = LocalDarkTheme.current
     val dynamicBackground = isRuntimeShaderSupported()
 
     val cardBlend =

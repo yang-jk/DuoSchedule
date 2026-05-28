@@ -45,6 +45,9 @@ import com.duoschedule.ui.theme.LocalLiquidBottomTabContentColor
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.duoschedule.util.PerformanceMonitor
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.darkColorScheme
+import top.yukonga.miuix.kmp.theme.lightColorScheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -88,6 +91,7 @@ class MainActivity : ComponentActivity() {
 
             DuoScheduleTheme(themeMode = themeMode) {
                 val darkTheme = LocalDarkTheme.current
+                MiuixTheme(colors = if (darkTheme) darkColorScheme() else lightColorScheme()) {
                 val navController = rememberNavController()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
@@ -213,6 +217,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+                }
                 }
             }
         }

@@ -2,9 +2,7 @@ package com.duoschedule.ui.main
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import com.kyant.capsule.ContinuousRoundedRectangle
@@ -12,18 +10,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.LocalCafe
-import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.Course
@@ -34,15 +29,13 @@ import com.duoschedule.ui.main.components.*
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.theme.LiquidGlassButton
 import com.duoschedule.ui.theme.LiquidGlassButtonStyle
-import com.duoschedule.ui.theme.BlurredBar
-import com.duoschedule.ui.theme.rememberBlurBackdrop
+import dev.chrisbanes.haze.rememberHazeState
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop as kyantRememberLayerBackdrop
 import dev.chrisbanes.haze.hazeSource
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -73,50 +66,22 @@ fun MainScreen(
     }
 
     val scrollState = rememberScrollState()
-    val topAppBarScrollBehavior = MiuixScrollBehavior()
-
-    val scrollProgress by remember {
-        derivedStateOf {
-            (scrollState.value.toFloat() / 300f).coerceIn(0f, 1f)
-        }
-    }
 
     val hazeState = rememberHazeState()
-    val blurActive = scrollProgress > 0f
-    val barColor = if (blurActive) {
-        Color.Transparent
-    } else {
-        if (scrollProgress > 0f) MiuixTheme.colorScheme.surface else Color.Transparent
-    }
 
     val today = remember { LocalDate.now() }
-    val dateFormatter = DateTimeFormatter.ofPattern("M月d日 EEEE")
-    val dateText = today.format(dateFormatter)
 
-    val topBarTitle = if (scrollProgress > 0.35f) dateText else ""
+    val contentBackdrop = kyantRememberLayerBackdrop()
 
-    CompositionLocalProvider(LocalHazeState provides hazeState) {
     Scaffold(
-        topBar = {
-            BlurredBar(null, blurActive) {
-                SmallTopAppBar(
-                    title = topBarTitle,
-                    scrollBehavior = topAppBarScrollBehavior,
-                    color = barColor,
-                    titleColor = MiuixTheme.colorScheme.onSurface.copy(
-                        alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
-                    ),
-                    defaultWindowInsetsPadding = false,
-                )
-            }
-        },
+        topBar = {}
     ) { innerPadding ->
-        Box(modifier = Modifier.hazeSource(hazeState)) {
+        Box(modifier = Modifier.hazeSource(hazeState).kyantLayerBackdrop(contentBackdrop)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-                    .padding(top = innerPadding.calculateTopPadding()),
+                    .statusBarsPadding(),
                 verticalArrangement = Arrangement.spacedBy(Spacing.md)
             ) {
                 HeaderSection(
@@ -147,7 +112,6 @@ fun MainScreen(
                 Spacer(modifier = Modifier.height(LiquidBottomTabsSpec.Height + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()))
             }
         }
-    }
     }
 
     if (showPreview && selectedCourse != null) {
@@ -231,7 +195,8 @@ private fun HeaderSection(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
                 text = dateText,
@@ -239,11 +204,10 @@ private fun HeaderSection(
                     fontWeight = FontWeight.Bold
                 ),
                 color = labelsPrimary,
-                maxLines = 1,
-                modifier = Modifier.weight(1f, fill = false)
+                maxLines = 1
             )
             
-            Row(
+            Column(
                 modifier = Modifier
                     .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.small))
                     .background(
@@ -251,33 +215,43 @@ private fun HeaderSection(
                         else Color.Black.copy(alpha = 0.04f)
                     )
                     .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.CalendarMonth,
-                    contentDescription = null,
-                    tint = labelsSecondary,
-                    modifier = Modifier.size(14.dp)
-                )
-                Text(
-                    text = "${personAName}第${personACurrentWeek}周",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = labelsSecondary,
-                    maxLines = 1
-                )
-                if (!singleModeEnabled) {
-                    Text(
-                        text = "·",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = labelsTertiary
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.CalendarMonth,
+                        contentDescription = null,
+                        tint = labelsSecondary,
+                        modifier = Modifier.size(14.dp)
                     )
                     Text(
-                        text = "${personBName}第${personBCurrentWeek}周",
+                        text = "${personAName}第${personACurrentWeek}周",
                         style = MaterialTheme.typography.labelSmall,
                         color = labelsSecondary,
                         maxLines = 1
                     )
+                }
+                if (!singleModeEnabled) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.CalendarMonth,
+                            contentDescription = null,
+                            tint = labelsSecondary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = "${personBName}第${personBCurrentWeek}周",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = labelsSecondary,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }

@@ -1,4 +1,4 @@
-package com.duoschedule.ui.theme
+﻿package com.duoschedule.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme

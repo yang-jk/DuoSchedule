@@ -1,4 +1,4 @@
-package com.duoschedule.ui.schedule
+﻿package com.duoschedule.ui.schedule
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
