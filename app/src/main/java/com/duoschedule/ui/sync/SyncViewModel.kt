@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.sync
+package com.duoschedule.ui.sync
 
 import android.app.Application
 import android.content.ClipData
@@ -42,6 +42,15 @@ class SyncViewModel @Inject constructor(
 
     private val _syncCode = MutableStateFlow("")
     val syncCode: StateFlow<String> = _syncCode.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val config = syncPreferences.syncConfig.first()
+            if (config != null) {
+                _syncCode.value = SyncCodeGenerator.generate(config)
+            }
+        }
+    }
 
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()

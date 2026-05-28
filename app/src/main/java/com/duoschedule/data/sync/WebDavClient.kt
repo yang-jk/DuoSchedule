@@ -27,17 +27,33 @@ class WebDavClient @Inject constructor() {
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
+    private val xmlMediaType = "application/xml; charset=utf-8".toMediaType()
+
+    private val propfindBody = """<?xml version="1.0" encoding="utf-8"?>
+        |<propfind xmlns="DAV:">
+        |<prop>
+        |<resourcetype/>
+        |</prop>
+        |</propfind>""".trimMargin().toRequestBody(xmlMediaType)
+
     fun testConnection(config: SyncConfig): Result<Unit> {
         return try {
-            val request = buildGetRequest(config, config.webDavUrl.trimEnd('/'))
+            val request = Request.Builder()
+                .url(config.webDavUrl.trimEnd('/'))
+                .header("Authorization", Credentials.basic(config.username, config.password))
+                .header("Depth", "0")
+                .method("PROPFIND", propfindBody)
+                .build()
             val response = client.newCall(request).execute()
             response.close()
             if (response.isSuccessful || response.code == 207) {
                 Result.success(Unit)
             } else if (response.code == 401) {
                 Result.failure(IOException("认证失败，请检查账号密码"))
+            } else if (response.code == 403) {
+                Result.failure(IOException("无访问权限，请检查账号是否对该目录有读写权限"))
             } else if (response.code == 404) {
-                Result.success(Unit)
+                Result.failure(IOException("路径不存在，请检查 WebDAV 地址"))
             } else {
                 Result.failure(IOException("连接失败: HTTP ${response.code}"))
             }

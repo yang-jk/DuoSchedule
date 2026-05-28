@@ -6,6 +6,64 @@
 
 ---
 
+## [4.6.6] - 2026-05-29
+
+### 变更类型：Bug 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复重新进入同步设置页面后复制同步码不生效**
+
+1. **修复**：ViewModel 初始化时从已保存的 SyncConfig 重新生成同步码，确保离开页面再回来后仍可复制同步码
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/ui/sync/SyncViewModel.kt`（init 块中从持久化配置恢复同步码）
+- `app/build.gradle.kts`（versionCode 40605→40606，versionName 4.6.5→4.6.6）
+
+---
+
+## [4.6.5] - 2026-05-29
+
+### 变更类型：Bug 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 WebDAV 连接测试使用 GET 请求导致 HTTP 403 错误**
+
+1. **修复**：将 `testConnection` 方法从 GET 请求改为 WebDAV 标准的 PROPFIND 请求（Depth: 0），大多数 WebDAV 服务器不允许 GET 访问目录，只支持 PROPFIND 探测资源
+2. **优化**：403 返回更明确的错误提示"无访问权限"，404 返回"路径不存在"而非之前错误地视为连接成功
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/data/sync/WebDavClient.kt`（testConnection 改用 PROPFIND，优化错误提示）
+- `app/build.gradle.kts`（versionCode 40604→40605，versionName 4.6.4→4.6.5）
+
+---
+
+## [4.6.4] - 2026-05-29
+
+### 变更类型：Bug 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 WebDAV 同步网络请求在主线程执行导致 NetworkOnMainThreadException 崩溃**
+
+1. **修复**：在 `SyncManager` 的所有调用 `WebDavClient` 的方法（`createRoom`、`joinRoom`、`sync`、`pushChanges`、`resolveConflicts`）中使用 `withContext(Dispatchers.IO)` 将阻塞网络调用切换到 IO 线程，避免在主线程执行网络 I/O
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（添加 `withContext(Dispatchers.IO)` 包裹网络调用）
+- `app/build.gradle.kts`（versionCode 40603→40604，versionName 4.6.3→4.6.4）
+
+---
+
 ## [4.6.3] - 2026-05-29
 
 ### 变更类型：Bug 修复

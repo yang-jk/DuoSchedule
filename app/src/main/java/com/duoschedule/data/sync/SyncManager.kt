@@ -5,10 +5,12 @@ import com.duoschedule.data.local.CourseDao
 import com.duoschedule.data.local.SettingsDataStore
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
@@ -29,266 +31,276 @@ class SyncManager @Inject constructor(
     val syncStatus = MutableStateFlow(SyncStatus())
 
     suspend fun createRoom(config: SyncConfig): Result<String> {
-        return try {
-            val testResult = webDavClient.testConnection(config)
-            if (testResult.isFailure) {
-                return Result.failure(testResult.exceptionOrNull() ?: Exception("连接测试失败"))
-            }
-
-            val dirs = listOf("duoschedule/", "duoschedule/sync/", "duoschedule/sync/${config.roomId}/")
-            for (dir in dirs) {
-                val result = webDavClient.ensureDirectory(config, dir)
-                if (result.isFailure) {
-                    return Result.failure(result.exceptionOrNull() ?: Exception("创建目录失败"))
+        return withContext(Dispatchers.IO) {
+            try {
+                val testResult = webDavClient.testConnection(config)
+                if (testResult.isFailure) {
+                    return@withContext Result.failure(testResult.exceptionOrNull() ?: Exception("连接测试失败"))
                 }
-            }
 
-            val meta = JSONObject().apply {
-                put("roomId", config.roomId)
-                put("createdAt", Instant.now().toString())
-                put("createdBy", config.deviceId)
-                put("members", JSONArray().apply { put(config.deviceId) })
-                put("currentVersion", 0)
-            }
-            val metaResult = webDavClient.uploadJson(config, webDavClient.getMetaPath(config.roomId), meta)
-            if (metaResult.isFailure) {
-                return Result.failure(metaResult.exceptionOrNull() ?: Exception("上传元数据失败"))
-            }
+                val dirs = listOf("duoschedule/", "duoschedule/sync/", "duoschedule/sync/${config.roomId}/")
+                for (dir in dirs) {
+                    val result = webDavClient.ensureDirectory(config, dir)
+                    if (result.isFailure) {
+                        return@withContext Result.failure(result.exceptionOrNull() ?: Exception("创建目录失败"))
+                    }
+                }
 
-            syncPreferences.saveSyncConfig(config)
-            syncPreferences.setSyncEnabled(true)
-            syncPreferences.updateLastSyncVersion(0)
+                val meta = JSONObject().apply {
+                    put("roomId", config.roomId)
+                    put("createdAt", Instant.now().toString())
+                    put("createdBy", config.deviceId)
+                    put("members", JSONArray().apply { put(config.deviceId) })
+                    put("currentVersion", 0)
+                }
+                val metaResult = webDavClient.uploadJson(config, webDavClient.getMetaPath(config.roomId), meta)
+                if (metaResult.isFailure) {
+                    return@withContext Result.failure(metaResult.exceptionOrNull() ?: Exception("上传元数据失败"))
+                }
 
-            val syncCode = SyncCodeGenerator.generate(config)
-            Result.success(syncCode)
-        } catch (e: Exception) {
-            Log.e(TAG, "createRoom failed", e)
-            Result.failure(e)
+                syncPreferences.saveSyncConfig(config)
+                syncPreferences.setSyncEnabled(true)
+                syncPreferences.updateLastSyncVersion(0)
+
+                val syncCode = SyncCodeGenerator.generate(config)
+                Result.success(syncCode)
+            } catch (e: Exception) {
+                Log.e(TAG, "createRoom failed", e)
+                Result.failure(e)
+            }
         }
     }
 
     suspend fun joinRoom(syncCode: String): Result<Unit> {
-        return try {
-            val parseResult = SyncCodeGenerator.parse(syncCode)
-            if (parseResult.isFailure) {
-                return Result.failure(parseResult.exceptionOrNull() ?: Exception("同步码解析失败"))
-            }
-
-            val config = parseResult.getOrThrow()
-
-            val testResult = webDavClient.testConnection(config)
-            if (testResult.isFailure) {
-                return Result.failure(testResult.exceptionOrNull() ?: Exception("连接测试失败"))
-            }
-
-            val metaResult = webDavClient.downloadJson(config, webDavClient.getMetaPath(config.roomId))
-            if (metaResult.isFailure) {
-                val ex = metaResult.exceptionOrNull()
-                if (ex?.message == "NOT_FOUND") {
-                    return Result.failure(Exception("房间不存在，请检查同步码是否正确"))
+        return withContext(Dispatchers.IO) {
+            try {
+                val parseResult = SyncCodeGenerator.parse(syncCode)
+                if (parseResult.isFailure) {
+                    return@withContext Result.failure(parseResult.exceptionOrNull() ?: Exception("同步码解析失败"))
                 }
-                return Result.failure(ex ?: Exception("获取房间信息失败"))
+
+                val config = parseResult.getOrThrow()
+
+                val testResult = webDavClient.testConnection(config)
+                if (testResult.isFailure) {
+                    return@withContext Result.failure(testResult.exceptionOrNull() ?: Exception("连接测试失败"))
+                }
+
+                val metaResult = webDavClient.downloadJson(config, webDavClient.getMetaPath(config.roomId))
+                if (metaResult.isFailure) {
+                    val ex = metaResult.exceptionOrNull()
+                    if (ex?.message == "NOT_FOUND") {
+                        return@withContext Result.failure(Exception("房间不存在，请检查同步码是否正确"))
+                    }
+                    return@withContext Result.failure(ex ?: Exception("获取房间信息失败"))
+                }
+
+                val metaJson = metaResult.getOrThrow()
+                val members = metaJson.optJSONArray("members") ?: JSONArray()
+                members.put(config.deviceId)
+                metaJson.put("members", members)
+
+                val updateResult = webDavClient.uploadJson(config, webDavClient.getMetaPath(config.roomId), metaJson)
+                if (updateResult.isFailure) {
+                    Log.w(TAG, "Failed to update meta members, continuing anyway")
+                }
+
+                syncPreferences.saveSyncConfig(config)
+                syncPreferences.setSyncEnabled(true)
+
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Log.e(TAG, "joinRoom failed", e)
+                Result.failure(e)
             }
-
-            val metaJson = metaResult.getOrThrow()
-            val members = metaJson.optJSONArray("members") ?: JSONArray()
-            members.put(config.deviceId)
-            metaJson.put("members", members)
-
-            val updateResult = webDavClient.uploadJson(config, webDavClient.getMetaPath(config.roomId), metaJson)
-            if (updateResult.isFailure) {
-                Log.w(TAG, "Failed to update meta members, continuing anyway")
-            }
-
-            syncPreferences.saveSyncConfig(config)
-            syncPreferences.setSyncEnabled(true)
-
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Log.e(TAG, "joinRoom failed", e)
-            Result.failure(e)
         }
     }
 
     suspend fun sync(): SyncResult = syncMutex.withLock {
-        val config = syncPreferences.getSyncConfigSync()
-        if (config == null) {
-            return SyncResult.NotConfigured
-        }
-
-        val enabled = syncPreferences.syncEnabled.first()
-        if (!enabled) {
-            return SyncResult.NotConfigured
-        }
-
-        syncStatus.value = SyncStatus(state = SyncState.SYNCING)
-
-        return try {
-            val metaResult = webDavClient.downloadJson(config, webDavClient.getMetaPath(config.roomId))
-            if (metaResult.isFailure) {
-                syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = metaResult.exceptionOrNull()?.message)
-                return SyncResult.Error(metaResult.exceptionOrNull()?.message ?: "获取元数据失败")
+        withContext(Dispatchers.IO) {
+            val config = syncPreferences.getSyncConfigSync()
+            if (config == null) {
+                return@withContext SyncResult.NotConfigured
             }
 
-            val metaJson = metaResult.getOrThrow()
-            val cloudVersion = metaJson.optInt("currentVersion", 0)
-            val localLastSyncVersion = syncPreferences.lastSyncVersion.first()
-
-            if (cloudVersion == localLastSyncVersion) {
-                syncStatus.value = SyncStatus(state = SyncState.SYNCED, lastSyncVersion = cloudVersion)
-                return SyncResult.NoChanges
+            val enabled = syncPreferences.syncEnabled.first()
+            if (!enabled) {
+                return@withContext SyncResult.NotConfigured
             }
 
-            val dataResult = webDavClient.downloadJson(config, webDavClient.getDataPath(config.roomId))
-            if (dataResult.isFailure) {
-                val ex = dataResult.exceptionOrNull()
-                if (ex?.message == "NOT_FOUND") {
-                    val pushResult = pushLocalToCloud(config, metaJson)
-                    return pushResult
+            syncStatus.value = SyncStatus(state = SyncState.SYNCING)
+
+            return@withContext try {
+                val metaResult = webDavClient.downloadJson(config, webDavClient.getMetaPath(config.roomId))
+                if (metaResult.isFailure) {
+                    syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = metaResult.exceptionOrNull()?.message)
+                    return@withContext SyncResult.Error(metaResult.exceptionOrNull()?.message ?: "获取元数据失败")
                 }
-                syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = ex?.message)
-                return SyncResult.Error(ex?.message ?: "获取云端数据失败")
-            }
 
-            val cloudDataJson = dataResult.getOrThrow()
-            val cloudData = parseCloudData(cloudDataJson)
+                val metaJson = metaResult.getOrThrow()
+                val cloudVersion = metaJson.optInt("currentVersion", 0)
+                val localLastSyncVersion = syncPreferences.lastSyncVersion.first()
 
-            val localHasChanges = hasLocalChangesSince(localLastSyncVersion)
+                if (cloudVersion == localLastSyncVersion) {
+                    syncStatus.value = SyncStatus(state = SyncState.SYNCED, lastSyncVersion = cloudVersion)
+                    return@withContext SyncResult.NoChanges
+                }
 
-            if (!localHasChanges) {
+                val dataResult = webDavClient.downloadJson(config, webDavClient.getDataPath(config.roomId))
+                if (dataResult.isFailure) {
+                    val ex = dataResult.exceptionOrNull()
+                    if (ex?.message == "NOT_FOUND") {
+                        val pushResult = pushLocalToCloud(config, metaJson)
+                        return@withContext pushResult
+                    }
+                    syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = ex?.message)
+                    return@withContext SyncResult.Error(ex?.message ?: "获取云端数据失败")
+                }
+
+                val cloudDataJson = dataResult.getOrThrow()
+                val cloudData = parseCloudData(cloudDataJson)
+
+                val localHasChanges = hasLocalChangesSince(localLastSyncVersion)
+
+                if (!localHasChanges) {
+                    val pullResult = applyCloudData(cloudData)
+                    syncPreferences.updateLastSyncVersion(cloudVersion)
+                    syncPreferences.updateLastSyncTime(System.currentTimeMillis())
+                    syncStatus.value = SyncStatus(state = SyncState.SYNCED, lastSyncVersion = cloudVersion, lastSyncTime = System.currentTimeMillis())
+                    return@withContext pullResult
+                }
+
+                val lastModifiedBy = cloudDataJson.optString("lastModifiedBy", "")
+                if (lastModifiedBy == config.deviceId) {
+                    syncPreferences.updateLastSyncVersion(cloudVersion)
+                    syncStatus.value = SyncStatus(state = SyncState.SYNCED, lastSyncVersion = cloudVersion)
+                    return@withContext SyncResult.NoChanges
+                }
+
+                val conflicts = detectConflicts(cloudData)
+                if (conflicts.isNotEmpty()) {
+                    syncStatus.value = SyncStatus(state = SyncState.CONFLICT, lastSyncVersion = localLastSyncVersion)
+                    return@withContext SyncResult.Conflict(
+                        localVersion = localLastSyncVersion,
+                        cloudVersion = cloudVersion,
+                        conflictItems = conflicts
+                    )
+                }
+
                 val pullResult = applyCloudData(cloudData)
                 syncPreferences.updateLastSyncVersion(cloudVersion)
                 syncPreferences.updateLastSyncTime(System.currentTimeMillis())
                 syncStatus.value = SyncStatus(state = SyncState.SYNCED, lastSyncVersion = cloudVersion, lastSyncTime = System.currentTimeMillis())
-                return pullResult
+                pullResult
+            } catch (e: Exception) {
+                Log.e(TAG, "sync failed", e)
+                syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = e.message)
+                SyncResult.Error(e.message ?: "同步失败", e)
             }
-
-            val lastModifiedBy = cloudDataJson.optString("lastModifiedBy", "")
-            if (lastModifiedBy == config.deviceId) {
-                syncPreferences.updateLastSyncVersion(cloudVersion)
-                syncStatus.value = SyncStatus(state = SyncState.SYNCED, lastSyncVersion = cloudVersion)
-                return SyncResult.NoChanges
-            }
-
-            val conflicts = detectConflicts(cloudData)
-            if (conflicts.isNotEmpty()) {
-                syncStatus.value = SyncStatus(state = SyncState.CONFLICT, lastSyncVersion = localLastSyncVersion)
-                return SyncResult.Conflict(
-                    localVersion = localLastSyncVersion,
-                    cloudVersion = cloudVersion,
-                    conflictItems = conflicts
-                )
-            }
-
-            val pullResult = applyCloudData(cloudData)
-            syncPreferences.updateLastSyncVersion(cloudVersion)
-            syncPreferences.updateLastSyncTime(System.currentTimeMillis())
-            syncStatus.value = SyncStatus(state = SyncState.SYNCED, lastSyncVersion = cloudVersion, lastSyncTime = System.currentTimeMillis())
-            pullResult
-        } catch (e: Exception) {
-            Log.e(TAG, "sync failed", e)
-            syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = e.message)
-            SyncResult.Error(e.message ?: "同步失败", e)
         }
     }
 
     suspend fun pushChanges(): SyncResult = syncMutex.withLock {
-        val config = syncPreferences.getSyncConfigSync()
-        if (config == null) return SyncResult.NotConfigured
+        withContext(Dispatchers.IO) {
+            val config = syncPreferences.getSyncConfigSync()
+            if (config == null) return@withContext SyncResult.NotConfigured
 
-        syncStatus.value = SyncStatus(state = SyncState.SYNCING)
+            syncStatus.value = SyncStatus(state = SyncState.SYNCING)
 
-        return try {
-            val metaResult = webDavClient.downloadJson(config, webDavClient.getMetaPath(config.roomId))
-            if (metaResult.isFailure) {
-                syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = metaResult.exceptionOrNull()?.message)
-                return SyncResult.Error(metaResult.exceptionOrNull()?.message ?: "获取元数据失败")
+            return@withContext try {
+                val metaResult = webDavClient.downloadJson(config, webDavClient.getMetaPath(config.roomId))
+                if (metaResult.isFailure) {
+                    syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = metaResult.exceptionOrNull()?.message)
+                    return@withContext SyncResult.Error(metaResult.exceptionOrNull()?.message ?: "获取元数据失败")
+                }
+
+                val metaJson = metaResult.getOrThrow()
+                val pushResult = pushLocalToCloud(config, metaJson)
+                pushResult
+            } catch (e: Exception) {
+                Log.e(TAG, "pushChanges failed", e)
+                syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = e.message)
+                SyncResult.Error(e.message ?: "推送失败", e)
             }
-
-            val metaJson = metaResult.getOrThrow()
-            val pushResult = pushLocalToCloud(config, metaJson)
-            pushResult
-        } catch (e: Exception) {
-            Log.e(TAG, "pushChanges failed", e)
-            syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = e.message)
-            SyncResult.Error(e.message ?: "推送失败", e)
         }
     }
 
     suspend fun resolveConflicts(resolution: ConflictResolution): SyncResult = syncMutex.withLock {
-        val config = syncPreferences.getSyncConfigSync()
-        if (config == null) return SyncResult.NotConfigured
+        withContext(Dispatchers.IO) {
+            val config = syncPreferences.getSyncConfigSync()
+            if (config == null) return@withContext SyncResult.NotConfigured
 
-        return try {
-            val dataResult = webDavClient.downloadJson(config, webDavClient.getDataPath(config.roomId))
-            if (dataResult.isFailure) {
-                return SyncResult.Error(dataResult.exceptionOrNull()?.message ?: "获取云端数据失败")
-            }
+            return@withContext try {
+                val dataResult = webDavClient.downloadJson(config, webDavClient.getDataPath(config.roomId))
+                if (dataResult.isFailure) {
+                    return@withContext SyncResult.Error(dataResult.exceptionOrNull()?.message ?: "获取云端数据失败")
+                }
 
-            val cloudDataJson = dataResult.getOrThrow()
-            val cloudData = parseCloudData(cloudDataJson)
-            val localCourses = courseDao.getAllCoursesSync()
+                val cloudDataJson = dataResult.getOrThrow()
+                val cloudData = parseCloudData(cloudDataJson)
+                val localCourses = courseDao.getAllCoursesSync()
 
-            val mergedCourses = mutableListOf<CloudCourse>()
-            val cloudCourseMap = cloudData.courses.associateBy { it.id }
-            val localCourseMap = localCourses.associateBy { it.id }
+                val mergedCourses = mutableListOf<CloudCourse>()
+                val cloudCourseMap = cloudData.courses.associateBy { it.id }
+                val localCourseMap = localCourses.associateBy { it.id }
 
-            for ((courseId, choice) in resolution.resolutions) {
-                val id = courseId.toLongOrNull() ?: continue
-                when (choice) {
-                    ConflictChoice.KEEP_LOCAL -> {
-                        localCourseMap[id]?.let { mergedCourses.add(it.toCloudCourse()) }
-                    }
-                    ConflictChoice.KEEP_CLOUD -> {
-                        cloudCourseMap[id]?.let { mergedCourses.add(it) }
-                    }
-                    ConflictChoice.KEEP_BOTH -> {
-                        localCourseMap[id]?.let { mergedCourses.add(it.toCloudCourse()) }
-                        cloudCourseMap[id]?.let { cloud ->
-                            val newId = (localCourses.maxOfOrNull { it.id } ?: 0) + 1 + mergedCourses.size
-                            mergedCourses.add(cloud.copy(id = newId))
+                for ((courseId, choice) in resolution.resolutions) {
+                    val id = courseId.toLongOrNull() ?: continue
+                    when (choice) {
+                        ConflictChoice.KEEP_LOCAL -> {
+                            localCourseMap[id]?.let { mergedCourses.add(it.toCloudCourse()) }
+                        }
+                        ConflictChoice.KEEP_CLOUD -> {
+                            cloudCourseMap[id]?.let { mergedCourses.add(it) }
+                        }
+                        ConflictChoice.KEEP_BOTH -> {
+                            localCourseMap[id]?.let { mergedCourses.add(it.toCloudCourse()) }
+                            cloudCourseMap[id]?.let { cloud ->
+                                val newId = (localCourses.maxOfOrNull { it.id } ?: 0) + 1 + mergedCourses.size
+                                mergedCourses.add(cloud.copy(id = newId))
+                            }
                         }
                     }
                 }
+
+                val nonConflictLocal = localCourses.filter { course ->
+                    resolution.resolutions.containsKey(course.id.toString()).not() &&
+                        !cloudCourseMap.containsKey(course.id)
+                }
+                val nonConflictCloud = cloudData.courses.filter { course ->
+                    resolution.resolutions.containsKey(course.id.toString()).not() &&
+                        !localCourseMap.containsKey(course.id)
+                }
+
+                mergedCourses.addAll(nonConflictLocal.map { it.toCloudCourse() })
+                mergedCourses.addAll(nonConflictCloud)
+
+                val mergedData = buildCloudDataJson(config, mergedCourses)
+                val uploadResult = webDavClient.uploadJson(config, webDavClient.getDataPath(config.roomId), mergedData)
+                if (uploadResult.isFailure) {
+                    return@withContext SyncResult.Error(uploadResult.exceptionOrNull()?.message ?: "上传合并数据失败")
+                }
+
+                val metaResult = webDavClient.downloadJson(config, webDavClient.getMetaPath(config.roomId))
+                if (metaResult.isSuccess) {
+                    val metaJson = metaResult.getOrThrow()
+                    val newVersion = metaJson.optInt("currentVersion", 0) + 1
+                    metaJson.put("currentVersion", newVersion)
+                    webDavClient.uploadJson(config, webDavClient.getMetaPath(config.roomId), metaJson)
+                    syncPreferences.updateLastSyncVersion(newVersion)
+                }
+
+                val finalData = parseCloudData(mergedData)
+                applyCloudData(finalData)
+
+                syncPreferences.updateLastSyncTime(System.currentTimeMillis())
+                syncStatus.value = SyncStatus(state = SyncState.SYNCED)
+
+                SyncResult.Success(pulledCourses = mergedCourses.size, pushedCourses = mergedCourses.size)
+            } catch (e: Exception) {
+                Log.e(TAG, "resolveConflicts failed", e)
+                SyncResult.Error(e.message ?: "冲突解决失败", e)
             }
-
-            val nonConflictLocal = localCourses.filter { course ->
-                resolution.resolutions.containsKey(course.id.toString()).not() &&
-                    !cloudCourseMap.containsKey(course.id)
-            }
-            val nonConflictCloud = cloudData.courses.filter { course ->
-                resolution.resolutions.containsKey(course.id.toString()).not() &&
-                    !localCourseMap.containsKey(course.id)
-            }
-
-            mergedCourses.addAll(nonConflictLocal.map { it.toCloudCourse() })
-            mergedCourses.addAll(nonConflictCloud)
-
-            val mergedData = buildCloudDataJson(config, mergedCourses)
-            val uploadResult = webDavClient.uploadJson(config, webDavClient.getDataPath(config.roomId), mergedData)
-            if (uploadResult.isFailure) {
-                return SyncResult.Error(uploadResult.exceptionOrNull()?.message ?: "上传合并数据失败")
-            }
-
-            val metaResult = webDavClient.downloadJson(config, webDavClient.getMetaPath(config.roomId))
-            if (metaResult.isSuccess) {
-                val metaJson = metaResult.getOrThrow()
-                val newVersion = metaJson.optInt("currentVersion", 0) + 1
-                metaJson.put("currentVersion", newVersion)
-                webDavClient.uploadJson(config, webDavClient.getMetaPath(config.roomId), metaJson)
-                syncPreferences.updateLastSyncVersion(newVersion)
-            }
-
-            val finalData = parseCloudData(mergedData)
-            applyCloudData(finalData)
-
-            syncPreferences.updateLastSyncTime(System.currentTimeMillis())
-            syncStatus.value = SyncStatus(state = SyncState.SYNCED)
-
-            SyncResult.Success(pulledCourses = mergedCourses.size, pushedCourses = mergedCourses.size)
-        } catch (e: Exception) {
-            Log.e(TAG, "resolveConflicts failed", e)
-            SyncResult.Error(e.message ?: "冲突解决失败", e)
         }
     }
 
