@@ -6,6 +6,89 @@
 
 ---
 
+## [4.7.3] - 2026-05-29
+
+### 变更类型：Bug 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复离开同步房间时未清除 WebDAV 云端文件**
+
+1. **修复**：`leaveRoom()` 离开房间时删除 WebDAV 上的 data.json、meta.json 和房间目录，避免云端残留数据
+2. **优化**：`leaveRoom()` 添加 `withContext(Dispatchers.IO)` 确保网络操作在 IO 线程，即使删除失败也继续清除本地配置
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（leaveRoom 添加云端文件删除和 IO 线程切换）
+- `app/build.gradle.kts`（versionCode 40702→40703，versionName 4.7.2→4.7.3）
+
+---
+
+## [4.7.2] - 2026-05-29
+
+### 变更类型：Bug 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复同步逻辑三个关键缺陷**
+
+1. **修复**：`detectConflicts` 不再将"本地有云端没有"/"云端有本地没有"视为冲突，双人各自添加课程是正常合并场景，只有同 ID 内容不同才是真正冲突
+2. **修复**：合并后推送云端的同时，将合并结果应用到本地数据库，确保能看到对方新增的课程
+3. **修复**：移除 `lastModifiedBy == deviceId` 的跳过逻辑，该逻辑会错误地丢弃本地变更
+4. **优化**：调整判断顺序为"数据相同→无变更"、"仅本地变更→推送"、"双方变更→合并或冲突"，逻辑更清晰
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（重构 sync 判断顺序，简化 detectConflicts，合并后应用本地）
+- `app/build.gradle.kts`（versionCode 40701→40702，versionName 4.7.1→4.7.2）
+
+---
+
+## [4.7.1] - 2026-05-29
+
+### 变更类型：Bug 修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复同步时双方都有变更只拉取不推送，本地独有课程丢失**
+
+1. **修复**：双方都有变更且无冲突时，改为合并本地和云端课程（保留本地全部 + 补充云端独有），然后推送合并结果到云端，而非仅拉取覆盖本地
+2. **新增**：`mergeCourses()` 方法，以本地课程为基础，补充云端独有的课程
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（合并逻辑替代纯拉取，新增 mergeCourses）
+- `app/build.gradle.kts`（versionCode 40700→40701，versionName 4.7.0→4.7.1）
+
+---
+
+## [4.7.0] - 2026-05-29
+
+### 变更类型：功能优化
+
+### 状态：已实现
+
+### 变更内容
+
+**重构同步逻辑，修复版本号相同时不推送本地变更的问题**
+
+1. **修复**：同步时不再仅凭版本号判断是否有变更，改为下载云端数据后与本地课程逐字段比较，版本号相同但本地数据不同时自动推送本地数据
+2. **重构**：用 `localDataDiffersFromCloud()` 替换永远返回 true 的 `hasLocalChangesSince()`，实现真正的本地与云端数据差异检测
+3. **优化**：同步流程改为先下载数据再判断，确保本地有课程而云端为空时能正确推送
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（重构 sync 逻辑，新增 localDataDiffersFromCloud，移除 hasLocalChangesSince）
+- `app/build.gradle.kts`（versionCode 40606→40700，versionName 4.6.6→4.7.0）
+
+---
+
 ## [4.6.6] - 2026-05-29
 
 ### 变更类型：Bug 修复

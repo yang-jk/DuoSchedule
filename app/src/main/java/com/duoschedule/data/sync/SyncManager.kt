@@ -141,11 +141,6 @@ class SyncManager @Inject constructor(
                 val cloudVersion = metaJson.optInt("currentVersion", 0)
                 val localLastSyncVersion = syncPreferences.lastSyncVersion.first()
 
-                if (cloudVersion == localLastSyncVersion) {
-                    syncStatus.value = SyncStatus(state = SyncState.SYNCED, lastSyncVersion = cloudVersion)
-                    return@withContext SyncResult.NoChanges
-                }
-
                 val dataResult = webDavClient.downloadJson(config, webDavClient.getDataPath(config.roomId))
                 if (dataResult.isFailure) {
                     val ex = dataResult.exceptionOrNull()
@@ -160,21 +155,19 @@ class SyncManager @Inject constructor(
                 val cloudDataJson = dataResult.getOrThrow()
                 val cloudData = parseCloudData(cloudDataJson)
 
-                val localHasChanges = hasLocalChangesSince(localLastSyncVersion)
+                val localCourses = courseDao.getAllCoursesSync()
+                val localDiffers = localDataDiffersFromCloud(localCourses, cloudData)
 
-                if (!localHasChanges) {
-                    val pullResult = applyCloudData(cloudData)
+                if (!localDiffers) {
                     syncPreferences.updateLastSyncVersion(cloudVersion)
                     syncPreferences.updateLastSyncTime(System.currentTimeMillis())
                     syncStatus.value = SyncStatus(state = SyncState.SYNCED, lastSyncVersion = cloudVersion, lastSyncTime = System.currentTimeMillis())
-                    return@withContext pullResult
+                    return@withContext SyncResult.NoChanges
                 }
 
-                val lastModifiedBy = cloudDataJson.optString("lastModifiedBy", "")
-                if (lastModifiedBy == config.deviceId) {
-                    syncPreferences.updateLastSyncVersion(cloudVersion)
-                    syncStatus.value = SyncStatus(state = SyncState.SYNCED, lastSyncVersion = cloudVersion)
-                    return@withContext SyncResult.NoChanges
+                if (cloudVersion == localLastSyncVersion) {
+                    val pushResult = pushLocalToCloud(config, metaJson)
+                    return@withContext pushResult
                 }
 
                 val conflicts = detectConflicts(cloudData)
@@ -187,11 +180,31 @@ class SyncManager @Inject constructor(
                     )
                 }
 
-                val pullResult = applyCloudData(cloudData)
-                syncPreferences.updateLastSyncVersion(cloudVersion)
+                val mergedCourses = mergeCourses(localCourses, cloudData)
+                val settingsA = getCloudSettings(PersonType.PERSON_A)
+                val settingsB = getCloudSettings(PersonType.PERSON_B)
+                val personAName = settingsDataStore.personAName.first()
+                val personBName = settingsDataStore.personBName.first()
+                val mergedData = buildCloudDataJson(config, mergedCourses, settingsA, settingsB, personAName, personBName)
+
+                val uploadResult = webDavClient.uploadJson(config, webDavClient.getDataPath(config.roomId), mergedData)
+                if (uploadResult.isFailure) {
+                    syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = uploadResult.exceptionOrNull()?.message)
+                    return@withContext SyncResult.Error(uploadResult.exceptionOrNull()?.message ?: "上传合并数据失败")
+                }
+
+                val newVersion = metaJson.optInt("currentVersion", 0) + 1
+                metaJson.put("currentVersion", newVersion)
+                webDavClient.uploadJson(config, webDavClient.getMetaPath(config.roomId), metaJson)
+
+                val mergedCloudData = parseCloudData(mergedData)
+                applyCloudData(mergedCloudData)
+
+                syncPreferences.updateLastSyncVersion(newVersion)
                 syncPreferences.updateLastSyncTime(System.currentTimeMillis())
-                syncStatus.value = SyncStatus(state = SyncState.SYNCED, lastSyncVersion = cloudVersion, lastSyncTime = System.currentTimeMillis())
-                pullResult
+                syncStatus.value = SyncStatus(state = SyncState.SYNCED, lastSyncVersion = newVersion, lastSyncTime = System.currentTimeMillis())
+
+                SyncResult.Success(pulledCourses = mergedCourses.size, pushedCourses = mergedCourses.size)
             } catch (e: Exception) {
                 Log.e(TAG, "sync failed", e)
                 syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = e.message)
@@ -305,9 +318,24 @@ class SyncManager @Inject constructor(
     }
 
     suspend fun leaveRoom(): Result<Unit> {
-        syncPreferences.clearSyncConfig()
-        syncStatus.value = SyncStatus(state = SyncState.DISABLED)
-        return Result.success(Unit)
+        return withContext(Dispatchers.IO) {
+            try {
+                val config = syncPreferences.getSyncConfigSync()
+                if (config != null) {
+                    webDavClient.deleteFile(config, webDavClient.getDataPath(config.roomId))
+                    webDavClient.deleteFile(config, webDavClient.getMetaPath(config.roomId))
+                    webDavClient.deleteFile(config, webDavClient.getRoomPath(config.roomId))
+                }
+                syncPreferences.clearSyncConfig()
+                syncStatus.value = SyncStatus(state = SyncState.DISABLED)
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Log.e(TAG, "leaveRoom failed", e)
+                syncPreferences.clearSyncConfig()
+                syncStatus.value = SyncStatus(state = SyncState.DISABLED)
+                Result.success(Unit)
+            }
+        }
     }
 
     private suspend fun pushLocalToCloud(config: SyncConfig, metaJson: JSONObject): SyncResult {
@@ -409,11 +437,38 @@ class SyncManager @Inject constructor(
         )
     }
 
-    private suspend fun hasLocalChangesSince(lastSyncVersion: Int): Boolean {
-        if (lastSyncVersion == 0) return true
-        val lastSyncTime = syncPreferences.lastSyncTime.first()
-        if (lastSyncTime == 0L) return true
-        return true
+    private suspend fun localDataDiffersFromCloud(localCourses: List<Course>, cloudData: CloudData): Boolean {
+        val cloudCourseMap = cloudData.courses.associateBy { it.id }
+        if (localCourses.size != cloudData.courses.size) return true
+        for (local in localCourses) {
+            val cloud = cloudCourseMap[local.id] ?: return true
+            if (local.name != cloud.name || local.location != cloud.location ||
+                local.teacher != cloud.teacher || local.dayOfWeek != cloud.dayOfWeek ||
+                local.startHour != cloud.startHour || local.startMinute != cloud.startMinute ||
+                local.endHour != cloud.endHour || local.endMinute != cloud.endMinute ||
+                local.weekType.name != cloud.weekType || local.startWeek != cloud.startWeek ||
+                local.endWeek != cloud.endWeek || local.customWeeks != cloud.customWeeks ||
+                local.personType.name != cloud.personType || local.startPeriod != cloud.startPeriod ||
+                local.endPeriod != cloud.endPeriod || local.isCustomTime != cloud.isCustomTime
+            ) return true
+        }
+        return false
+    }
+
+    private fun mergeCourses(localCourses: List<Course>, cloudData: CloudData): List<CloudCourse> {
+        val cloudMap = cloudData.courses.associateBy { it.id }
+        val localCloudCourses = localCourses.map { it.toCloudCourse() }
+        val localMap = localCloudCourses.associateBy { it.id }
+        val merged = mutableMapOf<Long, CloudCourse>()
+        for (course in localCloudCourses) {
+            merged[course.id] = course
+        }
+        for (course in cloudData.courses) {
+            if (!merged.containsKey(course.id)) {
+                merged[course.id] = course
+            }
+        }
+        return merged.values.toList()
     }
 
     private suspend fun detectConflicts(cloudData: CloudData): List<ConflictItem> {
@@ -422,36 +477,16 @@ class SyncManager @Inject constructor(
         val cloudMap = cloudData.courses.associateBy { it.id }
 
         val conflicts = mutableListOf<ConflictItem>()
-        val allIds = localMap.keys + cloudMap.keys
 
-        for (id in allIds) {
-            val local = localMap[id]
+        for ((id, local) in localMap) {
             val cloud = cloudMap[id]
-            when {
-                local != null && cloud != null && local != cloud.toCourse() -> {
-                    conflicts.add(ConflictItem(
-                        courseName = local.name,
-                        localVersion = local.toCloudCourse(),
-                        cloudVersion = cloud,
-                        conflictType = ConflictType.BOTH_MODIFIED
-                    ))
-                }
-                local == null && cloud != null -> {
-                    conflicts.add(ConflictItem(
-                        courseName = cloud.name,
-                        localVersion = null,
-                        cloudVersion = cloud,
-                        conflictType = ConflictType.LOCAL_DELETED_CLOUD_MODIFIED
-                    ))
-                }
-                local != null && cloud == null -> {
-                    conflicts.add(ConflictItem(
-                        courseName = local.name,
-                        localVersion = local.toCloudCourse(),
-                        cloudVersion = null,
-                        conflictType = ConflictType.LOCAL_MODIFIED_CLOUD_DELETED
-                    ))
-                }
+            if (cloud != null && local != cloud.toCourse()) {
+                conflicts.add(ConflictItem(
+                    courseName = local.name,
+                    localVersion = local.toCloudCourse(),
+                    cloudVersion = cloud,
+                    conflictType = ConflictType.BOTH_MODIFIED
+                ))
             }
         }
         return conflicts
