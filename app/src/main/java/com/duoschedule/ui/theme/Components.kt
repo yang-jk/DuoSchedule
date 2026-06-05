@@ -17,6 +17,8 @@ import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
+import com.duoschedule.data.model.AppThemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun Separator(
@@ -24,11 +26,21 @@ fun Separator(
     thickness: Dp = 1.dp,
     color: Color? = null
 ) {
-    val darkTheme = LocalDarkTheme.current
-    val dividerColor = color ?: if (darkTheme) {
-        SeparatorsDark.NonOpaque
+    val appThemeMode = LocalAppThemeMode.current
+    val dividerColor = if (appThemeMode == AppThemeMode.MIUIX) {
+        color ?: MiuixTheme.colorScheme.dividerLine
     } else {
-        SeparatorsLight.NonOpaque
+        val darkTheme = LocalDarkTheme.current
+        color ?: if (darkTheme) {
+            SeparatorsDark.NonOpaque
+        } else {
+            SeparatorsLight.NonOpaque
+        }
+    }
+    
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        // MIUIX 风格不需要分割线
+        return
     }
     
     Box(
@@ -244,6 +256,47 @@ fun BlurredBar(
     enabled: Boolean = true,
     content: @Composable () -> Unit,
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        // MIUIX 模式下使用 Miuix blur 实现模糊效果
+        val darkTheme = LocalDarkTheme.current
+        val containerColor = if (darkTheme) {
+            Color(0x80121212)
+        } else {
+            Color(0x80FAFAFA)
+        }
+        val blurColors = BlurDefaults.blurColors(
+            blendColors = listOf(
+                BlendColorEntry(containerColor, BlurBlendMode.SrcOver)
+            ),
+            saturation = 1.3f
+        )
+        Box(
+            modifier = Modifier
+                .zIndex(1f)
+                .then(
+                    if (backdrop != null) {
+                        Modifier.textureBlur(
+                            backdrop = backdrop,
+                            shape = RoundedCornerShape(0.dp),
+                            blurRadiusX = 80f,
+                            blurRadiusY = 25f,
+                            noiseCoefficient = 0f,
+                            colors = blurColors,
+                            enabled = enabled,
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+        ) {
+            content()
+        }
+        return
+    }
+
+    // iOS 模式：使用半透明背景色
     val darkTheme = LocalDarkTheme.current
 
     val containerColor = if (darkTheme) {
@@ -252,31 +305,10 @@ fun BlurredBar(
         Color(0x80FAFAFA)
     }
 
-    val blurColors = BlurDefaults.blurColors(
-        blendColors = listOf(
-            BlendColorEntry(containerColor, BlurBlendMode.SrcOver)
-        ),
-        saturation = 1.3f
-    )
-
     Box(
         modifier = Modifier
             .zIndex(1f)
-            .then(
-                if (backdrop != null) {
-                    Modifier.textureBlur(
-                        backdrop = backdrop,
-                        shape = RoundedCornerShape(0.dp),
-                        blurRadiusX = 80f,
-                        blurRadiusY = 25f,
-                        noiseCoefficient = 0f,
-                        colors = blurColors,
-                        enabled = enabled,
-                    )
-                } else {
-                    Modifier
-                }
-            )
+            .background(containerColor)
     ) {
         content()
     }

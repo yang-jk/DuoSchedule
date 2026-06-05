@@ -27,7 +27,8 @@ data class ConflictItem(
     val courseName: String,
     val localVersion: CloudCourse?,
     val cloudVersion: CloudCourse?,
-    val conflictType: ConflictType
+    val conflictType: ConflictType,
+    val courseKey: String = localVersion?.syncId ?: cloudVersion?.syncId ?: courseName
 )
 
 enum class ConflictType {

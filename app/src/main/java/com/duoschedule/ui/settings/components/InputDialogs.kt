@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.settings.components
+package com.duoschedule.ui.settings.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -20,7 +20,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.ui.theme.*
+import com.duoschedule.ui.theme.LocalAppThemeMode
+import top.yukonga.miuix.kmp.window.WindowDialog
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator as MiuixCircularProgressIndicator
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
@@ -46,6 +56,43 @@ fun TextInputAlert(
     placeholder: String = "",
     singleLine: Boolean = true
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        var value by remember(initialValue) { mutableStateOf(initialValue) }
+        WindowDialog(
+            show = true,
+            title = title,
+            onDismissRequest = onDismiss
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                TextField(
+                    value = value,
+                    onValueChange = { value = it },
+                    label = label,
+                    useLabelAsPlaceholder = true,
+                    singleLine = singleLine,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(Spacing.lg))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    Button(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors()) {
+                        top.yukonga.miuix.kmp.basic.Text("取消")
+                    }
+                    Button(
+                        onClick = { onConfirm(value) },
+                        modifier = Modifier.weight(1f),
+                        enabled = value.isNotBlank(),
+                        colors = ButtonDefaults.buttonColorsPrimary()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("确定")
+                    }
+                }
+            }
+        }
+        return
+    }
+
     var value by remember(initialValue) { mutableStateOf(initialValue) }
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
@@ -102,6 +149,59 @@ fun NumberInputAlert(
     maxValue: Int = Int.MAX_VALUE,
     placeholder: String = ""
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        var value by remember(initialValue) { mutableStateOf(initialValue.toString()) }
+        var isError by remember { mutableStateOf(false) }
+        WindowDialog(
+            show = true,
+            title = title,
+            onDismissRequest = onDismiss
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                TextField(
+                    value = value,
+                    onValueChange = {
+                        value = it
+                        val num = it.toIntOrNull()
+                        isError = num == null || num < minValue || num > maxValue
+                    },
+                    label = label,
+                    useLabelAsPlaceholder = true,
+                    singleLine = true,
+                    borderColor = if (isError) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.outline,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (isError) {
+                    Spacer(modifier = Modifier.height(Spacing.xs))
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = "请输入 $minValue-$maxValue 之间的数字",
+                        color = MiuixTheme.colorScheme.error
+                    )
+                }
+                Spacer(modifier = Modifier.height(Spacing.lg))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    Button(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors()) {
+                        top.yukonga.miuix.kmp.basic.Text("取消")
+                    }
+                    Button(
+                        onClick = {
+                            val num = value.toIntOrNull()
+                            if (num != null && num in minValue..maxValue) onConfirm(num)
+                        },
+                        modifier = Modifier.weight(1f),
+                        enabled = !isError && value.toIntOrNull() != null,
+                        colors = ButtonDefaults.buttonColorsPrimary()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("确定")
+                    }
+                }
+            }
+        }
+        return
+    }
+
     var value by remember(initialValue) { mutableStateOf(initialValue.toString()) }
     var isError by remember { mutableStateOf(false) }
     val labelsPrimary = getLabelsVibrantPrimary()
@@ -192,6 +292,8 @@ fun TimeRangeAlert(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
     val parts = initialValue.split("-")
     val startTime = parts.getOrElse(0) { "08:00" }
     val endTime = parts.getOrElse(1) { "08:45" }
@@ -214,6 +316,57 @@ fun TimeRangeAlert(
         val startTotal = startHour * 60 + startMinute
         val endTotal = endHour * 60 + endMinute
         endTotal > startTotal
+    }
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = title,
+            onDismissRequest = onDismiss
+        ) {
+            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "第${periodIndex + 1}节课",
+                    color = MiuixTheme.colorScheme.onBackgroundVariant
+                )
+                Spacer(modifier = Modifier.height(Spacing.lg))
+                TimeRangeWheelPicker(
+                    initialStartHour = startHour,
+                    initialStartMinute = startMinute,
+                    initialEndHour = endHour,
+                    initialEndMinute = endMinute,
+                    onTimeRangeChange = { sh, sm, eh, em ->
+                        startHour = sh
+                        startMinute = sm
+                        endHour = eh
+                        endMinute = em
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (!isValid) {
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = "结束时间必须晚于开始时间",
+                        color = MiuixTheme.colorScheme.error
+                    )
+                }
+                Spacer(modifier = Modifier.height(Spacing.lg))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    Button(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors()) {
+                        top.yukonga.miuix.kmp.basic.Text("取消")
+                    }
+                    Button(
+                        onClick = { if (isValid) onConfirm(timeRange) },
+                        modifier = Modifier.weight(1f),
+                        enabled = isValid,
+                        colors = ButtonDefaults.buttonColorsPrimary()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("确定")
+                    }
+                }
+            }
+        }
+        return
     }
 
     val labelsPrimary = getLabelsVibrantPrimary()
@@ -524,6 +677,36 @@ fun GlassAlertDialog(
     dismissButton: @Composable (() -> Unit)? = null,
     width: Dp = 300.dp
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = title,
+            onDismissRequest = onDismiss
+        ) {
+            Column {
+                if (icon != null) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { icon() }
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                }
+                if (message != null) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = message,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.lg))
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    dismissButton?.invoke()
+                    confirmButton()
+                }
+            }
+        }
+        return
+    }
+
     val darkTheme = LocalDarkTheme.current
     val containerColor = if (darkTheme) {
         Color(0xFF121212).copy(alpha = 0.4f)
@@ -617,6 +800,36 @@ fun IOSAlertDialog(
     dismissButton: @Composable (() -> Unit)? = null,
     width: Dp = 300.dp
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = title,
+            onDismissRequest = onDismiss
+        ) {
+            Column {
+                if (icon != null) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { icon() }
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                }
+                if (message != null) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = message,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.lg))
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    dismissButton?.invoke()
+                    confirmButton()
+                }
+            }
+        }
+        return
+    }
+
     val dialogBackground = getDialogBackgroundColor()
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
@@ -682,6 +895,28 @@ fun GlassLoadingDialog(
     message: String,
     onDismiss: () -> Unit
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = null,
+            onDismissRequest = onDismiss
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+            ) {
+                MiuixCircularProgressIndicator(modifier = Modifier.size(24.dp))
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = message,
+                    color = MiuixTheme.colorScheme.onBackground
+                )
+            }
+        }
+        return
+    }
+
     val darkTheme = LocalDarkTheme.current
     val containerColor = if (darkTheme) {
         Color(0xFF121212).copy(alpha = 0.4f)
@@ -750,6 +985,28 @@ fun IOSLoadingDialog(
     message: String,
     onDismiss: () -> Unit
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = null,
+            onDismissRequest = onDismiss
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+            ) {
+                MiuixCircularProgressIndicator(modifier = Modifier.size(24.dp))
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = message,
+                    color = MiuixTheme.colorScheme.onBackground
+                )
+            }
+        }
+        return
+    }
+
     val dialogBackground = getDialogBackgroundColor()
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
@@ -803,6 +1060,44 @@ fun GlassConfirmDialog(
     isDestructive: Boolean = false,
     content: @Composable (ColumnScope.() -> Unit)? = null
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = title,
+            onDismissRequest = onDismiss
+        ) {
+            Column {
+                if (message != null) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = message,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                }
+                if (content != null) {
+                    Column(modifier = Modifier.fillMaxWidth(), content = content)
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    Button(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors()) {
+                        top.yukonga.miuix.kmp.basic.Text(dismissText)
+                    }
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1f),
+                        enabled = confirmEnabled,
+                        colors = ButtonDefaults.buttonColorsPrimary()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text(confirmText)
+                    }
+                }
+            }
+        }
+        return
+    }
+
     val darkTheme = LocalDarkTheme.current
     val containerColor = if (darkTheme) {
         Color(0xFF121212).copy(alpha = 0.4f)
@@ -910,6 +1205,44 @@ fun IOSConfirmDialog(
     isDestructive: Boolean = false,
     content: @Composable (ColumnScope.() -> Unit)? = null
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = title,
+            onDismissRequest = onDismiss
+        ) {
+            Column {
+                if (message != null) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = message,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                }
+                if (content != null) {
+                    Column(modifier = Modifier.fillMaxWidth(), content = content)
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    Button(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors()) {
+                        top.yukonga.miuix.kmp.basic.Text(dismissText)
+                    }
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1f),
+                        enabled = confirmEnabled,
+                        colors = ButtonDefaults.buttonColorsPrimary()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text(confirmText)
+                    }
+                }
+            }
+        }
+        return
+    }
+
     val dialogBackground = getDialogBackgroundColor()
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
@@ -993,6 +1326,47 @@ fun GlassSuccessDialog(
     actionText: String = "查看",
     dismissText: String = "返回"
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = title,
+            onDismissRequest = onDismiss
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.primary,
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.height(Spacing.md))
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = message,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(Spacing.lg))
+                if (onAction != null) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                        Button(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors()) {
+                            top.yukonga.miuix.kmp.basic.Text(dismissText)
+                        }
+                        Button(onClick = onAction, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColorsPrimary()) {
+                            top.yukonga.miuix.kmp.basic.Text(actionText)
+                        }
+                    }
+                } else {
+                    Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColorsPrimary()) {
+                        top.yukonga.miuix.kmp.basic.Text(dismissText)
+                    }
+                }
+            }
+        }
+        return
+    }
+
     val darkTheme = LocalDarkTheme.current
     val containerColor = if (darkTheme) {
         Color(0xFF121212).copy(alpha = 0.4f)
@@ -1108,6 +1482,47 @@ fun IOSSuccessDialog(
     actionText: String = "查看",
     dismissText: String = "返回"
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = title,
+            onDismissRequest = onDismiss
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.primary,
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.height(Spacing.md))
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = message,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(Spacing.lg))
+                if (onAction != null) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                        Button(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors()) {
+                            top.yukonga.miuix.kmp.basic.Text(dismissText)
+                        }
+                        Button(onClick = onAction, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColorsPrimary()) {
+                            top.yukonga.miuix.kmp.basic.Text(actionText)
+                        }
+                    }
+                } else {
+                    Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColorsPrimary()) {
+                        top.yukonga.miuix.kmp.basic.Text(dismissText)
+                    }
+                }
+            }
+        }
+        return
+    }
+
     val dialogBackground = getDialogBackgroundColor()
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
@@ -1200,6 +1615,56 @@ fun GlassErrorDialog(
     onDismiss: () -> Unit,
     dismissText: String = "确定"
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = title,
+            onDismissRequest = onDismiss
+        ) {
+            Column {
+                if (message != null) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = message,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+                }
+                if (errors.isNotEmpty()) {
+                    Surface(
+                        color = MiuixTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp).padding(Spacing.sm)
+                        ) {
+                            errors.take(5).forEach { error ->
+                                top.yukonga.miuix.kmp.basic.Text(
+                                    text = "• $error",
+                                    color = MiuixTheme.colorScheme.error,
+                                    modifier = Modifier.padding(vertical = 2.dp)
+                                )
+                            }
+                            if (errors.size > 5) {
+                                top.yukonga.miuix.kmp.basic.Text(
+                                    text = "还有 ${errors.size - 5} 条错误...",
+                                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                    modifier = Modifier.padding(top = Spacing.xs)
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                }
+                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColorsPrimary()) {
+                    top.yukonga.miuix.kmp.basic.Text(dismissText)
+                }
+            }
+        }
+        return
+    }
+
     val darkTheme = LocalDarkTheme.current
     val containerColor = if (darkTheme) {
         Color(0xFF121212).copy(alpha = 0.4f)
@@ -1330,6 +1795,56 @@ fun IOSErrorDialog(
     onDismiss: () -> Unit,
     dismissText: String = "确定"
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = title,
+            onDismissRequest = onDismiss
+        ) {
+            Column {
+                if (message != null) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = message,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+                }
+                if (errors.isNotEmpty()) {
+                    Surface(
+                        color = MiuixTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp).padding(Spacing.sm)
+                        ) {
+                            errors.take(5).forEach { error ->
+                                top.yukonga.miuix.kmp.basic.Text(
+                                    text = "• $error",
+                                    color = MiuixTheme.colorScheme.error,
+                                    modifier = Modifier.padding(vertical = 2.dp)
+                                )
+                            }
+                            if (errors.size > 5) {
+                                top.yukonga.miuix.kmp.basic.Text(
+                                    text = "还有 ${errors.size - 5} 条错误...",
+                                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                                    modifier = Modifier.padding(top = Spacing.xs)
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                }
+                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColorsPrimary()) {
+                    top.yukonga.miuix.kmp.basic.Text(dismissText)
+                }
+            }
+        }
+        return
+    }
+
     val dialogBackground = getDialogBackgroundColor()
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()

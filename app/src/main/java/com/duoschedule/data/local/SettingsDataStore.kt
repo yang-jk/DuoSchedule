@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.ThemeMode
 import com.duoschedule.data.model.TodayCourseDisplayMode
@@ -60,6 +61,7 @@ class SettingsDataStore @Inject constructor(
         private val LIVE_NOTIFICATION_ENABLED = booleanPreferencesKey("live_notification_enabled")
         private val TODAY_COURSE_DISPLAY_MODE = stringPreferencesKey("today_course_display_mode")
         private val THEME_MODE = stringPreferencesKey("theme_mode")
+        private val APP_THEME_MODE = stringPreferencesKey("app_theme_mode")
         
         private val AUTO_SILENT_ENABLED = booleanPreferencesKey("auto_silent_enabled")
         private val AUTO_SILENT_MODE_TYPE = stringPreferencesKey("auto_silent_mode_type")
@@ -166,6 +168,15 @@ class SettingsDataStore @Inject constructor(
             ThemeMode.valueOf(mode)
         } catch (e: Exception) {
             ThemeMode.FOLLOW_SYSTEM
+        }
+    }
+
+    val appThemeMode: Flow<AppThemeMode> = context.dataStore.data.map { preferences ->
+        val mode = preferences[APP_THEME_MODE] ?: "IOS"
+        try {
+            AppThemeMode.valueOf(mode)
+        } catch (e: Exception) {
+            AppThemeMode.IOS
         }
     }
 
@@ -318,6 +329,12 @@ class SettingsDataStore @Inject constructor(
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { preferences ->
             preferences[THEME_MODE] = mode.name
+        }
+    }
+
+    suspend fun setAppThemeMode(mode: AppThemeMode) {
+        context.dataStore.edit { preferences ->
+            preferences[APP_THEME_MODE] = mode.name
         }
     }
 

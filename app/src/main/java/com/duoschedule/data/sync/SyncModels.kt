@@ -9,7 +9,9 @@ data class SyncConfig(
     val username: String,
     val password: String,
     val roomId: String,
-    val deviceId: String
+    val deviceId: String,
+    val inviteSenderProfileId: String? = null,
+    val inviteReceiverProfileId: String? = null
 )
 
 data class CloudData(
@@ -21,7 +23,10 @@ data class CloudData(
     val settingsA: CloudSettings?,
     val settingsB: CloudSettings?,
     val personAName: String,
-    val personBName: String
+    val personBName: String,
+    val schemaVersion: Int = 1,
+    val profiles: List<CloudProfile> = emptyList(),
+    val profileSettings: Map<String, CloudSettings> = emptyMap()
 )
 
 data class CloudCourse(
@@ -41,7 +46,14 @@ data class CloudCourse(
     val personType: String,
     val startPeriod: Int,
     val endPeriod: Int,
-    val isCustomTime: Boolean
+    val isCustomTime: Boolean,
+    val syncId: String = "",
+    val ownerProfileId: String = ""
+)
+
+data class CloudProfile(
+    val id: String,
+    val name: String
 )
 
 data class CloudSettings(
@@ -94,13 +106,19 @@ fun Course.toCloudCourse(): CloudCourse {
         personType = personType.name,
         startPeriod = startPeriod,
         endPeriod = endPeriod,
-        isCustomTime = isCustomTime
+        isCustomTime = isCustomTime,
+        syncId = syncId
     )
 }
 
-fun CloudCourse.toCourse(): Course {
+fun Course.toCloudCourse(ownerProfileId: String): CloudCourse {
+    return toCloudCourse().copy(ownerProfileId = ownerProfileId, syncId = syncId)
+}
+
+fun CloudCourse.toCourse(personTypeOverride: PersonType? = null): Course {
     return Course(
         id = id,
+        syncId = syncId,
         name = name,
         location = location,
         teacher = teacher,
@@ -113,7 +131,7 @@ fun CloudCourse.toCourse(): Course {
         startWeek = startWeek,
         endWeek = endWeek,
         customWeeks = customWeeks,
-        personType = try { PersonType.valueOf(personType) } catch (_: Exception) { PersonType.PERSON_A },
+        personType = personTypeOverride ?: try { PersonType.valueOf(personType) } catch (_: Exception) { PersonType.PERSON_A },
         startPeriod = startPeriod,
         endPeriod = endPeriod,
         isCustomTime = isCustomTime

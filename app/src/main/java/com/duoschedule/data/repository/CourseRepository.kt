@@ -2,6 +2,7 @@ package com.duoschedule.data.repository
 
 import com.duoschedule.data.local.CourseDao
 import com.duoschedule.data.local.SettingsDataStore
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.ThemeMode
@@ -115,6 +116,9 @@ class CourseRepository @Inject constructor(
     fun getThemeMode(): Flow<ThemeMode> = 
         settingsDataStore.themeMode
 
+    fun getAppThemeMode(): Flow<AppThemeMode> =
+        settingsDataStore.appThemeMode
+
     fun getAutoSilentEnabled(): Flow<Boolean> = 
         settingsDataStore.autoSilentEnabled
 
@@ -192,6 +196,9 @@ class CourseRepository @Inject constructor(
 
     suspend fun setThemeMode(mode: ThemeMode) = 
         settingsDataStore.setThemeMode(mode)
+
+    suspend fun setAppThemeMode(mode: AppThemeMode) =
+        settingsDataStore.setAppThemeMode(mode)
 
     suspend fun setAutoSilentEnabled(enabled: Boolean) = 
         settingsDataStore.setAutoSilentEnabled(enabled)

@@ -27,6 +27,8 @@ class SyncPreferences @Inject constructor(
         private val WEBDAV_PASSWORD = stringPreferencesKey("webdav_password")
         private val ROOM_ID = stringPreferencesKey("room_id")
         private val DEVICE_ID = stringPreferencesKey("device_id")
+        private val MY_PROFILE_ID = stringPreferencesKey("my_profile_id")
+        private val PARTNER_PROFILE_ID = stringPreferencesKey("partner_profile_id")
         private val LAST_SYNC_VERSION = intPreferencesKey("last_sync_version")
         private val LAST_SYNC_TIME = longPreferencesKey("last_sync_time")
         private val SYNC_ENABLED = stringPreferencesKey("sync_enabled")
@@ -83,6 +85,25 @@ class SyncPreferences @Inject constructor(
         }
     }
 
+    suspend fun getMyProfileIdSync(): String? {
+        return context.syncDataStore.data.map { prefs -> prefs[MY_PROFILE_ID] }.first()
+    }
+
+    suspend fun getPartnerProfileIdSync(): String? {
+        return context.syncDataStore.data.map { prefs -> prefs[PARTNER_PROFILE_ID] }.first()
+    }
+
+    suspend fun saveProfileMapping(myProfileId: String, partnerProfileId: String?) {
+        context.syncDataStore.edit { prefs ->
+            prefs[MY_PROFILE_ID] = myProfileId
+            if (partnerProfileId.isNullOrBlank()) {
+                prefs.remove(PARTNER_PROFILE_ID)
+            } else {
+                prefs[PARTNER_PROFILE_ID] = partnerProfileId
+            }
+        }
+    }
+
     suspend fun getSyncConfigSync(): SyncConfig? {
         return syncConfig.first()
     }
@@ -94,6 +115,8 @@ class SyncPreferences @Inject constructor(
             prefs.remove(WEBDAV_PASSWORD)
             prefs.remove(ROOM_ID)
             prefs.remove(DEVICE_ID)
+            prefs.remove(MY_PROFILE_ID)
+            prefs.remove(PARTNER_PROFILE_ID)
             prefs.remove(LAST_SYNC_VERSION)
             prefs.remove(LAST_SYNC_TIME)
             prefs[SYNC_ENABLED] = "false"

@@ -9,7 +9,7 @@ import com.duoschedule.data.model.Course
 
 @Database(
     entities = [Course::class],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -34,6 +34,14 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_courses_dayOfWeek_personType_startHour_startMinute` ON `courses` (`dayOfWeek`, `personType`, `startHour`, `startMinute`)")
+            }
+        }
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE courses ADD COLUMN syncId TEXT NOT NULL DEFAULT ''")
+                db.execSQL("UPDATE courses SET syncId = 'legacy-' || id WHERE syncId = ''")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_courses_syncId` ON `courses` (`syncId`)")
             }
         }
     }

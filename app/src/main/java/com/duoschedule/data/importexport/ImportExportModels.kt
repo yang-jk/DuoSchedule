@@ -147,3 +147,59 @@ enum class ExportScope {
     BOTH,
     ALL_WITH_SETTINGS
 }
+
+data class SchoolInfo(
+    val id: String,
+    val name: String,
+    val baseUrl: String,
+    val systemType: String,
+    val vpnHint: String = "",
+    val loginUrl: String = "",
+    val scheduleUrlPath: String = ""
+)
+
+data class SchoolLoginResult(
+    val success: Boolean,
+    val cookies: Map<String, String> = emptyMap(),
+    val needCaptcha: Boolean = false,
+    val captchaImageUrl: String? = null,
+    val errors: List<String> = emptyList()
+)
+
+interface SchoolAdapter {
+    val schoolInfo: SchoolInfo
+
+    suspend fun login(
+        username: String,
+        password: String,
+        captcha: String = "",
+        cookies: Map<String, String> = emptyMap()
+    ): SchoolLoginResult
+
+    suspend fun fetchScheduleHtml(
+        cookies: Map<String, String>,
+        studentId: String
+    ): String?
+
+    fun parseScheduleHtml(
+        html: String,
+        targetPerson: PersonType
+    ): List<CourseImportData>
+}
+
+object SupportedSchools {
+    private val adapters = mutableMapOf<String, SchoolAdapter>()
+
+    fun register(adapter: SchoolAdapter) {
+        adapters[adapter.schoolInfo.id] = adapter
+    }
+
+    fun getSchools(): List<SchoolInfo> = adapters.values.map { it.schoolInfo }
+
+    fun getAdapter(schoolId: String): SchoolAdapter? = adapters[schoolId]
+
+    fun getAdapterByPosition(position: Int): SchoolAdapter? {
+        val list = adapters.values.toList()
+        return list.getOrNull(position)
+    }
+}

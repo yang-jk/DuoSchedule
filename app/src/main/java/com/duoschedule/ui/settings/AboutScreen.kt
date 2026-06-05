@@ -28,6 +28,8 @@ import androidx.compose.material3.MaterialTheme
 import com.duoschedule.ui.theme.GlassSymbolIconButton
 import com.duoschedule.ui.theme.GlassSymbolButtonStyle
 import androidx.compose.runtime.Composable
+import com.duoschedule.data.model.AppThemeMode
+import com.duoschedule.ui.theme.LocalAppThemeMode
 import com.duoschedule.ui.theme.rememberLayerBackdropWithBackground
 import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as kyantRememberLayerBackdrop
@@ -137,8 +139,15 @@ fun AboutScreen(
                     titleColor = MiuixTheme.colorScheme.onSurface,
                     defaultWindowInsetsPadding = false,
                     navigationIcon = {
-                        GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
-                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                        val appThemeMode = LocalAppThemeMode.current
+                        if (appThemeMode == AppThemeMode.MIUIX) {
+                            top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                            }
+                        } else {
+                            GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                            }
                         }
                     },
                 )

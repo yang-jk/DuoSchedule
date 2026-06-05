@@ -1,21 +1,14 @@
-﻿package com.duoschedule.ui.schedule
+package com.duoschedule.ui.schedule
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.EnterExitState
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.TweenSpec
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -65,12 +58,23 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewModelScope
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.edit.CoursePreviewBottomSheet
 import com.duoschedule.ui.edit.CourseEditContent
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.settings.components.GlassConfirmDialog
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator as MiuixCircularProgressIndicator
+import top.yukonga.miuix.kmp.window.WindowDialog
+import top.yukonga.miuix.kmp.window.WindowListPopup
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -107,7 +111,6 @@ import java.time.format.DateTimeFormatter
 
 private val EaseInOutCubic = CubicBezierEasing(0.645f, 0.045f, 0.355f, 1.0f)
 
-private val ContainerTransformSpring: SpringSpec<Dp> = spring(dampingRatio = 0.9f, stiffness = 600f)
 private val MicroTween: TweenSpec<Float> = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing)
 
 private val EmptyCourseAction: (Course) -> Unit = { }
@@ -118,11 +121,10 @@ private val EmptyTriAction: (Int, Int, CellBounds) -> Unit = { _, _, _ -> }
 data class EditTarget(
     val courseId: Long?,
     val dayOfWeek: Int?,
-    val periodIndex: Int?,
-    val sourceKey: String
+    val periodIndex: Int?
 )
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(
     personType: PersonType,
@@ -252,20 +254,13 @@ fun ScheduleScreen(
     val labelsSecondary = getLabelsVibrantSecondary()
     val labelsTertiary = getLabelsVibrantTertiary()
 
-    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val appThemeMode = LocalAppThemeMode.current
 
     AnimatedContent(
         targetState = editTarget,
         transitionSpec = {
-            val isSharedElement = targetState?.sourceKey?.isNotEmpty() == true ||
-                    initialState?.sourceKey?.isNotEmpty() == true
-            if (isSharedElement) {
-                EnterTransition.None togetherWith
-                fadeOut(animationSpec = tween(200, easing = FastOutLinearInEasing))
-            } else {
-                fadeIn(animationSpec = tween(250, delayMillis = 50, easing = FastOutSlowInEasing)) togetherWith
-                fadeOut(animationSpec = tween(200, easing = FastOutLinearInEasing))
-            }
+            fadeIn(animationSpec = tween(250, delayMillis = 50, easing = FastOutSlowInEasing)) togetherWith
+            fadeOut(animationSpec = tween(200, easing = FastOutLinearInEasing))
         },
         label = "schedule_edit_transition"
     ) { target ->
@@ -274,6 +269,25 @@ fun ScheduleScreen(
         modifier = Modifier
             .fillMaxSize()
     ) {
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            SmallTopAppBar(
+                title = "${personName}的课表",
+                scrollBehavior = null,
+                color = Color.Transparent,
+                titleColor = MiuixTheme.colorScheme.onBackground,
+                defaultWindowInsetsPadding = true,
+                actions = {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = "第 $selectedWeek 周",
+                        color = MiuixTheme.colorScheme.onBackground,
+                        modifier = Modifier.clickable { showWeekSelector = !showWeekSelector }
+                    )
+                    IconButton(onClick = { editTarget = EditTarget(null, null, null) }) {
+                        Icon(Icons.Default.Add, contentDescription = "添加课程", tint = MiuixTheme.colorScheme.onBackground)
+                    }
+                }
+            )
+        } else {
         Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
         Row(
             modifier = Modifier
@@ -303,25 +317,13 @@ fun ScheduleScreen(
                 contentAlignment = Alignment.CenterEnd
             ) {
                 GlassSymbolIconButton(
-                    onClick = { editTarget = EditTarget(null, null, null, "addButton_${personType.name}") },
-                    style = GlassSymbolButtonStyle.NonTinted,
-                    modifier = sharedTransitionScope?.let { scope ->
-                        with(scope) {
-                            Modifier.sharedElement(
-                                rememberSharedContentState(key = "addButton_${personType.name}"),
-                                animatedVisibilityScope = this@AnimatedContent,
-                                boundsTransform = { _, _ -> spring(dampingRatio = 0.9f, stiffness = 600f) },
-                                renderInOverlayDuringTransition = true,
-                                clipInOverlayDuringTransition = OverlayClip(
-                                    ContinuousRoundedRectangle(BorderRadius.iOS26.large)
-                                )
-                            )
-                        }
-                    } ?: Modifier
+                    onClick = { editTarget = EditTarget(null, null, null) },
+                    style = GlassSymbolButtonStyle.NonTinted
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "添加课程", tint = labelsPrimary)
                 }
             }
+        }
         }
 
         Column(
@@ -441,7 +443,7 @@ fun ScheduleScreen(
                             selectedContextMenuSlot = selectedContextMenuSlot,
                             onCourseClick = handleCourseClick,
                             onEmptySlotClick = { dayOfWeek, periodIndex ->
-                                editTarget = EditTarget(null, dayOfWeek, periodIndex, "addButton_${personType.name}")
+                                editTarget = EditTarget(null, dayOfWeek, periodIndex)
                             },
                             onCourseLongPress = { course, cellBounds ->
                                 contextMenuCellBounds = cellBounds
@@ -463,7 +465,7 @@ fun ScheduleScreen(
                                         showContextMenu = false
                                         editTransitionScope.launch {
                                             delay(150)
-                                            editTarget = EditTarget(course.id, null, null, "courseCard_${course.id}")
+                                            editTarget = EditTarget(course.id, null, null)
                                         }
                                     },
                                     ContextMenuItem(
@@ -513,15 +515,13 @@ fun ScheduleScreen(
                                     ContextMenuItem(
                                         label = "添加课程"
                                     ) {
-                                        editTarget = EditTarget(null, dayOfWeek, period, "addButton_${personType.name}")
+                                        editTarget = EditTarget(null, dayOfWeek, period)
                                     }
                                 )
                                 
                                 contextMenuItems = items
                                 showContextMenu = true
-                            },
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = this@AnimatedContent
+                            }
                         )
                     }
                     
@@ -550,9 +550,7 @@ fun ScheduleScreen(
                                 onCourseClick = EmptyCourseAction,
                                 onEmptySlotClick = EmptyBiAction,
                                 onCourseLongPress = { _, _ -> },
-                                onEmptySlotLongPress = EmptyTriAction,
-                                sharedTransitionScope = null,
-                                animatedVisibilityScope = null
+                                onEmptySlotLongPress = EmptyTriAction
                             )
                         }
                     }
@@ -582,9 +580,7 @@ fun ScheduleScreen(
                                 onCourseClick = EmptyCourseAction,
                                 onEmptySlotClick = EmptyBiAction,
                                 onCourseLongPress = { _, _ -> },
-                                onEmptySlotLongPress = EmptyTriAction,
-                                sharedTransitionScope = null,
-                                animatedVisibilityScope = null
+                                onEmptySlotLongPress = EmptyTriAction
                             )
                         }
                     }
@@ -593,9 +589,13 @@ fun ScheduleScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
+                    if (appThemeMode == AppThemeMode.MIUIX) {
+                        MiuixCircularProgressIndicator()
+                    } else {
                         CircularProgressIndicator(
                             color = getLabelsVibrantPrimary()
                         )
+                    }
                     }
                 }
             }
@@ -608,8 +608,6 @@ fun ScheduleScreen(
                 initialPeriod = target.periodIndex,
                 initialPersonType = personType,
                 onNavigateBack = { editTarget = null },
-                animatedVisibilityScope = this@AnimatedContent,
-                sharedElementSourceKey = target.sourceKey,
                 viewModel = hiltViewModel(key = "edit_${target.courseId ?: "new"}_${personType.name}")
             )
         }
@@ -626,7 +624,7 @@ fun ScheduleScreen(
                 showPreview = false
                 val course = selectedCourse
                 selectedCourse = null
-                course?.let { editTarget = EditTarget(it.id, null, null, "courseCard_${it.id}") }
+                course?.let { editTarget = EditTarget(it.id, null, null) }
             },
             onDelete = {
                 showDeleteConfirm = true
@@ -636,6 +634,43 @@ fun ScheduleScreen(
     }
 
     if (showDeleteConfirm && selectedCourse != null) {
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            WindowDialog(
+                show = true,
+                title = "删除课程",
+                onDismissRequest = { showDeleteConfirm = false }
+            ) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "确定要删除「${selectedCourse?.name}」吗？",
+                    color = MiuixTheme.colorScheme.onBackgroundVariant
+                )
+                Spacer(modifier = Modifier.height(Spacing.lg))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    Button(
+                        onClick = { showDeleteConfirm = false },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("取消")
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.deleteCourse(selectedCourse!!.id)
+                            showDeleteConfirm = false
+                            showPreview = false
+                            selectedCourse = null
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColorsPrimary()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("删除")
+                    }
+                }
+            }
+        } else {
         GlassConfirmDialog(
             backdrop = LocalBackdrop.current ?: emptyBackdrop(),
             title = "删除课程",
@@ -650,9 +685,56 @@ fun ScheduleScreen(
             },
             onDismiss = { showDeleteConfirm = false }
         )
+        }
     }
     
     if (showPasteConflictDialog && pendingPasteNewCourse != null && pendingPasteConflictCourse != null && pendingPasteSlot != null) {
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            WindowDialog(
+                show = true,
+                title = "时间冲突",
+                onDismissRequest = { showPasteConflictDialog = false }
+            ) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "该时间段已有课程「${pendingPasteConflictCourse!!.name}」，是否覆盖？",
+                    color = MiuixTheme.colorScheme.onBackgroundVariant
+                )
+                Spacer(modifier = Modifier.height(Spacing.lg))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    Button(
+                        onClick = { showPasteConflictDialog = false },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("取消")
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.viewModelScope.launch {
+                                viewModel.forcePasteWithConflictResolution(
+                                    conflictCourse = pendingPasteConflictCourse!!,
+                                    dayOfWeek = pendingPasteSlot!!.dayOfWeek,
+                                    period = pendingPasteSlot!!.period,
+                                    periodTimes = displayPeriodTimes,
+                                    personType = personType
+                                )
+                            }
+                            showPasteConflictDialog = false
+                            pendingPasteNewCourse = null
+                            pendingPasteConflictCourse = null
+                            pendingPasteSlot = null
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColorsPrimary()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("覆盖")
+                    }
+                }
+            }
+        } else {
         GlassConfirmDialog(
             backdrop = LocalBackdrop.current ?: emptyBackdrop(),
             title = "时间冲突",
@@ -676,6 +758,7 @@ fun ScheduleScreen(
             },
             onDismiss = { showPasteConflictDialog = false }
         )
+        }
     }
     
     CourseContextMenu(
@@ -699,6 +782,59 @@ private fun WeekSelectorDropdown(
     onDismiss: () -> Unit,
     backdrop: com.kyant.backdrop.Backdrop
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = "选择周次",
+            onDismissRequest = onDismiss
+        ) {
+            LazyColumn(
+                modifier = Modifier.height(300.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+            ) {
+                items(
+                    items = (1..totalWeeks).toList(),
+                    key = { week -> week }
+                ) { week ->
+                    val isSelected = week == selectedWeek
+                    val isCurrent = week == currentWeek
+
+                    Surface(
+                        color = if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+                        else Color.Transparent,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onWeekSelected(week) }
+                                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            top.yukonga.miuix.kmp.basic.Text(
+                                text = "第 $week 周",
+                                color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            if (isCurrent) {
+                                top.yukonga.miuix.kmp.basic.Text(
+                                    text = "当前",
+                                    color = MiuixTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return
+    }
+
     val darkTheme = LocalDarkTheme.current
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
@@ -952,9 +1088,7 @@ fun WeeklyScheduleGrid(
     onCourseClick: (Course) -> Unit,
     onEmptySlotClick: (Int, Int) -> Unit,
     onCourseLongPress: (Course, CellBounds) -> Unit,
-    onEmptySlotLongPress: (Int, Int, CellBounds) -> Unit,
-    sharedTransitionScope: SharedTransitionScope?,
-    animatedVisibilityScope: AnimatedVisibilityScope?
+    onEmptySlotLongPress: (Int, Int, CellBounds) -> Unit
 ) {
     var selectedEmptySlot by remember { mutableStateOf<EmptySlotPosition?>(null) }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("M/d") }
@@ -1149,9 +1283,7 @@ fun WeeklyScheduleGrid(
                                 courseLocationFontSize = courseLocationFontSize,
                                 onCourseClick = onCourseClick,
                                 onCourseLongPress = onCourseLongPress,
-                                gridOffsetY = gridOffsetY,
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope
+                                gridOffsetY = gridOffsetY
                             )
                         }
                     }
@@ -1188,7 +1320,14 @@ private fun PeriodRow(
     val gridSeparatorColor = getScheduleGridSeparatorColor()
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsTertiary = getLabelsVibrantTertiary()
-    val overlayBackgroundColor = if (darkTheme) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.18f)
+    val appThemeMode = LocalAppThemeMode.current
+    val overlayBackgroundColor = if (appThemeMode == AppThemeMode.MIUIX) {
+        MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+    } else if (darkTheme) {
+        Color.White.copy(alpha = 0.25f)
+    } else {
+        Color.Black.copy(alpha = 0.18f)
+    }
 
     Column {
         Row(
@@ -1271,7 +1410,8 @@ private fun RowScope.EmptySlot(
     onLongPress: (Int, Int, CellBounds) -> Unit
 ) {
     val darkTheme = LocalDarkTheme.current
-    val shape = ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
+    val appThemeMode = LocalAppThemeMode.current
+    val shape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(12.dp) else ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
     val selectionBorderColor = Color(0xFF4789FE)
     
     var cellBounds by remember { mutableStateOf(CellBounds(0, 0, 0, 0)) }
@@ -1306,9 +1446,13 @@ private fun RowScope.EmptySlot(
                 .fillMaxWidth()
                 .clip(shape)
                 .background(
-                    if (isSelected) overlayBackgroundColor
-                    else if (darkTheme) Color.White.copy(alpha = 0.02f)
-                    else Color.Black.copy(alpha = 0.01f)
+                    if (isSelected) {
+                        if (appThemeMode == AppThemeMode.MIUIX) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f) else overlayBackgroundColor
+                    } else {
+                        if (appThemeMode == AppThemeMode.MIUIX) MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f)
+                        else if (darkTheme) Color.White.copy(alpha = 0.02f)
+                        else Color.Black.copy(alpha = 0.01f)
+                    }
                 )
                 .combinedClickable(
                     interactionSource = interactionSource,
@@ -1338,7 +1482,7 @@ private fun RowScope.EmptySlot(
     }
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, ExperimentalSharedTransitionApi::class)
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun CourseOverlayCard(
     course: Course,
@@ -1356,27 +1500,15 @@ private fun CourseOverlayCard(
     courseLocationFontSize: Int,
     onCourseClick: (Course) -> Unit,
     onCourseLongPress: (Course, CellBounds) -> Unit,
-    gridOffsetY: Int,
-    sharedTransitionScope: SharedTransitionScope?,
-    animatedVisibilityScope: AnimatedVisibilityScope?
+    gridOffsetY: Int
 ) {
     val isCurrentWeekCourse = course.isInWeek(currentWeek)
     val darkTheme = LocalDarkTheme.current
+    val appThemeMode = LocalAppThemeMode.current
     
     val fillShadow = getLiquidGlassFillShadow()
-    val shadowColor = getLiquidGlassShadowColor()
-    val targetCornerRadius = when (animatedVisibilityScope?.transition?.targetState) {
-        EnterExitState.PreEnter -> BorderRadius.iOS26.xxlarge
-        EnterExitState.Visible -> BorderRadius.iOS26.medium
-        EnterExitState.PostExit -> BorderRadius.iOS26.xxlarge
-        else -> BorderRadius.iOS26.medium
-    }
-    val cornerRadius by animateDpAsState(
-        targetValue = targetCornerRadius,
-        animationSpec = ContainerTransformSpring,
-        label = "card_corner"
-    )
-    val shape = ContinuousRoundedRectangle(cornerRadius.coerceAtLeast(0.dp))
+    val shadowColor = if (appThemeMode == AppThemeMode.MIUIX) MiuixTheme.colorScheme.outline else getLiquidGlassShadowColor()
+    val shape = ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
     
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
@@ -1392,9 +1524,9 @@ private fun CourseOverlayCard(
     val density = androidx.compose.ui.platform.LocalDensity.current
     val cellPaddingPx = with(density) { ScheduleDimensions.CellPadding.toPx().toInt() }
     
-    val cardWidth = columnWidth - cellPaddingPx * 2
+    val cardWidth = (columnWidth - cellPaddingPx * 2).coerceAtLeast(1)
     val singleCellHeightPx = with(density) { cellHeight.dp.toPx().toInt() }
-    val totalHeightPx = (singleCellHeightPx * span + cellSpacing * (span - 1)).roundToInt()
+    val totalHeightPx = (singleCellHeightPx * span + cellSpacing * (span - 1)).roundToInt().coerceAtLeast(1)
 
     val offsetX = timeColumnWidth + dayIndex * columnWidth + cellPaddingPx
     val offsetY = ((startPeriod - 1) * (singleCellHeightPx + cellSpacing) + cellPaddingPx).roundToInt()
@@ -1423,23 +1555,6 @@ private fun CourseOverlayCard(
             .offset { IntOffset(offsetX, offsetY) }
             .width(with(density) { cardWidth.toDp() })
             .height(with(density) { totalHeightPx.toDp() })
-            .then(
-                sharedTransitionScope?.let { scope ->
-                    animatedVisibilityScope?.let { avScope ->
-                        with(scope) {
-                            Modifier.sharedElement(
-                                rememberSharedContentState(key = "courseCard_${course.id}"),
-                                animatedVisibilityScope = avScope,
-                                boundsTransform = { _, _ -> spring(dampingRatio = 0.9f, stiffness = 600f) },
-                                renderInOverlayDuringTransition = true,
-                                clipInOverlayDuringTransition = OverlayClip(
-                                    ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
-                                )
-                            )
-                        }
-                    }
-                } ?: Modifier
-            )
             .scale(scale)
             .clip(shape)
             .graphicsLayer {

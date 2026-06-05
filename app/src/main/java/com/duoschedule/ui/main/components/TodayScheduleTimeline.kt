@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.main.components
+package com.duoschedule.ui.main.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.TodayCourseDisplayMode
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.ui.model.FreeTimeSlot
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.Backdrop
@@ -54,6 +55,8 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val CARD_MIN_HEIGHT = 72.dp
 private val CARD_SPACING = Spacing.sm
@@ -170,6 +173,41 @@ private fun FreeTimeSummaryChip(
     val labelsSecondary = getLabelsVibrantSecondary()
     val nearestSlot = freeTimeSlots.first()
 
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        Surface(
+            color = MiuixTheme.colorScheme.surfaceContainer,
+            shape = ContinuousRoundedRectangle(BorderRadius.iOS26.small),
+            modifier = modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .background(selectedColor.copy(alpha = 0.12f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "🕐",
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "${freeTimeSlots.size}个空闲时段 · 最近 ${nearestSlot.getTimeString()}",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                )
+            }
+        }
+        return
+    }
+
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val pressScale by animateFloatAsState(
@@ -256,6 +294,136 @@ private fun TodayCourseCardItem(
 
     val textPrimaryColor = if (courseInfo.hasEnded) labelsTertiary else labelsPrimary
     val textSecondaryColor = if (courseInfo.hasEnded) labelsTertiary else labelsSecondary
+
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        val miuixTextPrimaryColor = if (courseInfo.hasEnded) MiuixTheme.colorScheme.onSurfaceVariantSummary else MiuixTheme.colorScheme.onSurface
+        val miuixTextSecondaryColor = if (courseInfo.hasEnded) MiuixTheme.colorScheme.onSurfaceVariantSummary else MiuixTheme.colorScheme.onSurfaceVariantSummary
+
+        Surface(
+            color = MiuixTheme.colorScheme.surfaceContainer,
+            shape = ContinuousRoundedRectangle(BorderRadius.iOS26.medium),
+            modifier = modifier
+                .heightIn(min = CARD_MIN_HEIGHT)
+                .clickable(onClick = onClick)
+        ) {
+            Box {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.md, vertical = Spacing.sm)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(personColor, CircleShape)
+                        )
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = personName,
+                            color = miuixTextSecondaryColor
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = courseInfo.course.name,
+                            color = miuixTextPrimaryColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = courseInfo.course.getTimeString(),
+                            color = miuixTextSecondaryColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val locationText = courseInfo.course.location
+                            val teacherText = courseInfo.course.teacher
+
+                            if (locationText.isNotBlank() && teacherText.isNotBlank()) {
+                                top.yukonga.miuix.kmp.basic.Text(
+                                    text = "$locationText · $teacherText",
+                                    color = miuixTextSecondaryColor,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            } else if (locationText.isNotBlank()) {
+                                top.yukonga.miuix.kmp.basic.Text(
+                                    text = locationText,
+                                    color = miuixTextSecondaryColor,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            } else if (teacherText.isNotBlank()) {
+                                top.yukonga.miuix.kmp.basic.Text(
+                                    text = teacherText,
+                                    color = miuixTextSecondaryColor,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        if (courseInfo.periodText.isNotEmpty()) {
+                            top.yukonga.miuix.kmp.basic.Text(
+                                text = courseInfo.periodText,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            )
+                        }
+                    }
+                }
+
+                if (courseInfo.isOngoing) {
+                    val infiniteTransition = rememberInfiniteTransition()
+                    val pulseScale by infiniteTransition.animateFloat(
+                        initialValue = 1.0f,
+                        targetValue = 1.5f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "pulse"
+                    )
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp)
+                            .size(6.dp)
+                            .scale(pulseScale)
+                            .background(personColor, CircleShape)
+                    )
+                }
+            }
+        }
+        return
+    }
 
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()

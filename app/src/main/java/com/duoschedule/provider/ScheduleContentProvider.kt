@@ -30,12 +30,20 @@ class ScheduleContentProvider : ContentProvider() {
         private const val CODE_TOMORROW_COURSES = 2
         private const val CODE_INIT_STATUS = 3
         private const val CODE_VIVO_INTENT = 4
+        private const val CODE_MAML_SCHEDULE = 10
+        private const val CODE_MAML_MY_COURSES = 11
+        private const val CODE_MAML_TA_COURSES = 12
+        private const val CODE_MAML_FREE_TIME = 13
         
         private val URI_MATCHER = UriMatcher(UriMatcher.NO_MATCH).apply {
             addURI(AUTHORITY, "today", CODE_TODAY_COURSES)
             addURI(AUTHORITY, "tomorrow", CODE_TOMORROW_COURSES)
             addURI(AUTHORITY, "init", CODE_INIT_STATUS)
             addURI(AUTHORITY, "vivo_intent", CODE_VIVO_INTENT)
+            addURI(AUTHORITY, "maml/schedule", CODE_MAML_SCHEDULE)
+            addURI(AUTHORITY, "maml/my_courses", CODE_MAML_MY_COURSES)
+            addURI(AUTHORITY, "maml/ta_courses", CODE_MAML_TA_COURSES)
+            addURI(AUTHORITY, "maml/free_time", CODE_MAML_FREE_TIME)
         }
         
         private val ALLOWED_PACKAGES = setOf(
@@ -98,6 +106,10 @@ class ScheduleContentProvider : ContentProvider() {
                     CODE_TOMORROW_COURSES -> queryCourses(dependencies, true)
                     CODE_INIT_STATUS -> queryInitStatus(dependencies)
                     CODE_VIVO_INTENT -> queryVivoIntent(dependencies)
+                    CODE_MAML_SCHEDULE -> queryMamlSchedule(dependencies)
+                    CODE_MAML_MY_COURSES -> queryMamlMyCourses(dependencies)
+                    CODE_MAML_TA_COURSES -> queryMamlTaCourses(dependencies)
+                    CODE_MAML_FREE_TIME -> queryMamlFreeTime(dependencies)
                     else -> {
                         Log.w(TAG, "Unknown URI: $uri")
                         null
@@ -188,6 +200,206 @@ class ScheduleContentProvider : ContentProvider() {
         val jsonData = "{\"action\":\"查看课程表\",\"target\":{\"package\":\"com.duoschedule\"}}"
         cursor.addRow(arrayOf<Any>(0, jsonData))
         return cursor
+    }
+
+    private suspend fun queryMamlSchedule(dependencies: ProviderDependencies): Cursor {
+        val database = dependencies.database
+        val settingsDataStore = dependencies.settingsDataStore
+
+        val currentWeekA = settingsDataStore.getCurrentWeek(PersonType.PERSON_A).first()
+        val currentWeekB = settingsDataStore.getCurrentWeek(PersonType.PERSON_B).first()
+        val personAName = settingsDataStore.personAName.first()
+        val personBName = settingsDataStore.personBName.first()
+
+        val dayOfWeek = LocalDate.now().dayOfWeek.value
+        val currentHour = LocalDateTime.now().hour
+        val currentMinute = LocalDateTime.now().minute
+
+        val personACourses = database.courseDao().getCoursesForDaySync(dayOfWeek, PersonType.PERSON_A)
+            .filter { it.isInWeek(currentWeekA) }
+        val personBCourses = database.courseDao().getCoursesForDaySync(dayOfWeek, PersonType.PERSON_B)
+            .filter { it.isInWeek(currentWeekB) }
+
+        val currentCourseA = personACourses.find { it.isOngoing(currentHour, currentMinute, currentWeekA) }
+        val currentCourseB = personBCourses.find { it.isOngoing(currentHour, currentMinute, currentWeekB) }
+
+        val cursor = MatrixCursor(arrayOf(
+            "week", "person_a_name", "person_a_course", "person_a_time", "person_a_remaining",
+            "person_b_name", "person_b_course", "person_b_time", "person_b_remaining"
+        ))
+
+        val personACourseName = currentCourseA?.name ?: "无课"
+        val personATime = if (currentCourseA != null) {
+            val remaining = currentCourseA.getRemainingMinutes(currentHour, currentMinute)
+            val periodText = if (currentCourseA.isCustomTime) {
+                currentCourseA.getTimeString()
+            } else if (currentCourseA.startPeriod == currentCourseA.endPeriod) {
+                "第${currentCourseA.startPeriod}节"
+            } else {
+                "第${currentCourseA.startPeriod}-${currentCourseA.endPeriod}节"
+            }
+            "$periodText · 剩余${remaining}分钟"
+        } else {
+            ""
+        }
+        val personARemaining = currentCourseA?.getRemainingMinutes(currentHour, currentMinute) ?: 0
+
+        val personBCourseName = currentCourseB?.name ?: "无课"
+        val personBTime = if (currentCourseB != null) {
+            val remaining = currentCourseB.getRemainingMinutes(currentHour, currentMinute)
+            val periodText = if (currentCourseB.isCustomTime) {
+                currentCourseB.getTimeString()
+            } else if (currentCourseB.startPeriod == currentCourseB.endPeriod) {
+                "第${currentCourseB.startPeriod}节"
+            } else {
+                "第${currentCourseB.startPeriod}-${currentCourseB.endPeriod}节"
+            }
+            "$periodText · 剩余${remaining}分钟"
+        } else {
+            ""
+        }
+        val personBRemaining = currentCourseB?.getRemainingMinutes(currentHour, currentMinute) ?: 0
+
+        cursor.addRow(arrayOf<Any>(
+            currentWeekA, personAName, personACourseName, personATime, personARemaining,
+            personBName, personBCourseName, personBTime, personBRemaining
+        ))
+        return cursor
+    }
+
+    private suspend fun queryMamlMyCourses(dependencies: ProviderDependencies): Cursor {
+        return queryMamlPersonCourses(dependencies, PersonType.PERSON_A)
+    }
+
+    private suspend fun queryMamlTaCourses(dependencies: ProviderDependencies): Cursor {
+        return queryMamlPersonCourses(dependencies, PersonType.PERSON_B)
+    }
+
+    private suspend fun queryMamlPersonCourses(dependencies: ProviderDependencies, personType: PersonType): Cursor {
+        val database = dependencies.database
+        val settingsDataStore = dependencies.settingsDataStore
+
+        val currentWeek = settingsDataStore.getCurrentWeek(personType).first()
+        val personName = if (personType == PersonType.PERSON_A) {
+            settingsDataStore.personAName.first()
+        } else {
+            settingsDataStore.personBName.first()
+        }
+
+        val dayOfWeek = LocalDate.now().dayOfWeek.value
+        val currentHour = LocalDateTime.now().hour
+        val currentMinute = LocalDateTime.now().minute
+
+        val courses = database.courseDao().getCoursesForDaySync(dayOfWeek, personType)
+            .filter { it.isInWeek(currentWeek) }
+            .sortedBy { it.startHour * 60 + it.startMinute }
+            .take(4)
+
+        val cursor = MatrixCursor(arrayOf(
+            "week", "person_name",
+            "course_1_name", "course_1_location", "course_1_period", "course_1_ended",
+            "course_2_name", "course_2_location", "course_2_period", "course_2_ended",
+            "course_3_name", "course_3_location", "course_3_period", "course_3_ended",
+            "course_4_name", "course_4_location", "course_4_period", "course_4_ended"
+        ))
+
+        val row = mutableListOf<Any>(currentWeek, personName)
+        for (i in 0 until 4) {
+            val course = courses.getOrNull(i)
+            if (course != null) {
+                val periodText = if (course.isCustomTime) {
+                    course.getTimeString()
+                } else if (course.startPeriod == course.endPeriod) {
+                    "第${course.startPeriod}节"
+                } else {
+                    "第${course.startPeriod}-${course.endPeriod}节"
+                }
+                val ended = if (course.hasEnded(currentHour, currentMinute)) 1 else 0
+                row.add(course.name)
+                row.add(course.location)
+                row.add(periodText)
+                row.add(ended)
+            } else {
+                row.add("")
+                row.add("")
+                row.add("")
+                row.add(0)
+            }
+        }
+
+        cursor.addRow(row.toTypedArray())
+        return cursor
+    }
+
+    private suspend fun queryMamlFreeTime(dependencies: ProviderDependencies): Cursor {
+        val database = dependencies.database
+        val settingsDataStore = dependencies.settingsDataStore
+
+        val currentWeekA = settingsDataStore.getCurrentWeek(PersonType.PERSON_A).first()
+        val currentWeekB = settingsDataStore.getCurrentWeek(PersonType.PERSON_B).first()
+
+        val dayOfWeek = LocalDate.now().dayOfWeek.value
+        val currentHour = LocalDateTime.now().hour
+        val currentMinute = LocalDateTime.now().minute
+
+        val personACourses = database.courseDao().getCoursesForDaySync(dayOfWeek, PersonType.PERSON_A)
+            .filter { it.isInWeek(currentWeekA) }
+        val personBCourses = database.courseDao().getCoursesForDaySync(dayOfWeek, PersonType.PERSON_B)
+            .filter { it.isInWeek(currentWeekB) }
+
+        val freeTimeSlots = calculateFreeTimeSlots(personACourses, personBCourses, currentHour, currentMinute)
+
+        val cursor = MatrixCursor(arrayOf("free_time_text", "free_time_label"))
+        if (freeTimeSlots.isNotEmpty()) {
+            cursor.addRow(arrayOf<Any>(freeTimeSlots.first(), "空闲"))
+        } else {
+            cursor.addRow(arrayOf<Any>("无空闲时间", ""))
+        }
+        return cursor
+    }
+
+    private fun calculateFreeTimeSlots(
+        personACourses: List<com.duoschedule.data.model.Course>,
+        personBCourses: List<com.duoschedule.data.model.Course>,
+        currentHour: Int,
+        currentMinute: Int
+    ): List<String> {
+        val freeSlots = mutableListOf<String>()
+        val currentMinutes = currentHour * 60 + currentMinute
+
+        val allPeriods = listOf(
+            Pair(8 * 60, 9 * 60 + 40),
+            Pair(10 * 60, 11 * 60 + 40),
+            Pair(14 * 60, 15 * 60 + 40),
+            Pair(16 * 60, 17 * 60 + 40),
+            Pair(19 * 60, 20 * 60 + 40)
+        )
+
+        for ((start, end) in allPeriods) {
+            if (start < currentMinutes) continue
+
+            val aHasCourse = personACourses.any { course ->
+                val courseStart = course.startHour * 60 + course.startMinute
+                val courseEnd = course.endHour * 60 + course.endMinute
+                start < courseEnd && end > courseStart
+            }
+
+            val bHasCourse = personBCourses.any { course ->
+                val courseStart = course.startHour * 60 + course.startMinute
+                val courseEnd = course.endHour * 60 + course.endMinute
+                start < courseEnd && end > courseStart
+            }
+
+            if (!aHasCourse && !bHasCourse) {
+                val startHour = start / 60
+                val startMin = start % 60
+                val endHour = end / 60
+                val endMin = end % 60
+                freeSlots.add(String.format("%02d:%02d-%02d:%02d", startHour, startMin, endHour, endMin))
+            }
+        }
+
+        return freeSlots
     }
 
     private fun createErrorCursor(code: Int, message: String): Cursor {

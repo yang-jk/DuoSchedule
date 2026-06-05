@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.navigation
+package com.duoschedule.ui.navigation
 
 import android.net.Uri
 import androidx.compose.animation.*
@@ -199,6 +199,33 @@ fun DuoScheduleNavGraph(
 
         composable("settings/data") {
             DataManagementScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToImportPreview = { importData ->
+                    pendingImportData = importData
+                    navController.navigate("settings/import-preview")
+                },
+                onNavigateToEducationImport = { navController.navigate("settings/education-import") }
+            )
+        }
+
+        composable("settings/education-import") {
+            EducationImportScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToImportPreview = { importData ->
+                    pendingImportData = importData
+                    navController.navigate("settings/import-preview")
+                },
+                onNavigateToEducationWebView = { schoolId -> navController.navigate("settings/education-webview/$schoolId") }
+            )
+        }
+
+        composable(
+            route = "settings/education-webview/{schoolId}",
+            arguments = listOf(navArgument("schoolId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val schoolId = backStackEntry.arguments?.getString("schoolId") ?: ""
+            EducationWebViewScreen(
+                schoolId = schoolId,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToImportPreview = { importData ->
                     pendingImportData = importData

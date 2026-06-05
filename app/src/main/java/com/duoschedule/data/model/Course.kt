@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.util.Locale
+import java.util.UUID
 
 object CourseWeekCache {
     private val cache = mutableMapOf<Int, Set<Int>>()
@@ -21,12 +22,14 @@ object CourseWeekCache {
         Index(value = ["dayOfWeek"]),
         Index(value = ["startWeek", "endWeek"]),
         Index(value = ["personType", "dayOfWeek"]),
-        Index(value = ["dayOfWeek", "personType", "startHour", "startMinute"])
+        Index(value = ["dayOfWeek", "personType", "startHour", "startMinute"]),
+        Index(value = ["syncId"], unique = true)
     ]
 )
 data class Course(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    val syncId: String = UUID.randomUUID().toString(),
     val name: String,
     val location: String = "",
     val teacher: String = "",

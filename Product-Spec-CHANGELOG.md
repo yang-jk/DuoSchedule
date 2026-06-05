@@ -6,144 +6,91 @@
 
 ---
 
+## [4.8.0] - 2026-06-06
+
+### 变更类型：新增功能
+
+### 状态：已实现
+
+### 变更内容
+
+**适配 MAML 小部件，支持小米/MIUI/HyperOS 桌面小组件**
+
+1. **新增**：4 个 MAML 小部件包（双人课程表、我的课程、Ta的课程、共同空闲），放置于 `app/src/main/assets/maml_widgets/` 目录
+2. **新增**：ScheduleContentProvider 新增 4 个 MAML 专用数据端点（`maml/schedule`、`maml/my_courses`、`maml/ta_courses`、`maml/free_time`），返回列式 Cursor 供 MAML ContentProviderBinder 消费
+3. **新增**：每个小部件包含 manifest.xml（MAML 布局）、description.xml（描述信息）、preview 图片
+4. **支持**：深色模式适配，使用 `#__darkmode` 全局变量和 `ifelse` 条件表达式切换配色
+5. **支持**：通过 ContentProviderBinder 绑定应用数据，实现课程信息实时显示
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/provider/ScheduleContentProvider.kt`（新增 4 个 MAML 数据端点）
+- `app/src/main/assets/maml_widgets/duo_schedule/manifest.xml`
+- `app/src/main/assets/maml_widgets/duo_schedule/description.xml`
+- `app/src/main/assets/maml_widgets/duo_schedule/preview/preview.png`
+- `app/src/main/assets/maml_widgets/my_courses/manifest.xml`
+- `app/src/main/assets/maml_widgets/my_courses/description.xml`
+- `app/src/main/assets/maml_widgets/my_courses/preview/preview.png`
+- `app/src/main/assets/maml_widgets/ta_courses/manifest.xml`
+- `app/src/main/assets/maml_widgets/ta_courses/description.xml`
+- `app/src/main/assets/maml_widgets/ta_courses/preview/preview.png`
+- `app/src/main/assets/maml_widgets/free_time/manifest.xml`
+- `app/src/main/assets/maml_widgets/free_time/description.xml`
+- `app/src/main/assets/maml_widgets/free_time/preview/preview.png`
+- `app/build.gradle.kts`（versionCode 40703→40800，versionName 4.7.3→4.8.0）
+
+---
+
+> **补录：教务系统导入功能（WebView 浏览器方案）**
+>
+> 此功能已在先前版本中实现但未记录变更日志，现补录如下：
+>
+> 1. **新增**：`EducationImportScreen` 学校选择页面，展示已注册的学校列表，点击进入对应学校的 WebView 登录页
+> 2. **新增**：`EducationWebViewScreen` WebView 浏览器页面，用户在浏览器中自行登录教务系统，自动检测课表页面并解析
+> 3. **新增**：`QiangzhiSchoolAdapter` 强智教务系统适配器（辽宁石油化工大学），实现 SchoolAdapter 接口
+> 4. **新增**：`ZhengfangSchoolAdapter` 正方教务系统适配器，支持自定义 baseUrl
+> 5. **新增**：`SchoolAdapter` 接口和 `SupportedSchools` 注册表，支持通过 SchoolInfo 配置 loginUrl 和 scheduleUrlPath
+> 6. **新增**：`SchoolInfo` 数据类包含 vpnHint 字段，提示用户需先连接学校 VPN
+> 7. **修改**：Navigation 添加 educationImport 和 educationWebView 路由
+> 8. **修改**：EducationSystemImporter 注册两个学校适配器
+>
+> **涉及文件**
+>
+> - `app/src/main/java/com/duoschedule/ui/settings/EducationImportScreen.kt`
+> - `app/src/main/java/com/duoschedule/ui/settings/EducationWebViewScreen.kt`
+> - `app/src/main/java/com/duoschedule/data/importexport/QiangzhiSchoolAdapter.kt`
+> - `app/src/main/java/com/duoschedule/data/importexport/ZhengfangSchoolAdapter.kt`
+> - `app/src/main/java/com/duoschedule/data/importexport/ImportExportModels.kt`
+> - `app/src/main/java/com/duoschedule/data/importexport/EducationSystemImporter.kt`
+
+---
+
 ## [4.7.3] - 2026-05-29
 
-### 变更类型：Bug 修复
+### 变更类型：Bug 修复 + 功能优化
 
 ### 状态：已实现
 
 ### 变更内容
 
-**修复离开同步房间时未清除 WebDAV 云端文件**
+**同步逻辑全面修复与优化**（合并原 4.6.4~4.7.3 共 7 个版本的同步修复）
 
-1. **修复**：`leaveRoom()` 离开房间时删除 WebDAV 上的 data.json、meta.json 和房间目录，避免云端残留数据
-2. **优化**：`leaveRoom()` 添加 `withContext(Dispatchers.IO)` 确保网络操作在 IO 线程，即使删除失败也继续清除本地配置
-
-### 涉及文件
-
-- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（leaveRoom 添加云端文件删除和 IO 线程切换）
-- `app/build.gradle.kts`（versionCode 40702→40703，versionName 4.7.2→4.7.3）
-
----
-
-## [4.7.2] - 2026-05-29
-
-### 变更类型：Bug 修复
-
-### 状态：已实现
-
-### 变更内容
-
-**修复同步逻辑三个关键缺陷**
-
-1. **修复**：`detectConflicts` 不再将"本地有云端没有"/"云端有本地没有"视为冲突，双人各自添加课程是正常合并场景，只有同 ID 内容不同才是真正冲突
-2. **修复**：合并后推送云端的同时，将合并结果应用到本地数据库，确保能看到对方新增的课程
-3. **修复**：移除 `lastModifiedBy == deviceId` 的跳过逻辑，该逻辑会错误地丢弃本地变更
-4. **优化**：调整判断顺序为"数据相同→无变更"、"仅本地变更→推送"、"双方变更→合并或冲突"，逻辑更清晰
+1. **修复**：`SyncManager` 所有调用 `WebDavClient` 的方法使用 `withContext(Dispatchers.IO)` 将网络调用切换到 IO 线程，避免 NetworkOnMainThreadException 崩溃
+2. **修复**：`testConnection` 从 GET 请求改为 WebDAV 标准的 PROPFIND 请求，403 返回"无访问权限"，404 返回"路径不存在"
+3. **修复**：ViewModel 初始化时从已保存的 SyncConfig 重新生成同步码，确保离开页面再回来后仍可复制
+4. **重构**：同步时不再仅凭版本号判断是否有变更，改为下载云端数据后与本地课程逐字段比较，版本号相同但本地数据不同时自动推送
+5. **修复**：双方都有变更且无冲突时，合并本地和云端课程（保留本地全部+补充云端独有），然后推送合并结果到云端
+6. **修复**：`detectConflicts` 不再将"本地有云端没有"/"云端有本地没有"视为冲突，只有同 ID 内容不同才是真正冲突
+7. **修复**：合并后推送云端的同时，将合并结果应用到本地数据库
+8. **修复**：移除 `lastModifiedBy == deviceId` 的跳过逻辑
+9. **修复**：`leaveRoom()` 离开房间时删除 WebDAV 上的 data.json、meta.json 和房间目录，避免云端残留数据
 
 ### 涉及文件
 
-- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（重构 sync 判断顺序，简化 detectConflicts，合并后应用本地）
-- `app/build.gradle.kts`（versionCode 40701→40702，versionName 4.7.1→4.7.2）
-
----
-
-## [4.7.1] - 2026-05-29
-
-### 变更类型：Bug 修复
-
-### 状态：已实现
-
-### 变更内容
-
-**修复同步时双方都有变更只拉取不推送，本地独有课程丢失**
-
-1. **修复**：双方都有变更且无冲突时，改为合并本地和云端课程（保留本地全部 + 补充云端独有），然后推送合并结果到云端，而非仅拉取覆盖本地
-2. **新增**：`mergeCourses()` 方法，以本地课程为基础，补充云端独有的课程
-
-### 涉及文件
-
-- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（合并逻辑替代纯拉取，新增 mergeCourses）
-- `app/build.gradle.kts`（versionCode 40700→40701，versionName 4.7.0→4.7.1）
-
----
-
-## [4.7.0] - 2026-05-29
-
-### 变更类型：功能优化
-
-### 状态：已实现
-
-### 变更内容
-
-**重构同步逻辑，修复版本号相同时不推送本地变更的问题**
-
-1. **修复**：同步时不再仅凭版本号判断是否有变更，改为下载云端数据后与本地课程逐字段比较，版本号相同但本地数据不同时自动推送本地数据
-2. **重构**：用 `localDataDiffersFromCloud()` 替换永远返回 true 的 `hasLocalChangesSince()`，实现真正的本地与云端数据差异检测
-3. **优化**：同步流程改为先下载数据再判断，确保本地有课程而云端为空时能正确推送
-
-### 涉及文件
-
-- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（重构 sync 逻辑，新增 localDataDiffersFromCloud，移除 hasLocalChangesSince）
-- `app/build.gradle.kts`（versionCode 40606→40700，versionName 4.6.6→4.7.0）
-
----
-
-## [4.6.6] - 2026-05-29
-
-### 变更类型：Bug 修复
-
-### 状态：已实现
-
-### 变更内容
-
-**修复重新进入同步设置页面后复制同步码不生效**
-
-1. **修复**：ViewModel 初始化时从已保存的 SyncConfig 重新生成同步码，确保离开页面再回来后仍可复制同步码
-
-### 涉及文件
-
-- `app/src/main/java/com/duoschedule/ui/sync/SyncViewModel.kt`（init 块中从持久化配置恢复同步码）
-- `app/build.gradle.kts`（versionCode 40605→40606，versionName 4.6.5→4.6.6）
-
----
-
-## [4.6.5] - 2026-05-29
-
-### 变更类型：Bug 修复
-
-### 状态：已实现
-
-### 变更内容
-
-**修复 WebDAV 连接测试使用 GET 请求导致 HTTP 403 错误**
-
-1. **修复**：将 `testConnection` 方法从 GET 请求改为 WebDAV 标准的 PROPFIND 请求（Depth: 0），大多数 WebDAV 服务器不允许 GET 访问目录，只支持 PROPFIND 探测资源
-2. **优化**：403 返回更明确的错误提示"无访问权限"，404 返回"路径不存在"而非之前错误地视为连接成功
-
-### 涉及文件
-
-- `app/src/main/java/com/duoschedule/data/sync/WebDavClient.kt`（testConnection 改用 PROPFIND，优化错误提示）
-- `app/build.gradle.kts`（versionCode 40604→40605，versionName 4.6.4→4.6.5）
-
----
-
-## [4.6.4] - 2026-05-29
-
-### 变更类型：Bug 修复
-
-### 状态：已实现
-
-### 变更内容
-
-**修复 WebDAV 同步网络请求在主线程执行导致 NetworkOnMainThreadException 崩溃**
-
-1. **修复**：在 `SyncManager` 的所有调用 `WebDavClient` 的方法（`createRoom`、`joinRoom`、`sync`、`pushChanges`、`resolveConflicts`）中使用 `withContext(Dispatchers.IO)` 将阻塞网络调用切换到 IO 线程，避免在主线程执行网络 I/O
-
-### 涉及文件
-
-- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（添加 `withContext(Dispatchers.IO)` 包裹网络调用）
-- `app/build.gradle.kts`（versionCode 40603→40604，versionName 4.6.3→4.6.4）
+- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（IO线程切换、sync逻辑重构、detectConflicts简化、mergeCourses新增、合并后应用本地、leaveRoom云端删除）
+- `app/src/main/java/com/duoschedule/data/sync/WebDavClient.kt`（testConnection改用PROPFIND，优化错误提示）
+- `app/src/main/java/com/duoschedule/ui/sync/SyncViewModel.kt`（init块中从持久化配置恢复同步码）
+- `app/build.gradle.kts`（versionCode 40603→40703，versionName 4.6.3→4.7.3）
 
 ---
 
@@ -729,13 +676,13 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 
 ## [3.10.1] - 2026-05-28
 
-### 变更类型：小变更
+### 变更类型：小变更 + Bug修复
 
 ### 状态：已实现
 
 ### 变更内容
 
-**同步冲突对话框改用 Glass 设计语言**
+**同步冲突对话框改用 Glass 设计语言 + 适配新 BlurredBar API**
 
 1. **替换**：将 Material3 `AlertDialog` 替换为项目自定义 `GlassConfirmDialog`，统一玻璃拟态风格
 2. **替换**：将 Material3 `Card` 替换为 `Separator` 分隔线布局，更贴合 iOS 风格
@@ -744,32 +691,15 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 5. **新增**：使用 `BrandColors.Primary` 作为选中颜色
 6. **新增**：`LaunchedEffect` 初始化所有非 BOTH_DELETED 项默认选择 KEEP_LOCAL
 7. **新增**：`CourseSummaryText` 组件根据选择动态显示课程摘要信息
+8. **移除**：移除 `com.duoschedule.ui.theme.rememberBlurBackdrop` 导入，改用 `dev.chrisbanes.haze.rememberHazeState`
+9. **移除**：移除 `CompositionLocalProvider(LocalHazeState provides hazeState)` 包裹，不再需要通过 CompositionLocal 传递 HazeState
+10. **修改**：将 `BlurredBar(null, blurActive)` 改为 `BlurredBar(hazeState, blurActive)`，直接传入 hazeState 参数
 
-### 修改文件
+### 涉及文件
 
 - `app/src/main/java/com/duoschedule/ui/sync/ConflictResolutionDialog.kt`（全面重写，Material3→Glass 设计语言）
-- `app/build.gradle.kts`（versionCode 31001→31100，versionName 3.10.1→3.11.0）
-
----
-
-## [3.10.1] - 2026-05-28
-
-### 变更类型：Bug修复
-
-### 状态：已实现
-
-### 变更内容
-
-**适配新的 BlurredBar API**
-
-1. **移除**：移除 `com.duoschedule.ui.theme.rememberBlurBackdrop` 导入，改用 `dev.chrisbanes.haze.rememberHazeState`
-2. **移除**：移除 `CompositionLocalProvider(LocalHazeState provides hazeState)` 包裹，不再需要通过 CompositionLocal 传递 HazeState
-3. **修改**：将 `BlurredBar(null, blurActive)` 改为 `BlurredBar(hazeState, blurActive)`，直接传入 hazeState 参数
-
-### 修改文件
-
 - `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（移除旧导入、移除 CompositionLocalProvider 包裹、BlurredBar 参数变更）
-- `app/build.gradle.kts`（versionCode 31000→31001，versionName 3.10.0→3.10.1）
+- `app/build.gradle.kts`（versionCode 31000→31100，versionName 3.10.0→3.11.0）
 - `Product-Spec.md`（版本号 3.10.0→3.10.1）
 
 ---
@@ -2004,13 +1934,13 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 
 ## [1.10.0] - 2026-05-18
 
-### 变更类型：性能优化
+### 变更类型：性能优化 + 功能增强
 
 ### 状态：已实现
 
-### 优化内容
+### 变更内容
 
-**启动流程优化 + 数据库索引优化**
+**启动流程优化 + Compose 稳定性优化**
 
 1. **ComposeWarmup 简化**：移除 NavHost 预热、delay(500) 阻塞调用和大量重量级组件预热（动画、LazyColumn、Card、Brush、Navigation、Schedule、Course、Screen 等），仅保留轻量级 Text/Column/Row/Box 预热。使用 Choreographer.postFrameCallback 在下一帧后自动释放组合，避免不必要的延迟阻塞启动。
 
@@ -2022,50 +1952,32 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 
 5. **数据库迁移**：版本 6→7，新增 MIGRATION_6_7（空迁移，索引由 Room 自动创建）。
 
-### 修改文件
+6. **@Immutable/@Stable 注解**：为以下数据类添加 `@Immutable` 注解，帮助 Compose 编译器识别类型稳定性，跳过不必要的重组：
+   - `CurrentCourseState`（ui/model/CurrentCourseState.kt）
+   - `FreeTimeSlot`（ui/model/FreeTimeSlot.kt）
+   - `CourseSlotInfo`（ui/schedule/ScheduleScreen.kt）
+   - `CourseLayoutInfo`（ui/schedule/ScheduleScreen.kt）
+   - `EmptySlotPosition`（ui/schedule/ScheduleScreen.kt）
+   - `EditTarget`（ui/schedule/ScheduleScreen.kt）
+   - `CellBounds`（ui/schedule/CourseContextMenu.kt）
+   - `Course`（data/model/Course.kt）
+
+7. **ContextMenuItem @Stable 注解**：为 `ContextMenuItem` 添加 `@Stable` 注解（包含 lambda 参数，不适合 @Immutable）
+
+8. **Course 可变缓存外部化**：将 `Course` 的可变缓存 `cachedCustomWeeks` 移至外部 `CourseWeekCache` 对象，使 `Course` 数据类真正不可变，符合 `@Immutable` 契约。`CourseWeekCache` 提供 get/put/clear 方法，通过 Course.id 作为键管理缓存。
+
+### 涉及文件
 
 - `ComposeWarmup.kt`（简化预热内容，移除 delay，使用 Choreographer 释放）
 - `DuoScheduleApp.kt`（移除重复的 database preload 和 preloadSettings 调用）
 - `PerformanceMonitor.kt`（startupMetrics 改用 ConcurrentHashMap）
-- `Course.kt`（新增复合索引）
+- `Course.kt`（新增复合索引、添加 @Immutable 注解、移除 cachedCustomWeeks 字段、新增 CourseWeekCache 对象、更新 isInWeek 方法使用外部缓存）
 - `AppDatabase.kt`（版本 6→7，新增 MIGRATION_6_7）
 - `DatabaseModule.kt`（注册 MIGRATION_6_7）
-- `app/build.gradle.kts`（versionCode 19008→20000，versionName 1.9.8→1.10.0）
-- `Product-Spec.md`（更新版本号）
-- `Product-Spec-CHANGELOG.md`（更新变更记录）
-
----
-
-## [1.10.0] - 2026-05-18
-
-### 变更类型：功能增强
-
-### 状态：已实现
-
-### 变更内容
-
-**Compose 稳定性优化：为数据类添加 @Immutable/@Stable 注解并移除 Course 可变缓存**
-
-- 为以下数据类添加 `@Immutable` 注解，帮助 Compose 编译器识别类型稳定性，跳过不必要的重组：
-  - `CurrentCourseState`（ui/model/CurrentCourseState.kt）
-  - `FreeTimeSlot`（ui/model/FreeTimeSlot.kt）
-  - `CourseSlotInfo`（ui/schedule/ScheduleScreen.kt）
-  - `CourseLayoutInfo`（ui/schedule/ScheduleScreen.kt）
-  - `EmptySlotPosition`（ui/schedule/ScheduleScreen.kt）
-  - `EditTarget`（ui/schedule/ScheduleScreen.kt）
-  - `CellBounds`（ui/schedule/CourseContextMenu.kt）
-  - `Course`（data/model/Course.kt）
-- 为 `ContextMenuItem` 添加 `@Stable` 注解（包含 lambda 参数，不适合 @Immutable）
-- 将 `Course` 的可变缓存 `cachedCustomWeeks` 移至外部 `CourseWeekCache` 对象，使 `Course` 数据类真正不可变，符合 `@Immutable` 契约
-- `CourseWeekCache` 提供 get/put/clear 方法，通过 Course.id 作为键管理缓存
-
-### 修改文件
-
 - `ui/model/CurrentCourseState.kt`（添加 @Immutable 注解）
 - `ui/model/FreeTimeSlot.kt`（添加 @Immutable 注解）
 - `ui/schedule/ScheduleScreen.kt`（为 EditTarget、CourseSlotInfo、CourseLayoutInfo、EmptySlotPosition 添加 @Immutable 注解）
 - `ui/schedule/CourseContextMenu.kt`（为 ContextMenuItem 添加 @Stable 注解，为 CellBounds 添加 @Immutable 注解）
-- `data/model/Course.kt`（添加 @Immutable 注解，移除 cachedCustomWeeks 字段，新增 CourseWeekCache 对象，更新 isInWeek 方法使用外部缓存）
 - `app/build.gradle.kts`（versionCode 19008→20000，versionName 1.9.8→1.10.0）
 - `Product-Spec.md`（更新功能15描述 + 版本号）
 - `Product-Spec-CHANGELOG.md`（更新变更记录）
@@ -2359,7 +2271,7 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 - 原因：背景栏高度64dp内含4dp全方向padding，内容区域从顶部4dp处开始；但选中指示器Box高度56dp只有水平padding，在TopStart对齐下从容器最顶部开始，导致偏上4dp
 - 修复：将指示器Box的`.padding(horizontal = 4f.dp)`改为`.padding(horizontal = 4f.dp, top = 4.dp)`
 
-### 修改文件
+### 涉及文件
 
 - `LiquidBottomTabs.kt`（选中指示器添加top padding）
 - `app/build.gradle.kts`（versionCode 17004→17005，versionName 1.7.4→1.7.5）
@@ -2383,7 +2295,7 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 - 在 Column 内容底部添加 `Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))` 处理导航栏高度
 - 对于使用 LazyColumn 的页面（CourseEditScreen），通过 contentPadding 的 bottom 添加导航栏高度
 
-### 修改文件
+### 涉及文件
 
 - `DisplaySettingsScreen.kt`（Scaffold edge-to-edge 支持）
 - `ScheduleSettingsScreen.kt`（Scaffold edge-to-edge 支持）
@@ -2415,7 +2327,7 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 - 可滚动 Column/LazyColumn 添加 `.layerBackdrop(scrollBackdrop)` 修饰符
 - `ScrollTopBlurOverlay()` 改为 `ScrollTopBlurOverlay(backdrop = scrollBackdrop)`
 
-### 修改文件
+### 涉及文件
 
 - `MainScreen.kt`（添加 layerBackdrop 支持）
 - `ScheduleScreen.kt`（WeeklyScheduleGrid 添加 layerBackdrop 支持）
@@ -2448,7 +2360,7 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 - 原因：API 35+ 强制 edge-to-edge，`installSplashScreen()` 的 `postSplashScreenTheme` 会触发主题切换，若 `enableEdgeToEdge()` 尚未调用，导航栏恢复不透明
 - `isNavigationBarContrastEnforced = false` 同步移到 `installSplashScreen()` 之前
 
-### 修改文件
+### 涉及文件
 
 - `MainActivity.kt`（调整 `enableEdgeToEdge()` + `isNavigationBarContrastEnforced` 调用顺序）
 - `app/build.gradle.kts`（versionCode 17001→17002，versionName 1.7.1→1.7.2）
@@ -2471,7 +2383,7 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 - 修复 `values-night-v29/themes.xml`：补全与基础夜间主题相同的全部属性（`colorPrimary`、`colorPrimaryDark`、`colorAccent`、`windowBackground`、`datePickerStyle`、`timePickerStyle`），以及 `DatePickerStyle`、`CalendarViewStyle`、`TimePickerStyle`、`Theme.DuoSchedule.Splash` 样式
 - `windowBackground` 缺失导致 API 29+ 设备回退为父主题默认白色，导航栏区域显示白色实体条 — 修复后导航栏区域底色与页面背景一致
 
-### 修改文件
+### 涉及文件
 
 - `values-v29/themes.xml`（补全缺失属性 + 样式）
 - `values-night-v29/themes.xml`（补全缺失属性 + 样式）
@@ -2497,7 +2409,7 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 - 所有 9 个页面移除 `rememberLayerBackdrop()` 变量和 `.layerBackdrop(scrollBackdrop)` 修饰符
 - 所有 9 个页面 `ScrollTopBlurOverlay(backdrop = scrollBackdrop)` 改为 `ScrollTopBlurOverlay()`
 
-### 修改文件
+### 涉及文件
 
 - `build.gradle.kts`（移除 miuix-blur 依赖 + 版本号 1.6.2→1.7.0，versionCode 16002→17000）
 - `AndroidManifest.xml`（移除 uses-sdk overrideLibrary）
@@ -2524,7 +2436,7 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 
 ### 状态：已实现
 
-### 修复内容
+### 变更内容
 
 **修复沉浸式小白条：导航栏区域不透明，看不到后面内容**
 
@@ -2533,7 +2445,7 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 - 修复 `values-night-v29/themes.xml`：补充 `android:statusBarColor=transparent`、`android:navigationBarColor=transparent`、`android:windowLightStatusBar=false`
 - 修复 `PeriodTimesSettingsScreen` 的 `BottomAppBar` 缺少 `navigationBarsPadding()`，手势导航设备上保存按钮可能被系统导航栏遮挡
 
-### 修改文件
+### 涉及文件
 
 - `values-v29/themes.xml`（补充透明状态栏/导航栏颜色 + windowLightStatusBar）
 - `values-night-v29/themes.xml`（补充透明状态栏/导航栏颜色 + windowLightStatusBar）
@@ -2543,58 +2455,39 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 
 ## [1.6.1] - 2026-05-17
 
-### 变更类型：Bug 修复
+### 变更类型：Bug 修复 + 功能增强
 
 ### 状态：已实现
 
 ### 变更内容
 
-**修复沉浸式系统栏适配：底栏下方内容被遮挡**
+**沉浸式系统栏适配 + 顶部高斯模糊效果**
 
-- 修复 MainActivity 内容层缺少 `navigationBarsPadding()` 导致内容延伸到底栏和系统导航栏之间区域的问题
-- 从 MainScreen 和 ScheduleScreen 移除冗余的 `navigationBarsPadding()`（由 MainActivity 统一处理）
-- 修复 compileSdk 升级到 37 以兼容 miuix-blur-android:0.9.1
-- 添加 `tools:overrideLibrary` 解决 miuix-blur minSdk 冲突
+1. **修复**：MainActivity 内容层缺少 `navigationBarsPadding()` 导致内容延伸到底栏和系统导航栏之间区域的问题
+2. **移除**：从 MainScreen 和 ScheduleScreen 移除冗余的 `navigationBarsPadding()`（由 MainActivity 统一处理）
+3. **修复**：compileSdk 升级到 37 以兼容 miuix-blur-android:0.9.1
+4. **新增**：`tools:overrideLibrary` 解决 miuix-blur minSdk 冲突
+5. **新增**：可复用 `ScrollTopBlurOverlay` 组件（`ui/theme/Components.kt`），默认模糊高度 64dp，模糊半径 40dp
+6. **新增**：通过 `layerBackdrop` 捕获滚动内容，在顶部区域应用 `drawBackdrop` + `blur()` 实时高斯模糊
+7. **新增**：叠加半透明渐变遮罩让模糊边缘自然过渡到透明
+8. **新增**：自动适配深色/浅色模式（使用 `MaterialTheme.colorScheme.background`）
+9. **新增**：触摸事件穿透（`pointerInput(Unit) {}` 空实现），不影响内容交互
+10. **应用**：主页（MainScreen）、课表页（ScheduleScreen/WeeklyScheduleGrid）、设置主页（SettingsScreen）、5 个设置子页面（DisplaySettingsScreen、NotificationSettingsScreen、ScheduleSettingsScreen、PeriodTimesSettingsScreen、DataManagementScreen）、课程编辑页（CourseEditScreen）应用顶部高斯模糊
 
----
+### 涉及文件
 
-## [1.6.1] - 2026-05-17
-
-### 变更类型：功能增强
-
-### 状态：已实现
-
-### 变更内容
-
-**功能 21：页面顶部高斯模糊效果**
-
-所有可滚动页面顶部添加实时高斯模糊效果，使用 backdrop 库实现真正的毛玻璃效果。
-
-- 新增可复用 `ScrollTopBlurOverlay` 组件（`ui/theme/Components.kt`），默认模糊高度 64dp，模糊半径 40dp
-- 通过 `layerBackdrop` 捕获滚动内容，在顶部区域应用 `drawBackdrop` + `blur()` 实时高斯模糊
-- 叠加半透明渐变遮罩让模糊边缘自然过渡到透明
-- 自动适配深色/浅色模式（使用 `MaterialTheme.colorScheme.background`）
-- 触摸事件穿透（`pointerInput(Unit) {}` 空实现），不影响内容交互
-- 主页（MainScreen）应用顶部高斯模糊
-- 课表页（ScheduleScreen/WeeklyScheduleGrid）应用顶部高斯模糊
-- 设置主页（SettingsScreen）应用顶部高斯模糊
-- 5 个设置子页面（DisplaySettingsScreen、NotificationSettingsScreen、ScheduleSettingsScreen、PeriodTimesSettingsScreen、DataManagementScreen）应用顶部高斯模糊
-- 课程编辑页（CourseEditScreen）应用顶部高斯模糊
-
-### 修改文件
-
-- `ui/theme/Components.kt`（新增 ScrollTopBlurOverlay 组件，保留 ScrollTopGradientOverlay）
-- `ui/main/MainScreen.kt`（layerBackdrop + ScrollTopBlurOverlay）
-- `ui/schedule/ScheduleScreen.kt`（layerBackdrop + ScrollTopBlurOverlay）
-- `ui/settings/SettingsScreen.kt`（layerBackdrop + ScrollTopBlurOverlay）
-- `ui/settings/DisplaySettingsScreen.kt`（layerBackdrop + ScrollTopBlurOverlay）
-- `ui/settings/NotificationSettingsScreen.kt`（layerBackdrop + ScrollTopBlurOverlay）
-- `ui/settings/ScheduleSettingsScreen.kt`（layerBackdrop + ScrollTopBlurOverlay）
-- `ui/settings/PeriodTimesSettingsScreen.kt`（layerBackdrop + ScrollTopBlurOverlay）
-- `ui/settings/DataManagementScreen.kt`（layerBackdrop + ScrollTopBlurOverlay）
-- `ui/edit/CourseEditScreen.kt`（layerBackdrop + ScrollTopBlurOverlay）
+- `app/src/main/java/com/duoschedule/MainActivity.kt`（添加 navigationBarsPadding，升级 compileSdk，添加 overrideLibrary）
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（移除冗余 navigationBarsPadding，添加 layerBackdrop + ScrollTopBlurOverlay）
+- `app/src/main/java/com/duoschedule/ui/schedule/ScheduleScreen.kt`（添加 layerBackdrop + ScrollTopBlurOverlay）
+- `app/src/main/java/com/duoschedule/ui/settings/SettingsScreen.kt`（添加 layerBackdrop + ScrollTopBlurOverlay）
+- `app/src/main/java/com/duoschedule/ui/settings/DisplaySettingsScreen.kt`（添加 layerBackdrop + ScrollTopBlurOverlay）
+- `app/src/main/java/com/duoschedule/ui/settings/NotificationSettingsScreen.kt`（添加 layerBackdrop + ScrollTopBlurOverlay）
+- `app/src/main/java/com/duoschedule/ui/settings/ScheduleSettingsScreen.kt`（添加 layerBackdrop + ScrollTopBlurOverlay）
+- `app/src/main/java/com/duoschedule/ui/settings/PeriodTimesSettingsScreen.kt`（添加 layerBackdrop + ScrollTopBlurOverlay）
+- `app/src/main/java/com/duoschedule/ui/settings/DataManagementScreen.kt`（添加 layerBackdrop + ScrollTopBlurOverlay）
+- `app/src/main/java/com/duoschedule/ui/edit/CourseEditScreen.kt`（添加 layerBackdrop + ScrollTopBlurOverlay）
+- `app/src/main/java/com/duoschedule/ui/theme/Components.kt`（新增 ScrollTopBlurOverlay 组件，保留 ScrollTopGradientOverlay）
 - `Product-Spec.md`（更新功能 21 描述）
-- `Product-Spec-CHANGELOG.md`（更新变更记录）
 
 ---
 
@@ -2691,11 +2584,11 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 
 ### 状态：已实现
 
-### 修复内容
+### 变更内容
 
 - 预测式返回开关逻辑反转：开启预测式返回时反而没有预测式返回效果，关闭时反而有。原因是 `updatePredictiveBack()` 方法中 `if (enabled)` 注册了自定义回调覆盖了系统预测式返回，改为 `if (!enabled)` 注册自定义回调禁用预测式返回，开启时不注册回调让系统自然处理。
 
-### 修改文件
+### 涉及文件
 
 - `MainActivity.kt`（修复预测式返回开关逻辑）
 
@@ -2822,11 +2715,11 @@ Haze 库的软件渲染模糊效果质量不佳（文字仍可辨认、无质感
 
 ### 状态：已实现
 
-### 修复内容
+### 变更内容
 
 - 设置页开关组件首次进入时出现不必要动画。`LiquidToggle` 的 `checked` handler 中 `animateToValue` 改为 `snapToValue`，程序化状态变化不再触发动画；删除未使用的 `LocalToggleShouldAnimate` 定义；简化 `IOSSwitch`，移除失效的 `shouldAnimate` 机制。
 
-### 修改文件
+### 涉及文件
 
 - `LiquidToggle.kt`
 - `SettingsComponents.kt`

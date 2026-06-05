@@ -45,10 +45,7 @@ class SyncViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val config = syncPreferences.syncConfig.first()
-            if (config != null) {
-                _syncCode.value = SyncCodeGenerator.generate(config)
-            }
+            _syncCode.value = syncManager.getSyncCode().orEmpty()
         }
     }
 
@@ -85,6 +82,7 @@ class SyncViewModel @Inject constructor(
             val result = syncManager.joinRoom(syncCodeInput.trim())
             _isJoining.value = false
             if (result.isSuccess) {
+                _syncCode.value = syncManager.getSyncCode().orEmpty()
                 _message.value = "加入房间成功"
             } else {
                 _message.value = result.exceptionOrNull()?.message ?: "加入房间失败"

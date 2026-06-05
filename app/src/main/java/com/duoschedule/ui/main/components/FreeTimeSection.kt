@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.main.components
+package com.duoschedule.ui.main.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -23,10 +23,16 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.ui.model.FreeTimeSlot
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +46,67 @@ fun FreeTimeDetailSheet(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val darkTheme = LocalDarkTheme.current
+
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowBottomSheet(
+            show = true,
+            title = slot.getTimeString(),
+            onDismissRequest = onDismiss
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.xl)
+                    .padding(bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(4.dp))
+
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "共 ${slot.getDurationString()}",
+                    color = selectedColor
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Surface(
+                    color = MiuixTheme.colorScheme.surfaceContainer,
+                    shape = ContinuousRoundedRectangle(BorderRadius.iOS26.large)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Spacing.lg),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = "你们这段时间都空闲",
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = "可以安排见面",
+                            color = selectedColor
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColorsPrimary()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("知道了")
+                }
+            }
+            Spacer(modifier = Modifier.navigationBarsPadding())
+        }
+        return
+    }
 
     GlassBottomSheet(
         onDismiss = onDismiss,
@@ -142,6 +209,51 @@ fun AllFreeTimeSlotsSheet(
     val selectedColor = getPersonAColor()
     val labelsPrimary = getLabelsVibrantPrimary()
     val darkTheme = LocalDarkTheme.current
+
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowBottomSheet(
+            show = true,
+            title = "今天 ${slots.size} 个空闲时段",
+            onDismissRequest = onDismiss
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.xl)
+                    .padding(bottom = 32.dp)
+            ) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.heightIn(max = 400.dp)
+                ) {
+                    items(
+                        items = slots,
+                        key = { slot -> "${slot.startHour}_${slot.startMinute}_${slot.endHour}_${slot.endMinute}" }
+                    ) { slot ->
+                        FreeTimeSlotItem(
+                            slot = slot,
+                            selectedColor = selectedColor,
+                            onClick = { onSlotClick(slot) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColorsPrimary()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("关闭")
+                }
+            }
+            Spacer(modifier = Modifier.navigationBarsPadding())
+        }
+        return
+    }
 
     GlassBottomSheet(
         onDismiss = onDismiss,

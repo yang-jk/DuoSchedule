@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.theme
+package com.duoschedule.ui.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -7,9 +7,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.duoschedule.data.model.AppThemeMode
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 object IOSColors {
     val Blue = Color(0xFF007AFF)
@@ -440,6 +442,8 @@ val LocalDarkTheme = compositionLocalOf { false }
 
 val LocalBackdrop = compositionLocalOf<LayerBackdrop?> { null }
 
+val LocalAppThemeMode = compositionLocalOf { AppThemeMode.IOS }
+
 @Composable
 fun rememberLayerBackdropWithBackground(backgroundColor: Color): LayerBackdrop {
     return rememberLayerBackdrop {
@@ -462,6 +466,9 @@ fun getPersonBColor(): Color {
 
 @Composable
 fun getBackgroundColor(elevated: Boolean = false): Color {
+    if (LocalAppThemeMode.current == AppThemeMode.MIUIX) {
+        return MiuixTheme.colorScheme.background
+    }
     val darkTheme = LocalDarkTheme.current
     return when {
         !darkTheme && !elevated -> BackgroundsLight.Primary
@@ -473,6 +480,9 @@ fun getBackgroundColor(elevated: Boolean = false): Color {
 
 @Composable
 fun getSurfaceColor(elevated: Boolean = false): Color {
+    if (LocalAppThemeMode.current == AppThemeMode.MIUIX) {
+        return MiuixTheme.colorScheme.surface
+    }
     val darkTheme = LocalDarkTheme.current
     return when {
         !darkTheme && !elevated -> BackgroundsLight.Secondary
@@ -484,6 +494,9 @@ fun getSurfaceColor(elevated: Boolean = false): Color {
 
 @Composable
 fun getTextColor(primary: Boolean = true): Color {
+    if (LocalAppThemeMode.current == AppThemeMode.MIUIX) {
+        return if (primary) MiuixTheme.colorScheme.onBackground else MiuixTheme.colorScheme.onBackgroundVariant
+    }
     val darkTheme = LocalDarkTheme.current
     return if (darkTheme) {
         if (primary) LabelsDark.Primary else LabelsDark.Secondary
@@ -494,12 +507,18 @@ fun getTextColor(primary: Boolean = true): Color {
 
 @Composable
 fun getSeparatorColor(): Color {
+    if (LocalAppThemeMode.current == AppThemeMode.MIUIX) {
+        return MiuixTheme.colorScheme.dividerLine
+    }
     val darkTheme = LocalDarkTheme.current
     return if (darkTheme) SeparatorsDark.NonOpaque else SeparatorsLight.NonOpaque
 }
 
 @Composable
 fun getDialogBackgroundColor(): Color {
+    if (LocalAppThemeMode.current == AppThemeMode.MIUIX) {
+        return MiuixTheme.colorScheme.surfaceContainerHigh
+    }
     val darkTheme = LocalDarkTheme.current
     return if (darkTheme) BackgroundsDark.Secondary else BackgroundsLight.Secondary
 }
@@ -524,18 +543,27 @@ fun getLiquidGlassShadowColor(): Color {
 
 @Composable
 fun getLabelsVibrantPrimary(): Color {
+    if (LocalAppThemeMode.current == AppThemeMode.MIUIX) {
+        return MiuixTheme.colorScheme.onBackground
+    }
     val darkTheme = LocalDarkTheme.current
     return if (darkTheme) LabelsDark.Primary else LabelsLight.Primary
 }
 
 @Composable
 fun getLabelsVibrantSecondary(): Color {
+    if (LocalAppThemeMode.current == AppThemeMode.MIUIX) {
+        return MiuixTheme.colorScheme.onBackgroundVariant
+    }
     val darkTheme = LocalDarkTheme.current
     return if (darkTheme) LabelsDark.Secondary else LabelsLight.Secondary
 }
 
 @Composable
 fun getLabelsVibrantTertiary(): Color {
+    if (LocalAppThemeMode.current == AppThemeMode.MIUIX) {
+        return MiuixTheme.colorScheme.onSurfaceVariantSummary
+    }
     val darkTheme = LocalDarkTheme.current
     return if (darkTheme) LabelsDark.Tertiary else LabelsLight.Tertiary
 }
@@ -598,30 +626,45 @@ object ScheduleColors {
 
 @Composable
 fun getScheduleTimeIndicatorColor(): Color {
+    if (LocalAppThemeMode.current == AppThemeMode.MIUIX) {
+        return MiuixTheme.colorScheme.error
+    }
     val darkTheme = LocalDarkTheme.current
     return if (darkTheme) ScheduleColors.TimeIndicatorDark else ScheduleColors.TimeIndicatorLight
 }
 
 @Composable
 fun getScheduleGridSeparatorColor(): Color {
+    if (LocalAppThemeMode.current == AppThemeMode.MIUIX) {
+        return MiuixTheme.colorScheme.dividerLine
+    }
     val darkTheme = LocalDarkTheme.current
     return if (darkTheme) ScheduleColors.GridSeparatorDark else ScheduleColors.GridSeparatorLight
 }
 
 @Composable
 fun getScheduleEmptySlotHintColor(): Color {
+    if (LocalAppThemeMode.current == AppThemeMode.MIUIX) {
+        return MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+    }
     val darkTheme = LocalDarkTheme.current
     return if (darkTheme) ScheduleColors.EmptySlotHintDark else ScheduleColors.EmptySlotHintLight
 }
 
 @Composable
 fun getWeekChipSelectedColor(): Color {
+    if (LocalAppThemeMode.current == AppThemeMode.MIUIX) {
+        return MiuixTheme.colorScheme.primary
+    }
     val darkTheme = LocalDarkTheme.current
     return if (darkTheme) ScheduleColors.WeekChipSelectedDark else ScheduleColors.WeekChipSelectedLight
 }
 
 @Composable
 fun getWeekChipUnselectedColor(): Color {
+    if (LocalAppThemeMode.current == AppThemeMode.MIUIX) {
+        return MiuixTheme.colorScheme.dividerLine
+    }
     val darkTheme = LocalDarkTheme.current
     return if (darkTheme) ScheduleColors.WeekChipUnselectedDark else ScheduleColors.WeekChipUnselectedLight
 }

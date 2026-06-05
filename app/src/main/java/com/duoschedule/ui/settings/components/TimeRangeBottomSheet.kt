@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.settings.components
+package com.duoschedule.ui.settings.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -18,9 +18,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -60,6 +65,92 @@ fun TimeRangeBottomSheet(
         val startTotal = startHour * 60 + startMinute
         val endTotal = endHour * 60 + endMinute
         endTotal > startTotal
+    }
+
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowBottomSheet(
+            show = true,
+            title = "请调节第${periodIndex + 1}节课的时间",
+            onDismissRequest = onDismiss,
+            allowDismiss = false
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "本节${durationMinutes}分钟",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(156.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TimeWheelPickerNew(
+                        selectedHour = startHour,
+                        selectedMinute = startMinute,
+                        onTimeChange = { h, m -> startHour = h; startMinute = m },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Text(
+                        text = "-",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+
+                    TimeWheelPickerNew(
+                        selectedHour = endHour,
+                        selectedMinute = endMinute,
+                        onTimeChange = { h, m -> endHour = h; endMinute = m },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (!isValid) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = "结束时间必须晚于开始时间",
+                        color = MiuixTheme.colorScheme.error
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("取消")
+                    }
+                    Button(
+                        onClick = { if (isValid) onConfirm(timeRange) },
+                        modifier = Modifier.weight(1f),
+                        enabled = isValid,
+                        colors = ButtonDefaults.buttonColorsPrimary()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("确定")
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.navigationBarsPadding())
+        }
+        return
     }
 
     val darkTheme = LocalDarkTheme.current

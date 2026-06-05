@@ -30,6 +30,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.model.ThemeMode
 import com.duoschedule.ui.navigation.BottomNavItem
 import com.duoschedule.ui.navigation.DuoScheduleNavGraph
@@ -41,9 +42,12 @@ import com.duoschedule.ui.theme.LiquidBottomTabsSpec
 import com.duoschedule.ui.theme.LocalBackdrop
 import com.duoschedule.ui.theme.LocalSharedTransitionScope
 import com.duoschedule.ui.theme.LocalDarkTheme
+import com.duoschedule.ui.theme.LocalAppThemeMode
 import com.duoschedule.ui.theme.LocalLiquidBottomTabContentColor
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop as miuixLayerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as miuixRememberLayerBackdrop
 import com.duoschedule.util.PerformanceMonitor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
@@ -86,12 +90,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel: SettingsViewModel = hiltViewModel()
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+            val appThemeMode by viewModel.appThemeMode.collectAsStateWithLifecycle()
             val predictiveBackEnabled by viewModel.predictiveBackEnabled.collectAsStateWithLifecycle()
             val singleModeEnabled by viewModel.singleModeEnabled.collectAsStateWithLifecycle()
 
             DuoScheduleTheme(themeMode = themeMode) {
                 val darkTheme = LocalDarkTheme.current
                 MiuixTheme(colors = if (darkTheme) darkColorScheme() else lightColorScheme()) {
+                CompositionLocalProvider(LocalAppThemeMode provides appThemeMode) {
                 val navController = rememberNavController()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
@@ -135,6 +141,7 @@ class MainActivity : ComponentActivity() {
                 val backgroundColor = MaterialTheme.colorScheme.background
                 val backdrop = rememberLayerBackdrop()
                 val contentBackdrop = rememberLayerBackdrop()
+                val miuixContentBackdrop = miuixRememberLayerBackdrop()
 
                 Box(modifier = Modifier.fillMaxSize()) {
                     Box(
@@ -144,28 +151,61 @@ class MainActivity : ComponentActivity() {
                             .background(backgroundColor)
                     )
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .layerBackdrop(contentBackdrop)
-                    ) {
-                        SharedTransitionLayout {
-                            CompositionLocalProvider(
-                                LocalSharedTransitionScope provides this,
-                                LocalBackdrop provides backdrop
+                    if (appThemeMode == AppThemeMode.MIUIX) {
+                        // MIUIX 模式：内容区域注册到 miuixLayerBackdrop（用于 BlurredBar 等组件的模糊效果）
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .layerBackdrop(contentBackdrop)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .miuixLayerBackdrop(miuixContentBackdrop)
                             ) {
-                                DuoScheduleNavGraph(
-                                    navController = navController,
-                                    startDestination = BottomNavItem.Home.route,
-                                    pendingImportUri = pendingImportUri,
-                                    onImportHandled = {
-                                        pendingImportUri = null
+                                SharedTransitionLayout {
+                                    CompositionLocalProvider(
+                                        LocalSharedTransitionScope provides this,
+                                        LocalBackdrop provides backdrop
+                                    ) {
+                                        DuoScheduleNavGraph(
+                                            navController = navController,
+                                            startDestination = BottomNavItem.Home.route,
+                                            pendingImportUri = pendingImportUri,
+                                            onImportHandled = {
+                                                pendingImportUri = null
+                                            }
+                                        )
                                     }
-                                )
+                                }
+                            }
+                        }
+                    } else {
+                        // iOS 模式：原有布局
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .layerBackdrop(contentBackdrop)
+                        ) {
+                            SharedTransitionLayout {
+                                CompositionLocalProvider(
+                                    LocalSharedTransitionScope provides this,
+                                    LocalBackdrop provides backdrop
+                                ) {
+                                    DuoScheduleNavGraph(
+                                        navController = navController,
+                                        startDestination = BottomNavItem.Home.route,
+                                        pendingImportUri = pendingImportUri,
+                                        onImportHandled = {
+                                            pendingImportUri = null
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
 
+                    // 统一底栏：两种模式都使用 iOS 风格的 LiquidBottomTabs
                     if (showBottomBar) {
                         val currentSelectedIndex = bottomNavItems.indexOfFirst { it.route == currentRoute }.coerceAtLeast(0)
                         LaunchedEffect(currentRoute, bottomNavItems.size) {
@@ -217,6 +257,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+                }
                 }
                 }
             }

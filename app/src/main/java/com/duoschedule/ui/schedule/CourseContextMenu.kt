@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.schedule
+package com.duoschedule.ui.schedule
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -25,16 +25,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.duoschedule.ui.theme.*
+import com.duoschedule.data.model.AppThemeMode
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.colorControls
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.highlight.Highlight
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
 @Stable
@@ -64,6 +68,7 @@ fun CourseContextMenu(
     backdrop: Backdrop,
     modifier: Modifier = Modifier
 ) {
+    val appThemeMode = LocalAppThemeMode.current
     val hapticFeedback = LocalHapticFeedback.current
     val density = LocalDensity.current.density
     
@@ -74,6 +79,57 @@ fun CourseContextMenu(
         if (expanded) {
             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
         }
+    }
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        if (expanded) {
+            val menuY = cellBounds.y - menuHeightPx.roundToInt() - menuGapPx.roundToInt()
+
+            Popup(
+                alignment = Alignment.TopStart,
+                offset = IntOffset(cellBounds.x, menuY),
+                properties = PopupProperties(
+                    dismissOnBackPress = true,
+                    dismissOnClickOutside = true,
+                    focusable = true
+                ),
+                onDismissRequest = onDismiss
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(ContextMenuDefaults.CornerRadius),
+                    color = MiuixTheme.colorScheme.surface,
+                    modifier = Modifier.wrapContentSize()
+                ) {
+                    Column(
+                        modifier = Modifier.wrapContentSize()
+                    ) {
+                        menuItems.forEachIndexed { index, item ->
+                            if (index > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(0.5.dp)
+                                        .padding(horizontal = 12.dp)
+                                        .background(MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.1f))
+                                )
+                            }
+                            top.yukonga.miuix.kmp.basic.Text(
+                                text = item.label,
+                                color = if (item.isDestructive) ContextMenuDefaults.DestructiveColor else MiuixTheme.colorScheme.onBackground,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        item.action()
+                                        onDismiss()
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        return
     }
 
     if (expanded) {

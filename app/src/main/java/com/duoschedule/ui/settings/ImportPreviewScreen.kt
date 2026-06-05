@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.settings
+package com.duoschedule.ui.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowDialog
+import top.yukonga.miuix.kmp.basic.Surface
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -18,11 +22,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.importexport.CourseImportData
 import com.duoschedule.data.importexport.CsvFileType
 import com.duoschedule.data.importexport.ImportPreviewData
 import com.duoschedule.data.importexport.ScheduleSettingsExport
 import com.duoschedule.data.model.PersonType
+import com.duoschedule.ui.theme.LocalAppThemeMode
 import com.duoschedule.ui.theme.LiquidGlassButton
 import com.duoschedule.ui.theme.LiquidGlassButtonStyle
 import com.duoschedule.ui.theme.LiquidToggle
@@ -159,28 +165,52 @@ fun ImportPreviewScreen(
                     Text(if (isAppExport) "导入预览（应用导出）" else "导入预览（模板）") 
                 },
                 navigationIcon = {
-                    GlassSymbolIconButton(
-                        onClick = onDismiss,
-                        style = GlassSymbolButtonStyle.NonTinted,
-                        buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
-                        contentPadding = PaddingValues(start = Spacing.sm)
-                    ) {
-                        Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = getLabelsVibrantPrimary())
+                    val appThemeMode = LocalAppThemeMode.current
+                    if (appThemeMode == AppThemeMode.MIUIX) {
+                        top.yukonga.miuix.kmp.basic.IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                        }
+                    } else {
+                        GlassSymbolIconButton(
+                            onClick = onDismiss,
+                            style = GlassSymbolButtonStyle.NonTinted,
+                            buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
+                            contentPadding = PaddingValues(start = Spacing.sm)
+                        ) {
+                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = getLabelsVibrantPrimary())
+                        }
                     }
                 },
                 actions = {
-                    LiquidGlassButton(
-                        onClick = { 
-                            if (isAppExport) {
-                                showTargetDialog = true
-                            } else {
-                                showTargetDialog = true
-                            }
-                        },
-                        text = "确认导入",
-                        enabled = selectedCount > 0,
-                        style = LiquidGlassButtonStyle.Tinted
-                    )
+                    val appThemeMode = LocalAppThemeMode.current
+                    if (appThemeMode == AppThemeMode.MIUIX) {
+                        top.yukonga.miuix.kmp.basic.Button(
+                            onClick = {
+                                if (isAppExport) {
+                                    showTargetDialog = true
+                                } else {
+                                    showTargetDialog = true
+                                }
+                            },
+                            enabled = selectedCount > 0,
+                            colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary()
+                        ) {
+                            top.yukonga.miuix.kmp.basic.Text("确认导入")
+                        }
+                    } else {
+                        LiquidGlassButton(
+                            onClick = { 
+                                if (isAppExport) {
+                                    showTargetDialog = true
+                                } else {
+                                    showTargetDialog = true
+                                }
+                            },
+                            text = "确认导入",
+                            enabled = selectedCount > 0,
+                            style = LiquidGlassButtonStyle.Tinted
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
@@ -370,62 +400,105 @@ private fun AppExportPreviewContent(
         LiquidGlassColors.BottomSheet.Light.GlassEffect
     }
 
+    val appThemeMode = LocalAppThemeMode.current
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .drawBackdrop(
-                        backdrop = backdrop,
-                        shape = { ContinuousRoundedRectangle(16.dp) },
-                        effects = {
-                            vibrancy()
-                            blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
-                            lens(
-                                refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
-                                refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
-                                chromaticAberration = true
+            if (appThemeMode == AppThemeMode.MIUIX) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MiuixTheme.colorScheme.surfaceContainer
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                tint = BrandColors.Primary
                             )
-                        },
-                        onDrawSurface = {
-                            drawRect(BrandColors.Primary, blendMode = BlendMode.Hue)
-                            drawRect(BrandColors.Primary.copy(alpha = 0.08f))
+                            top.yukonga.miuix.kmp.basic.Text(
+                                "检测到应用导出文件，导入时请确认课表分配",
+                                color = BrandColors.Primary
+                            )
                         }
-                    )
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Info,
-                        contentDescription = null,
-                        tint = BrandColors.Primary
-                    )
-                    Text(
-                        "检测到应用导出文件，导入时请确认课表分配",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = BrandColors.Primary
-                    )
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            top.yukonga.miuix.kmp.basic.Text("同时导入设置信息")
+                            top.yukonga.miuix.kmp.basic.Switch(
+                                checked = importSettings,
+                                onCheckedChange = onImportSettingsChange
+                            )
+                        }
+                    }
                 }
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .drawBackdrop(
+                            backdrop = backdrop,
+                            shape = { ContinuousRoundedRectangle(16.dp) },
+                            effects = {
+                                vibrancy()
+                                blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
+                                lens(
+                                    refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
+                                    refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
+                                    chromaticAberration = true
+                                )
+                            },
+                            onDrawSurface = {
+                                drawRect(BrandColors.Primary, blendMode = BlendMode.Hue)
+                                drawRect(BrandColors.Primary.copy(alpha = 0.08f))
+                            }
+                        )
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("同时导入设置信息", style = MaterialTheme.typography.bodyMedium, color = labelsPrimary)
-                    LiquidToggle(
-                        checked = importSettings,
-                        onCheckedChange = onImportSettingsChange,
-                        backdrop = backdrop
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = BrandColors.Primary
+                        )
+                        Text(
+                            "检测到应用导出文件，导入时请确认课表分配",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = BrandColors.Primary
+                        )
+                    }
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("同时导入设置信息", style = MaterialTheme.typography.bodyMedium, color = labelsPrimary)
+                        LiquidToggle(
+                            checked = importSettings,
+                            onCheckedChange = onImportSettingsChange,
+                            backdrop = backdrop
+                        )
+                    }
                 }
             }
         }
@@ -507,6 +580,7 @@ private fun SettingsPreviewCard(
     val density = LocalDensity.current
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
+    val appThemeMode = LocalAppThemeMode.current
 
     val layer1Tint = if (darkTheme) {
         LiquidGlassColors.BottomSheet.Dark.Layer1_Tint
@@ -532,49 +606,80 @@ private fun SettingsPreviewCard(
         LiquidGlassColors.BottomSheet.Light.GlassEffect
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .drawBackdrop(
-                backdrop = backdrop,
-                shape = { ContinuousRoundedRectangle(16.dp) },
-                effects = {
-                    vibrancy()
-                    blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
-                    lens(
-                        refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
-                        refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
-                        chromaticAberration = true
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MiuixTheme.colorScheme.surfaceContainer
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    "将要导入的设置",
+                    fontWeight = FontWeight.Bold
+                )
+                
+                if (settingsA != null) {
+                    SettingsItemPreview(
+                        name = personAName ?: "我",
+                        settings = settingsA
                     )
-                },
-                onDrawSurface = {
-                    drawRect(layer1Tint.copy(alpha = layer1Alpha))
-                    drawRect(layer2Base, blendMode = BlendMode.ColorDodge)
-                    drawRect(glassEffect)
                 }
-            )
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(
-            "将要导入的设置",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = labelsPrimary
-        )
-        
-        if (settingsA != null) {
-            SettingsItemPreview(
-                name = personAName ?: "我",
-                settings = settingsA
-            )
+                
+                if (settingsB != null) {
+                    SettingsItemPreview(
+                        name = personBName ?: "Ta",
+                        settings = settingsB
+                    )
+                }
+            }
         }
-        
-        if (settingsB != null) {
-            SettingsItemPreview(
-                name = personBName ?: "Ta",
-                settings = settingsB
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBackdrop(
+                    backdrop = backdrop,
+                    shape = { ContinuousRoundedRectangle(16.dp) },
+                    effects = {
+                        vibrancy()
+                        blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
+                        lens(
+                            refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
+                            refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
+                            chromaticAberration = true
+                        )
+                    },
+                    onDrawSurface = {
+                        drawRect(layer1Tint.copy(alpha = layer1Alpha))
+                        drawRect(layer2Base, blendMode = BlendMode.ColorDodge)
+                        drawRect(glassEffect)
+                    }
+                )
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                "将要导入的设置",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = labelsPrimary
             )
+            
+            if (settingsA != null) {
+                SettingsItemPreview(
+                    name = personAName ?: "我",
+                    settings = settingsA
+                )
+            }
+            
+            if (settingsB != null) {
+                SettingsItemPreview(
+                    name = personBName ?: "Ta",
+                    settings = settingsB
+                )
+            }
         }
     }
 }
@@ -623,6 +728,7 @@ private fun TemplatePreviewContent(
     val density = LocalDensity.current
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
+    val appThemeMode = LocalAppThemeMode.current
 
     val layer1Tint = if (darkTheme) {
         LiquidGlassColors.BottomSheet.Dark.Layer1_Tint
@@ -651,83 +757,154 @@ private fun TemplatePreviewContent(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .drawBackdrop(
-                    backdrop = backdrop,
-                    shape = { ContinuousRoundedRectangle(16.dp) },
-                    effects = {
-                        vibrancy()
-                        blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
-                        lens(
-                            refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
-                            refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
-                            chromaticAberration = true
-                        )
-                    },
-                    onDrawSurface = {
-                        drawRect(layer1Tint.copy(alpha = layer1Alpha))
-                        drawRect(layer2Base, blendMode = BlendMode.ColorDodge)
-                        drawRect(glassEffect)
-                    }
-                )
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MiuixTheme.colorScheme.surfaceContainer,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
             ) {
-                Text("共 $totalCount 门课程", color = labelsPrimary)
-                Text(
-                    "已选择 $selectedCount 门",
-                    color = BrandColors.Primary
-                )
-            }
-            
-            if (conflictCount > 0) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                    Text(
-                        "$conflictCount 门课程存在时间冲突",
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("共 $totalCount 门课程")
+                        top.yukonga.miuix.kmp.basic.Text(
+                            "已选择 $selectedCount 门",
+                            color = BrandColors.Primary
+                        )
+                    }
+                    
+                    if (conflictCount > 0) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            top.yukonga.miuix.kmp.basic.Text(
+                                "$conflictCount 门课程存在时间冲突",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Button(
+                            onClick = { 
+                                previewItems.forEachIndexed { index, _ ->
+                                    previewItems[index] = previewItems[index].copy(isSelected = true)
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
+                        ) {
+                            top.yukonga.miuix.kmp.basic.Text("全选")
+                        }
+                        top.yukonga.miuix.kmp.basic.Button(
+                            onClick = { 
+                                previewItems.forEachIndexed { index, _ ->
+                                    previewItems[index] = previewItems[index].copy(isSelected = false)
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
+                        ) {
+                            top.yukonga.miuix.kmp.basic.Text("取消全选")
+                        }
+                    }
                 }
             }
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .drawBackdrop(
+                        backdrop = backdrop,
+                        shape = { ContinuousRoundedRectangle(16.dp) },
+                        effects = {
+                            vibrancy()
+                            blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
+                            lens(
+                                refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
+                                refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
+                                chromaticAberration = true
+                            )
+                        },
+                        onDrawSurface = {
+                            drawRect(layer1Tint.copy(alpha = layer1Alpha))
+                            drawRect(layer2Base, blendMode = BlendMode.ColorDodge)
+                            drawRect(glassEffect)
+                        }
+                    )
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                LiquidGlassButton(
-                    text = "全选",
-                    onClick = { 
-                        previewItems.forEachIndexed { index, _ ->
-                            previewItems[index] = previewItems[index].copy(isSelected = true)
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                    style = LiquidGlassButtonStyle.NonTinted
-                )
-                LiquidGlassButton(
-                    text = "取消全选",
-                    onClick = { 
-                        previewItems.forEachIndexed { index, _ ->
-                            previewItems[index] = previewItems[index].copy(isSelected = false)
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                    style = LiquidGlassButtonStyle.NonTinted
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("共 $totalCount 门课程", color = labelsPrimary)
+                    Text(
+                        "已选择 $selectedCount 门",
+                        color = BrandColors.Primary
+                    )
+                }
+                
+                if (conflictCount > 0) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            "$conflictCount 门课程存在时间冲突",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    LiquidGlassButton(
+                        text = "全选",
+                        onClick = { 
+                            previewItems.forEachIndexed { index, _ ->
+                                previewItems[index] = previewItems[index].copy(isSelected = true)
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        style = LiquidGlassButtonStyle.NonTinted
+                    )
+                    LiquidGlassButton(
+                        text = "取消全选",
+                        onClick = { 
+                            previewItems.forEachIndexed { index, _ ->
+                                previewItems[index] = previewItems[index].copy(isSelected = false)
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        style = LiquidGlassButtonStyle.NonTinted
+                    )
+                }
             }
         }
 
@@ -773,6 +950,7 @@ private fun AppExportConfirmDialog(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val darkTheme = LocalDarkTheme.current
+    val appThemeMode = LocalAppThemeMode.current
     
     val mergeOptions = listOf(
         SegmentOption(true, "合并（保留现有）"),
@@ -786,123 +964,250 @@ private fun AppExportConfirmDialog(
     
     val isAssignmentValid = personATarget != null && personBTarget != null && personATarget != personBTarget
 
-    IOSConfirmDialog(
-        title = "确认导入",
-        onConfirm = onConfirm,
-        onDismiss = onDismiss,
-        confirmText = if (isImporting) "导入中..." else "确认导入",
-        confirmEnabled = !isImporting && isAssignmentValid,
-        dismissText = "取消"
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = "确认导入",
+            onDismissRequest = onDismiss
         ) {
-            Text(
-                text = "请确认课表分配：",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = labelsPrimary
-            )
-            
-            if (coursesForPersonA.isNotEmpty()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "${personAName ?: "我"}的课表",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF2196F3),
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = "${coursesForPersonA.count { it.isSelected }}门课程",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = labelsSecondary
-                        )
-                    }
-                    SegmentedControl(
-                        options = targetOptions,
-                        selectedOption = personATarget ?: PersonType.PERSON_A,
-                        onOptionSelected = onPersonATargetChange,
-                        modifier = Modifier.width(180.dp)
-                    )
-                }
-            }
-            
-            if (coursesForPersonB.isNotEmpty()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "${personBName ?: "Ta"}的课表",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFFFFC107),
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = "${coursesForPersonB.count { it.isSelected }}门课程",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = labelsSecondary
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+            ) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "请确认课表分配：",
+                    fontWeight = FontWeight.Bold
+                )
+                
+                if (coursesForPersonA.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            top.yukonga.miuix.kmp.basic.Text(
+                                text = "${personAName ?: "我"}的课表",
+                                color = Color(0xFF2196F3),
+                                fontWeight = FontWeight.Medium
+                            )
+                            top.yukonga.miuix.kmp.basic.Text(
+                                text = "${coursesForPersonA.count { it.isSelected }}门课程",
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            )
+                        }
+                        SegmentedControl(
+                            options = targetOptions,
+                            selectedOption = personATarget ?: PersonType.PERSON_A,
+                            onOptionSelected = onPersonATargetChange,
+                            modifier = Modifier.width(180.dp)
                         )
                     }
-                    SegmentedControl(
-                        options = targetOptions,
-                        selectedOption = personBTarget ?: PersonType.PERSON_B,
-                        onOptionSelected = onPersonBTargetChange,
-                        modifier = Modifier.width(180.dp)
+                }
+                
+                if (coursesForPersonB.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            top.yukonga.miuix.kmp.basic.Text(
+                                text = "${personBName ?: "Ta"}的课表",
+                                color = Color(0xFFFFC107),
+                                fontWeight = FontWeight.Medium
+                            )
+                            top.yukonga.miuix.kmp.basic.Text(
+                                text = "${coursesForPersonB.count { it.isSelected }}门课程",
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            )
+                        }
+                        SegmentedControl(
+                            options = targetOptions,
+                            selectedOption = personBTarget ?: PersonType.PERSON_B,
+                            onOptionSelected = onPersonBTargetChange,
+                            modifier = Modifier.width(180.dp)
+                        )
+                    }
+                }
+                
+                if (personATarget != null && personBTarget != null && personATarget == personBTarget) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = "两份课表不能分配给同一个人",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(Spacing.xs))
+                
+                if (importSettings) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = "• 同时导入设置信息",
+                        color = BrandColors.Primary
                     )
                 }
-            }
-            
-            if (personATarget != null && personBTarget != null && personATarget == personBTarget) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "两份课表不能分配给同一个人",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(Spacing.xs))
-            
-            if (importSettings) {
-                Text(
-                    text = "• 同时导入设置信息",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = BrandColors.Primary
+                
+                Spacer(modifier = Modifier.height(Spacing.sm))
+                
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "冲突处理方式："
+                )
+                
+                SegmentedControl(
+                    options = mergeOptions,
+                    selectedOption = mergeMode,
+                    onOptionSelected = onMergeModeChange,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
-            
-            Spacer(modifier = Modifier.height(Spacing.sm))
-            
-            Text(
-                text = "冲突处理方式：",
-                style = MaterialTheme.typography.bodyMedium,
-                color = labelsPrimary
-            )
-            
-            SegmentedControl(
-                options = mergeOptions,
-                selectedOption = mergeMode,
-                onOptionSelected = onMergeModeChange,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Spacer(modifier = Modifier.height(Spacing.md))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                top.yukonga.miuix.kmp.basic.Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("取消")
+                }
+                top.yukonga.miuix.kmp.basic.Button(
+                    onClick = onConfirm,
+                    modifier = Modifier.weight(1f),
+                    enabled = !isImporting && isAssignmentValid,
+                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text(if (isImporting) "导入中..." else "确认导入")
+                }
+            }
+        }
+    } else {
+        IOSConfirmDialog(
+            title = "确认导入",
+            onConfirm = onConfirm,
+            onDismiss = onDismiss,
+            confirmText = if (isImporting) "导入中..." else "确认导入",
+            confirmEnabled = !isImporting && isAssignmentValid,
+            dismissText = "取消"
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+            ) {
+                Text(
+                    text = "请确认课表分配：",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = labelsPrimary
+                )
+                
+                if (coursesForPersonA.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "${personAName ?: "我"}的课表",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFF2196F3),
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "${coursesForPersonA.count { it.isSelected }}门课程",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = labelsSecondary
+                            )
+                        }
+                        SegmentedControl(
+                            options = targetOptions,
+                            selectedOption = personATarget ?: PersonType.PERSON_A,
+                            onOptionSelected = onPersonATargetChange,
+                            modifier = Modifier.width(180.dp)
+                        )
+                    }
+                }
+                
+                if (coursesForPersonB.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "${personBName ?: "Ta"}的课表",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color(0xFFFFC107),
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "${coursesForPersonB.count { it.isSelected }}门课程",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = labelsSecondary
+                            )
+                        }
+                        SegmentedControl(
+                            options = targetOptions,
+                            selectedOption = personBTarget ?: PersonType.PERSON_B,
+                            onOptionSelected = onPersonBTargetChange,
+                            modifier = Modifier.width(180.dp)
+                        )
+                    }
+                }
+                
+                if (personATarget != null && personBTarget != null && personATarget == personBTarget) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "两份课表不能分配给同一个人",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(Spacing.xs))
+                
+                if (importSettings) {
+                    Text(
+                        text = "• 同时导入设置信息",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = BrandColors.Primary
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(Spacing.sm))
+                
+                Text(
+                    text = "冲突处理方式：",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = labelsPrimary
+                )
+                
+                SegmentedControl(
+                    options = mergeOptions,
+                    selectedOption = mergeMode,
+                    onOptionSelected = onMergeModeChange,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
@@ -920,6 +1225,7 @@ private fun TemplateConfirmDialog(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val darkTheme = LocalDarkTheme.current
+    val appThemeMode = LocalAppThemeMode.current
     
     val targetOptions = listOf(
         SegmentOption(PersonType.PERSON_A, "我的课表"),
@@ -931,44 +1237,98 @@ private fun TemplateConfirmDialog(
         SegmentOption(false, "覆盖现有数据")
     )
 
-    IOSConfirmDialog(
-        title = "选择导入目标",
-        onConfirm = onConfirm,
-        onDismiss = onDismiss,
-        confirmText = if (isImporting) "导入中..." else "确认导入",
-        confirmEnabled = selectedTarget != null && !isImporting,
-        dismissText = "取消"
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(Spacing.md)
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = "选择导入目标",
+            onDismissRequest = onDismiss
         ) {
-            Text(
-                text = "请选择要将课程导入到哪个课表：",
-                style = MaterialTheme.typography.bodyMedium,
-                color = labelsPrimary
-            )
-            
-            SegmentedControl(
-                options = targetOptions,
-                selectedOption = selectedTarget ?: PersonType.PERSON_A,
-                onOptionSelected = onTargetChange,
-                modifier = Modifier.fillMaxWidth()
-            )
-            
-            Spacer(modifier = Modifier.height(Spacing.xs))
-            
-            Text(
-                text = "冲突处理方式：",
-                style = MaterialTheme.typography.bodyMedium,
-                color = labelsPrimary
-            )
-            
-            SegmentedControl(
-                options = mergeOptions,
-                selectedOption = mergeMode,
-                onOptionSelected = onMergeModeChange,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.md)
+            ) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "请选择要将课程导入到哪个课表："
+                )
+                
+                SegmentedControl(
+                    options = targetOptions,
+                    selectedOption = selectedTarget ?: PersonType.PERSON_A,
+                    onOptionSelected = onTargetChange,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Spacer(modifier = Modifier.height(Spacing.xs))
+                
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "冲突处理方式："
+                )
+                
+                SegmentedControl(
+                    options = mergeOptions,
+                    selectedOption = mergeMode,
+                    onOptionSelected = onMergeModeChange,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            Spacer(modifier = Modifier.height(Spacing.md))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                top.yukonga.miuix.kmp.basic.Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("取消")
+                }
+                top.yukonga.miuix.kmp.basic.Button(
+                    onClick = onConfirm,
+                    modifier = Modifier.weight(1f),
+                    enabled = selectedTarget != null && !isImporting,
+                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text(if (isImporting) "导入中..." else "确认导入")
+                }
+            }
+        }
+    } else {
+        IOSConfirmDialog(
+            title = "选择导入目标",
+            onConfirm = onConfirm,
+            onDismiss = onDismiss,
+            confirmText = if (isImporting) "导入中..." else "确认导入",
+            confirmEnabled = selectedTarget != null && !isImporting,
+            dismissText = "取消"
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.md)
+            ) {
+                Text(
+                    text = "请选择要将课程导入到哪个课表：",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = labelsPrimary
+                )
+                
+                SegmentedControl(
+                    options = targetOptions,
+                    selectedOption = selectedTarget ?: PersonType.PERSON_A,
+                    onOptionSelected = onTargetChange,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Spacer(modifier = Modifier.height(Spacing.xs))
+                
+                Text(
+                    text = "冲突处理方式：",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = labelsPrimary
+                )
+                
+                SegmentedControl(
+                    options = mergeOptions,
+                    selectedOption = mergeMode,
+                    onOptionSelected = onMergeModeChange,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
@@ -987,14 +1347,52 @@ private fun SuccessDialog(
         "成功导入 $importedCount 门课程到${if (importedTarget == PersonType.PERSON_A) "我的课表" else "Ta的课表"}\n已自动备份原有数据"
     }
     
-    IOSSuccessDialog(
-        title = "导入成功",
-        message = message,
-        onDismiss = onNavigateToHome,
-        onAction = onViewSchedule,
-        actionText = "查看课表",
-        dismissText = "返回主页"
-    )
+    val appThemeMode = LocalAppThemeMode.current
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = "导入成功",
+            onDismissRequest = onNavigateToHome
+        ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.primary,
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(modifier = Modifier.height(Spacing.md))
+            top.yukonga.miuix.kmp.basic.Text(
+                text = message,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+            )
+            Spacer(modifier = Modifier.height(Spacing.lg))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                top.yukonga.miuix.kmp.basic.Button(
+                    onClick = onNavigateToHome,
+                    modifier = Modifier.weight(1f),
+                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("返回主页")
+                }
+                top.yukonga.miuix.kmp.basic.Button(
+                    onClick = onViewSchedule,
+                    modifier = Modifier.weight(1f),
+                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("查看课表")
+                }
+            }
+        }
+    } else {
+        IOSSuccessDialog(
+            title = "导入成功",
+            message = message,
+            onDismiss = onNavigateToHome,
+            onAction = onViewSchedule,
+            actionText = "查看课表",
+            dismissText = "返回主页"
+        )
+    }
 }
 
 @Composable
@@ -1007,6 +1405,7 @@ private fun ImportPreviewItemCard(
     val density = LocalDensity.current
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
+    val appThemeMode = LocalAppThemeMode.current
 
     val layer1Tint = if (darkTheme) {
         LiquidGlassColors.BottomSheet.Dark.Layer1_Tint
@@ -1034,126 +1433,227 @@ private fun ImportPreviewItemCard(
 
     val errorColor = MaterialTheme.colorScheme.error
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .drawBackdrop(
-                backdrop = backdrop,
-                shape = { ContinuousRoundedRectangle(16.dp) },
-                effects = {
-                    vibrancy()
-                    blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
-                    lens(
-                        refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
-                        refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
-                        chromaticAberration = true
-                    )
-                },
-                onDrawSurface = {
-                    if (item.hasConflict) {
-                        drawRect(errorColor, blendMode = BlendMode.Hue)
-                        drawRect(errorColor.copy(alpha = 0.15f))
-                    } else {
-                        drawRect(layer1Tint.copy(alpha = layer1Alpha))
-                        drawRect(layer2Base, blendMode = BlendMode.ColorDodge)
-                        drawRect(glassEffect)
-                    }
-                }
-            )
-            .toggleable(
-                value = item.isSelected,
-                onValueChange = { onToggleSelection() }
-            )
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Checkbox(
-            checked = item.isSelected,
-            onCheckedChange = { onToggleSelection() }
-        )
-        
-        Spacer(modifier = Modifier.width(8.dp))
-        
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = if (item.hasConflict) MiuixTheme.colorScheme.errorContainer else MiuixTheme.colorScheme.surfaceContainer
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .toggleable(
+                        value = item.isSelected,
+                        onValueChange = { onToggleSelection() }
+                    )
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = item.data.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = labelsPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                Checkbox(
+                    checked = item.isSelected,
+                    onCheckedChange = { onToggleSelection() }
                 )
                 
-                if (item.hasConflict) {
-                    Icon(
-                        Icons.Default.Warning,
-                        contentDescription = "冲突",
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = item.data.name,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        if (item.hasConflict) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = "冲突",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = getDayOfWeekString(item.data.dayOfWeek),
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                        )
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = getPeriodDisplayText(item.data.startPeriod, item.data.endPeriod),
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                        )
+                    }
+                    
+                    if (item.data.location.isNotEmpty()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.LocationOn,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            )
+                            top.yukonga.miuix.kmp.basic.Text(
+                                text = item.data.location,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            )
+                        }
+                    }
+                    
+                    val weekText = when (item.data.weekType) {
+                        com.duoschedule.data.model.WeekType.ALL -> "${item.data.startWeek}-${item.data.endWeek}周"
+                        com.duoschedule.data.model.WeekType.ODD -> "单周"
+                        com.duoschedule.data.model.WeekType.EVEN -> "双周"
+                        com.duoschedule.data.model.WeekType.CUSTOM -> item.data.customWeeks.ifEmpty { "自定义周次" }
+                    }
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = weekText,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                     )
+                    
+                    if (item.hasConflict && item.conflictReason.isNotEmpty()) {
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = item.conflictReason,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
+        }
+    } else {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBackdrop(
+                    backdrop = backdrop,
+                    shape = { ContinuousRoundedRectangle(16.dp) },
+                    effects = {
+                        vibrancy()
+                        blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
+                        lens(
+                            refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
+                            refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
+                            chromaticAberration = true
+                        )
+                    },
+                    onDrawSurface = {
+                        if (item.hasConflict) {
+                            drawRect(errorColor, blendMode = BlendMode.Hue)
+                            drawRect(errorColor.copy(alpha = 0.15f))
+                        } else {
+                            drawRect(layer1Tint.copy(alpha = layer1Alpha))
+                            drawRect(layer2Base, blendMode = BlendMode.ColorDodge)
+                            drawRect(glassEffect)
+                        }
+                    }
+                )
+                .toggleable(
+                    value = item.isSelected,
+                    onValueChange = { onToggleSelection() }
+                )
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = item.isSelected,
+                onCheckedChange = { onToggleSelection() }
+            )
             
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    text = getDayOfWeekString(item.data.dayOfWeek),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = labelsSecondary
-                )
-                Text(
-                    text = getPeriodDisplayText(item.data.startPeriod, item.data.endPeriod),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = labelsSecondary
-                )
-            }
-            
-            if (item.data.location.isNotEmpty()) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(
-                        Icons.Default.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = labelsSecondary
+                    Text(
+                        text = item.data.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = labelsPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    if (item.hasConflict) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = "冲突",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = getDayOfWeekString(item.data.dayOfWeek),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = labelsSecondary
                     )
                     Text(
-                        text = item.data.location,
-                        style = MaterialTheme.typography.bodySmall,
+                        text = getPeriodDisplayText(item.data.startPeriod, item.data.endPeriod),
+                        style = MaterialTheme.typography.bodyMedium,
                         color = labelsSecondary
                     )
                 }
-            }
-            
-            val weekText = when (item.data.weekType) {
-                com.duoschedule.data.model.WeekType.ALL -> "${item.data.startWeek}-${item.data.endWeek}周"
-                com.duoschedule.data.model.WeekType.ODD -> "单周"
-                com.duoschedule.data.model.WeekType.EVEN -> "双周"
-                com.duoschedule.data.model.WeekType.CUSTOM -> item.data.customWeeks.ifEmpty { "自定义周次" }
-            }
-            Text(
-                text = weekText,
-                style = MaterialTheme.typography.bodySmall,
-                color = labelsSecondary
-            )
-            
-            if (item.hasConflict && item.conflictReason.isNotEmpty()) {
+                
+                if (item.data.location.isNotEmpty()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.LocationOn,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = labelsSecondary
+                        )
+                        Text(
+                            text = item.data.location,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = labelsSecondary
+                        )
+                    }
+                }
+                
+                val weekText = when (item.data.weekType) {
+                    com.duoschedule.data.model.WeekType.ALL -> "${item.data.startWeek}-${item.data.endWeek}周"
+                    com.duoschedule.data.model.WeekType.ODD -> "单周"
+                    com.duoschedule.data.model.WeekType.EVEN -> "双周"
+                    com.duoschedule.data.model.WeekType.CUSTOM -> item.data.customWeeks.ifEmpty { "自定义周次" }
+                }
                 Text(
-                    text = item.conflictReason,
+                    text = weekText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
+                    color = labelsSecondary
                 )
+                
+                if (item.hasConflict && item.conflictReason.isNotEmpty()) {
+                    Text(
+                        text = item.conflictReason,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }

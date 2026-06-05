@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.main.components
+package com.duoschedule.ui.main.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.ui.model.CurrentCourseState
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.Backdrop
@@ -33,6 +34,9 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun CurrentCourseCard(
@@ -42,9 +46,46 @@ fun CurrentCourseCard(
     singleModeEnabled: Boolean = false,
     backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
+    val appThemeMode = LocalAppThemeMode.current
     val darkTheme = LocalDarkTheme.current
     val personAColor = getPersonAColor()
     val personBColor = getPersonBColor()
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        Surface(
+            color = MiuixTheme.colorScheme.surfaceContainer,
+            shape = RoundedCornerShape(16.dp),
+            modifier = modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(Spacing.md),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+            ) {
+                PersonCourseColumn(
+                    state = personAState,
+                    personColor = personAColor,
+                    modifier = if (singleModeEnabled) Modifier.fillMaxWidth() else Modifier.weight(1f)
+                )
+
+                if (!singleModeEnabled) {
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(100.dp)
+                            .background(MiuixTheme.colorScheme.dividerLine.copy(alpha = 0.5f))
+                    )
+
+                    PersonCourseColumn(
+                        state = personBState,
+                        personColor = personBColor,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+        return
+    }
+
     val density = LocalDensity.current
 
     val layer1Tint = if (darkTheme) {

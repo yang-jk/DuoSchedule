@@ -31,6 +31,9 @@ interface CourseDao {
     @Query("SELECT * FROM courses WHERE id = :id")
     suspend fun getCourseById(id: Long): Course?
 
+    @Query("SELECT * FROM courses WHERE syncId = :syncId")
+    suspend fun getCourseBySyncId(syncId: String): Course?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCourse(course: Course): Long
 

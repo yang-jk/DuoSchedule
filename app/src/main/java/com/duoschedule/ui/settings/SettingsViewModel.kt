@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.settings
+package com.duoschedule.ui.settings
 
 import android.app.Application
 import android.content.Context
@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.duoschedule.data.importexport.*
 import com.duoschedule.data.local.CourseDao
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.ThemeMode
@@ -115,6 +116,9 @@ class SettingsViewModel @Inject constructor(
 
     val themeMode: StateFlow<ThemeMode> = repository.getThemeMode()
         .stateIn(viewModelScope, SharingStarted.Lazily, ThemeMode.FOLLOW_SYSTEM)
+
+    val appThemeMode: StateFlow<AppThemeMode> = repository.getAppThemeMode()
+        .stateIn(viewModelScope, SharingStarted.Lazily, AppThemeMode.IOS)
 
     val showDashedBorder: StateFlow<Boolean> = repository.getShowDashedBorder()
         .stateIn(viewModelScope, SharingStarted.Lazily, true)
@@ -240,6 +244,12 @@ class SettingsViewModel @Inject constructor(
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
             repository.setThemeMode(mode)
+        }
+    }
+
+    fun setAppThemeMode(mode: AppThemeMode) {
+        viewModelScope.launch {
+            repository.setAppThemeMode(mode)
         }
     }
 
@@ -484,6 +494,24 @@ class SettingsViewModel @Inject constructor(
         targetPerson: PersonType
     ): EducationSystemResult {
         return EducationSystemImporter.loginAndGetCourses(credentials, targetPerson)
+    }
+
+    suspend fun importFromEducationSystem(
+        adapter: SchoolAdapter,
+        username: String,
+        password: String,
+        captcha: String = "",
+        targetPerson: PersonType
+    ): EducationSystemResult {
+        return EducationSystemImporter.loginAndGetCourses(adapter, username, password, captcha, targetPerson)
+    }
+
+    fun importFromWebView(
+        adapter: com.duoschedule.data.importexport.SchoolAdapter,
+        html: String,
+        targetPerson: com.duoschedule.data.model.PersonType
+    ): List<com.duoschedule.data.importexport.CourseImportData> {
+        return adapter.parseScheduleHtml(html, targetPerson)
     }
 
     private suspend fun createPreImportBackup(): File? {
