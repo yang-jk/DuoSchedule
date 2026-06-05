@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
@@ -94,8 +95,15 @@ fun PeriodTimesSettingsScreen(
                     titleColor = MiuixTheme.colorScheme.onSurface,
                     defaultWindowInsetsPadding = false,
                     navigationIcon = {
-                        GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
-                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                        val appThemeMode = LocalAppThemeMode.current
+                        if (appThemeMode == AppThemeMode.MIUIX) {
+                            top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                            }
+                        } else {
+                            GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                            }
                         }
                     },
                 )
@@ -125,11 +133,9 @@ fun PeriodTimesSettingsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
                 verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
             ) {
-            Spacer(modifier = Modifier.height(Spacing.sm))
-
             SettingsFooter(
                 text = "点击时间可编辑每节课的开始和结束时间。"
             )

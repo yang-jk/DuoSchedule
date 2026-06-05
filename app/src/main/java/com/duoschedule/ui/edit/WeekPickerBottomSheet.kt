@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.edit
+package com.duoschedule.ui.edit
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import com.kyant.capsule.ContinuousRoundedRectangle
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
@@ -34,6 +36,11 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,8 +53,105 @@ fun WeekPickerBottomSheet(
     backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
     var currentSelectedWeeks by remember(selectedWeeks) { mutableStateOf(selectedWeeks) }
+    val appThemeMode = LocalAppThemeMode.current
     val darkTheme = LocalDarkTheme.current
     val density = LocalDensity.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowBottomSheet(
+            show = true,
+            title = "选择周数",
+            onDismissRequest = onDismiss
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { currentSelectedWeeks = (1..totalWeeks).filter { it % 2 == 1 }.toSet() },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("单周")
+                }
+                Button(
+                    onClick = { currentSelectedWeeks = (1..totalWeeks).filter { it % 2 == 0 }.toSet() },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("双周")
+                }
+                Button(
+                    onClick = { currentSelectedWeeks = (1..totalWeeks).toSet() },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("全部")
+                }
+                Button(
+                    onClick = { currentSelectedWeeks = emptySet() },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("清空")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            val weeks = remember(totalWeeks) { (1..totalWeeks).toList() }
+
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(7),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 300.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(weeks) { week ->
+                    WeekGridItemMiuix(
+                        week = week,
+                        isSelected = currentSelectedWeeks.contains(week),
+                        onClick = {
+                            currentSelectedWeeks = if (currentSelectedWeeks.contains(week)) {
+                                currentSelectedWeeks - week
+                            } else {
+                                currentSelectedWeeks + week
+                            }
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("取消")
+                }
+                Button(
+                    onClick = {
+                        onWeeksChange(currentSelectedWeeks)
+                        onDismiss()
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColorsPrimary()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("确定")
+                }
+            }
+            Spacer(modifier = Modifier.navigationBarsPadding())
+        }
+        return
+    }
 
     GlassBottomSheet(
         onDismiss = onDismiss,
@@ -333,6 +437,30 @@ private fun WeekGridItem(
                 text = "$week",
                 style = MaterialTheme.typography.labelMedium,
                 color = textColor,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun WeekGridItemMiuix(
+    week: Int,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.size(40.dp).clickable(onClick = onClick)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            top.yukonga.miuix.kmp.basic.Text(
+                text = "$week",
+                color = if (isSelected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center
             )
         }

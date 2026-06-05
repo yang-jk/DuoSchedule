@@ -26,6 +26,7 @@ import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.importexport.ImportResult
 import com.duoschedule.data.importexport.ImportPreviewData
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
@@ -46,6 +47,11 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.window.WindowDialog
+import androidx.compose.foundation.shape.RoundedCornerShape
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -57,12 +63,14 @@ import java.time.format.DateTimeFormatter
 fun DataManagementScreen(
     onNavigateBack: () -> Unit,
     onNavigateToImportPreview: (ImportPreviewData) -> Unit,
+    onNavigateToEducationImport: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val scope = rememberCoroutineScope()
+    val appThemeMode = LocalAppThemeMode.current
     
     var isLoading by remember { mutableStateOf(false) }
     var loadingMessage by remember { mutableStateOf("") }
@@ -146,8 +154,14 @@ fun DataManagementScreen(
                     titleColor = MiuixTheme.colorScheme.onSurface,
                     defaultWindowInsetsPadding = false,
                     navigationIcon = {
-                        GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
-                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                        if (appThemeMode == AppThemeMode.MIUIX) {
+                            top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                            }
+                        } else {
+                            GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                            }
                         }
                     },
                 )
@@ -161,99 +175,142 @@ fun DataManagementScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-                    .padding(innerPadding),
+                    .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
                 verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
             ) {
-            Spacer(modifier = Modifier.height(Spacing.sm))
-            
             if (deviceInfo.isMiuiDevice) {
-                val miuiBackdrop = LocalBackdrop.current ?: emptyBackdrop()
-                val darkTheme = LocalDarkTheme.current
-                val density = LocalDensity.current
-
-                val layer1Tint = if (darkTheme) {
-                    LiquidGlassColors.BottomSheet.Dark.Layer1_Tint
-                } else {
-                    LiquidGlassColors.BottomSheet.Light.Layer1_Tint
-                }
-
-                val layer1Alpha = if (darkTheme) {
-                    LiquidGlassColors.BottomSheet.Dark.Layer1_Alpha
-                } else {
-                    LiquidGlassColors.BottomSheet.Light.Layer1_Alpha
-                }
-
-                val layer2Base = if (darkTheme) {
-                    LiquidGlassColors.BottomSheet.Dark.Layer2_Base
-                } else {
-                    LiquidGlassColors.BottomSheet.Light.Layer2_Base
-                }
-
-                val glassEffect = if (darkTheme) {
-                    LiquidGlassColors.BottomSheet.Dark.GlassEffect
-                } else {
-                    LiquidGlassColors.BottomSheet.Light.GlassEffect
-                }
-
                 val accentColor = if (deviceInfo.isHyperOS) IOSColors.Green else IOSColors.Orange
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = Spacing.lg)
-                        .drawBackdrop(
-                            backdrop = miuiBackdrop,
-                            shape = { ContinuousRoundedRectangle(16.dp) },
-                            effects = {
-                                vibrancy()
-                                blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
-                                lens(
-                                    refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
-                                    refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
-                                    chromaticAberration = true
+                if (appThemeMode == AppThemeMode.MIUIX) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MiuixTheme.colorScheme.surfaceContainer,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.lg)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(Spacing.md),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (deviceInfo.isHyperOS) {
+                                    Icons.Outlined.CheckCircle
+                                } else {
+                                    Icons.Outlined.Info
+                                },
+                                contentDescription = null,
+                                tint = accentColor
+                            )
+                            Column {
+                                top.yukonga.miuix.kmp.basic.Text(
+                                    text = if (deviceInfo.isHyperOS) {
+                                        "小米文件选择器"
+                                    } else {
+                                        "系统文件选择器"
+                                    },
+                                    fontWeight = FontWeight.Medium
                                 )
-                            },
-                            onDrawSurface = {
-                                drawRect(accentColor, blendMode = BlendMode.Hue)
-                                drawRect(accentColor.copy(alpha = 0.1f))
+                                top.yukonga.miuix.kmp.basic.Text(
+                                    text = if (deviceInfo.isHyperOS) {
+                                        "HyperOS ${deviceInfo.miuiVersion} · 支持最新文件选择控件"
+                                    } else if (deviceInfo.isMiuiDevice) {
+                                        "MIUI ${deviceInfo.miuiVersion} · 升级至 HyperOS 可获得更好体验"
+                                    } else {
+                                        "Android ${deviceInfo.androidVersion}"
+                                    },
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                                )
                             }
-                        )
-                        .padding(Spacing.md),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        imageVector = if (deviceInfo.isHyperOS) {
-                            Icons.Outlined.CheckCircle
-                        } else {
-                            Icons.Outlined.Info
-                        },
-                        contentDescription = null,
-                        tint = accentColor
-                    )
-                    Column {
-                        Text(
-                            text = if (deviceInfo.isHyperOS) {
-                                "小米文件选择器"
+                        }
+                    }
+                } else {
+                    val miuiBackdrop = LocalBackdrop.current ?: emptyBackdrop()
+                    val darkTheme = LocalDarkTheme.current
+                    val density = LocalDensity.current
+
+                    val layer1Tint = if (darkTheme) {
+                        LiquidGlassColors.BottomSheet.Dark.Layer1_Tint
+                    } else {
+                        LiquidGlassColors.BottomSheet.Light.Layer1_Tint
+                    }
+
+                    val layer1Alpha = if (darkTheme) {
+                        LiquidGlassColors.BottomSheet.Dark.Layer1_Alpha
+                    } else {
+                        LiquidGlassColors.BottomSheet.Light.Layer1_Alpha
+                    }
+
+                    val layer2Base = if (darkTheme) {
+                        LiquidGlassColors.BottomSheet.Dark.Layer2_Base
+                    } else {
+                        LiquidGlassColors.BottomSheet.Light.Layer2_Base
+                    }
+
+                    val glassEffect = if (darkTheme) {
+                        LiquidGlassColors.BottomSheet.Dark.GlassEffect
+                    } else {
+                        LiquidGlassColors.BottomSheet.Light.GlassEffect
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.lg)
+                            .drawBackdrop(
+                                backdrop = miuiBackdrop,
+                                shape = { ContinuousRoundedRectangle(16.dp) },
+                                effects = {
+                                    vibrancy()
+                                    blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
+                                    lens(
+                                        refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
+                                        refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
+                                        chromaticAberration = true
+                                    )
+                                },
+                                onDrawSurface = {
+                                    drawRect(accentColor, blendMode = BlendMode.Hue)
+                                    drawRect(accentColor.copy(alpha = 0.1f))
+                                }
+                            )
+                            .padding(Spacing.md),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (deviceInfo.isHyperOS) {
+                                Icons.Outlined.CheckCircle
                             } else {
-                                "系统文件选择器"
+                                Icons.Outlined.Info
                             },
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
-                            color = labelsPrimary
+                            contentDescription = null,
+                            tint = accentColor
                         )
-                        Text(
-                            text = if (deviceInfo.isHyperOS) {
-                                "HyperOS ${deviceInfo.miuiVersion} · 支持最新文件选择控件"
-                            } else if (deviceInfo.isMiuiDevice) {
-                                "MIUI ${deviceInfo.miuiVersion} · 升级至 HyperOS 可获得更好体验"
-                            } else {
-                                "Android ${deviceInfo.androidVersion}"
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = labelsSecondary
-                        )
+                        Column {
+                            Text(
+                                text = if (deviceInfo.isHyperOS) {
+                                    "小米文件选择器"
+                                } else {
+                                    "系统文件选择器"
+                                },
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                color = labelsPrimary
+                            )
+                            Text(
+                                text = if (deviceInfo.isHyperOS) {
+                                    "HyperOS ${deviceInfo.miuiVersion} · 支持最新文件选择控件"
+                                } else if (deviceInfo.isMiuiDevice) {
+                                    "MIUI ${deviceInfo.miuiVersion} · 升级至 HyperOS 可获得更好体验"
+                                } else {
+                                    "Android ${deviceInfo.androidVersion}"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = labelsSecondary
+                            )
+                        }
                     }
                 }
             }
@@ -334,7 +391,7 @@ fun DataManagementScreen(
                     icon = Icons.Outlined.School,
                     iconBackgroundColor = IOSColors.Purple,
                     onClick = {
-                        Toast.makeText(context, "功能开发中", Toast.LENGTH_SHORT).show()
+                        onNavigateToEducationImport()
                     }
                 )
             }
@@ -428,45 +485,89 @@ fun DataManagementScreen(
                                 )
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                                LiquidGlassButton(
-                                    text = "恢复",
-                                    onClick = {
-                                        scope.launch {
-                                            isLoading = true
-                                            loadingMessage = "正在读取备份..."
-                                            val uri = FileProvider.getUriForFile(
-                                                context,
-                                                "${context.packageName}.fileprovider",
-                                                file
-                                            )
-                                            val result = viewModel.importFromCsv(context, uri)
-                                            isLoading = false
-                                            if (result.success && result.courses.isNotEmpty()) {
-                                                onNavigateToImportPreview(ImportPreviewData(
-                                                    courses = result.courses,
-                                                    fileType = result.fileType,
-                                                    settingsA = result.settingsA,
-                                                    settingsB = result.settingsB,
-                                                    personAName = result.personAName,
-                                                    personBName = result.personBName,
-                                                    exportVersion = result.exportVersion
-                                                ))
-                                            } else {
-                                                showImportResultDialog = true
-                                                importResult = result
+                                if (appThemeMode == AppThemeMode.MIUIX) {
+                                    Button(
+                                        onClick = {
+                                            scope.launch {
+                                                isLoading = true
+                                                loadingMessage = "正在读取备份..."
+                                                val uri = FileProvider.getUriForFile(
+                                                    context,
+                                                    "${context.packageName}.fileprovider",
+                                                    file
+                                                )
+                                                val result = viewModel.importFromCsv(context, uri)
+                                                isLoading = false
+                                                if (result.success && result.courses.isNotEmpty()) {
+                                                    onNavigateToImportPreview(ImportPreviewData(
+                                                        courses = result.courses,
+                                                        fileType = result.fileType,
+                                                        settingsA = result.settingsA,
+                                                        settingsB = result.settingsB,
+                                                        personAName = result.personAName,
+                                                        personBName = result.personBName,
+                                                        exportVersion = result.exportVersion
+                                                    ))
+                                                } else {
+                                                    showImportResultDialog = true
+                                                    importResult = result
+                                                }
                                             }
-                                        }
-                                    },
-                                    style = LiquidGlassButtonStyle.Tinted
-                                )
-                                LiquidGlassButton(
-                                    text = "删除",
-                                    onClick = {
-                                        viewModel.deleteBackupFile(file.name)
-                                        backupFiles = viewModel.getBackupFiles()
-                                    },
-                                    style = LiquidGlassButtonStyle.NonTinted
-                                )
+                                        },
+                                        colors = ButtonDefaults.buttonColorsPrimary()
+                                    ) {
+                                        top.yukonga.miuix.kmp.basic.Text("恢复")
+                                    }
+                                    Button(
+                                        onClick = {
+                                            viewModel.deleteBackupFile(file.name)
+                                            backupFiles = viewModel.getBackupFiles()
+                                        },
+                                        colors = ButtonDefaults.buttonColors()
+                                    ) {
+                                        top.yukonga.miuix.kmp.basic.Text("删除")
+                                    }
+                                } else {
+                                    LiquidGlassButton(
+                                        text = "恢复",
+                                        onClick = {
+                                            scope.launch {
+                                                isLoading = true
+                                                loadingMessage = "正在读取备份..."
+                                                val uri = FileProvider.getUriForFile(
+                                                    context,
+                                                    "${context.packageName}.fileprovider",
+                                                    file
+                                                )
+                                                val result = viewModel.importFromCsv(context, uri)
+                                                isLoading = false
+                                                if (result.success && result.courses.isNotEmpty()) {
+                                                    onNavigateToImportPreview(ImportPreviewData(
+                                                        courses = result.courses,
+                                                        fileType = result.fileType,
+                                                        settingsA = result.settingsA,
+                                                        settingsB = result.settingsB,
+                                                        personAName = result.personAName,
+                                                        personBName = result.personBName,
+                                                        exportVersion = result.exportVersion
+                                                    ))
+                                                } else {
+                                                    showImportResultDialog = true
+                                                    importResult = result
+                                                }
+                                            }
+                                        },
+                                        style = LiquidGlassButtonStyle.Tinted
+                                    )
+                                    LiquidGlassButton(
+                                        text = "删除",
+                                        onClick = {
+                                            viewModel.deleteBackupFile(file.name)
+                                            backupFiles = viewModel.getBackupFiles()
+                                        },
+                                        style = LiquidGlassButtonStyle.NonTinted
+                                    )
+                                }
                             }
                         }
                         if (file != backupFiles.last()) {
@@ -487,27 +588,88 @@ fun DataManagementScreen(
     }
 
     if (isLoading) {
-        IOSLoadingDialog(
-            message = loadingMessage,
-            onDismiss = { }
-        )
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            WindowDialog(
+                show = true,
+                title = "请稍候",
+                onDismissRequest = {}
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    top.yukonga.miuix.kmp.basic.CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp)
+                    )
+                    top.yukonga.miuix.kmp.basic.Text(loadingMessage)
+                }
+            }
+        } else {
+            IOSLoadingDialog(
+                message = loadingMessage,
+                onDismiss = { }
+            )
+        }
     }
 
     if (showImportResultDialog && importResult != null) {
         if (importResult!!.success && importResult!!.importedCount > 0) {
-            IOSSuccessDialog(
-                title = "导入成功",
-                message = "成功解析 ${importResult!!.importedCount} 门课程",
-                onDismiss = { showImportResultDialog = false },
-                dismissText = "确定"
-            )
+            if (appThemeMode == AppThemeMode.MIUIX) {
+                WindowDialog(
+                    show = true,
+                    title = "导入成功",
+                    onDismissRequest = { showImportResultDialog = false }
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = "成功解析 ${importResult!!.importedCount} 门课程",
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.lg))
+                    Button(
+                        onClick = { showImportResultDialog = false },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColorsPrimary()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("确定")
+                    }
+                }
+            } else {
+                IOSSuccessDialog(
+                    title = "导入成功",
+                    message = "成功解析 ${importResult!!.importedCount} 门课程",
+                    onDismiss = { showImportResultDialog = false },
+                    dismissText = "确定"
+                )
+            }
         } else {
-            IOSErrorDialog(
-                title = "导入失败",
-                message = if (importResult!!.errors.isEmpty()) "无法解析文件内容" else null,
-                errors = importResult!!.errors,
-                onDismiss = { showImportResultDialog = false }
-            )
+            if (appThemeMode == AppThemeMode.MIUIX) {
+                WindowDialog(
+                    show = true,
+                    title = "导入失败",
+                    onDismissRequest = { showImportResultDialog = false }
+                ) {
+                    val errorMsg = if (importResult!!.errors.isEmpty()) "无法解析文件内容" else importResult!!.errors.take(5).joinToString("\n") { "• $it" }
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = errorMsg,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.lg))
+                    Button(
+                        onClick = { showImportResultDialog = false },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColorsPrimary()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("确定")
+                    }
+                }
+            } else {
+                IOSErrorDialog(
+                    title = "导入失败",
+                    message = if (importResult!!.errors.isEmpty()) "无法解析文件内容" else null,
+                    errors = importResult!!.errors,
+                    onDismiss = { showImportResultDialog = false }
+                )
+            }
         }
     }
 }

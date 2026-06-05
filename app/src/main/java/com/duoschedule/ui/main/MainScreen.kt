@@ -21,12 +21,14 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.TodayCourseDisplayMode
 import com.duoschedule.ui.edit.CoursePreviewBottomSheet
 import com.duoschedule.ui.main.components.*
 import com.duoschedule.ui.theme.*
+import com.duoschedule.ui.theme.LocalAppThemeMode
 import com.duoschedule.ui.theme.LiquidGlassButton
 import com.duoschedule.ui.theme.LiquidGlassButtonStyle
 import dev.chrisbanes.haze.rememberHazeState
@@ -36,6 +38,14 @@ import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as kyantRememberLayerBackdrop
 import dev.chrisbanes.haze.hazeSource
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.window.WindowDialog
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.basic.TabRow
+import top.yukonga.miuix.kmp.basic.TabRowDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
@@ -138,33 +148,74 @@ fun MainScreen(
     }
 
     if (showDeleteConfirm && selectedCourse != null) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            containerColor = getDialogBackgroundColor(),
-            shape = MaterialTheme.shapes.large,
-            title = { Text("删除课程") },
-            text = { Text("确定要删除「${selectedCourse?.name}」吗？") },
-            confirmButton = {
-                LiquidGlassButton(
-                    onClick = {
-                        viewModel.deleteCourse(selectedCourse!!.id)
-                        showDeleteConfirm = false
-                        showPreview = false
-                        selectedCourse = null
-                        selectedCoursePersonType = null
-                    },
-                    text = "删除",
-                    style = LiquidGlassButtonStyle.Tinted
+        val appThemeMode = LocalAppThemeMode.current
+
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            WindowDialog(
+                show = true,
+                title = "删除课程",
+                onDismissRequest = { showDeleteConfirm = false }
+            ) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "确定要删除「${selectedCourse?.name}」吗？",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                 )
-            },
-            dismissButton = {
-                LiquidGlassButton(
-                    onClick = { showDeleteConfirm = false },
-                    text = "取消",
-                    style = LiquidGlassButtonStyle.NonTinted
-                )
+                Spacer(modifier = Modifier.height(Spacing.md))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    Button(
+                        onClick = { showDeleteConfirm = false },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("取消")
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.deleteCourse(selectedCourse!!.id)
+                            showDeleteConfirm = false
+                            showPreview = false
+                            selectedCourse = null
+                            selectedCoursePersonType = null
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColorsPrimary()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("删除")
+                    }
+                }
             }
-        )
+        } else {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirm = false },
+                containerColor = getDialogBackgroundColor(),
+                shape = MaterialTheme.shapes.large,
+                title = { Text("删除课程") },
+                text = { Text("确定要删除「${selectedCourse?.name}」吗？") },
+                confirmButton = {
+                    LiquidGlassButton(
+                        onClick = {
+                            viewModel.deleteCourse(selectedCourse!!.id)
+                            showDeleteConfirm = false
+                            showPreview = false
+                            selectedCourse = null
+                            selectedCoursePersonType = null
+                        },
+                        text = "删除",
+                        style = LiquidGlassButtonStyle.Tinted
+                    )
+                },
+                dismissButton = {
+                    LiquidGlassButton(
+                        onClick = { showDeleteConfirm = false },
+                        text = "取消",
+                        style = LiquidGlassButtonStyle.NonTinted
+                    )
+                }
+            )
+        }
     }
 }
 
@@ -183,6 +234,7 @@ private fun HeaderSection(
     val labelsSecondary = getLabelsVibrantSecondary()
     val labelsTertiary = getLabelsVibrantTertiary()
     val darkTheme = LocalDarkTheme.current
+    val appThemeMode = LocalAppThemeMode.current
     
     val dateFormatter = DateTimeFormatter.ofPattern("M月d日 EEEE")
     val dateText = today.format(dateFormatter)
@@ -207,13 +259,20 @@ private fun HeaderSection(
                 maxLines = 1
             )
             
-            Column(
-                modifier = Modifier
+            val chipModifier = if (appThemeMode == AppThemeMode.MIUIX) {
+                Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.7f))
+            } else {
+                Modifier
                     .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.small))
                     .background(
                         if (darkTheme) Color.White.copy(alpha = 0.08f)
                         else Color.Black.copy(alpha = 0.04f)
                     )
+            }
+            Column(
+                modifier = chipModifier
                     .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
@@ -309,18 +368,46 @@ private fun TodayScheduleSection(
         }
 
         if (!singleModeEnabled) {
-            val displayModeOptions = listOf(
-                SegmentOption(TodayCourseDisplayMode.SELF_ONLY, personAName.ifEmpty { "我" }),
-                SegmentOption(TodayCourseDisplayMode.TA_ONLY, personBName.ifEmpty { "Ta" }),
-                SegmentOption(TodayCourseDisplayMode.BOTH, "全部")
-            )
+            val appThemeMode = LocalAppThemeMode.current
 
-            SegmentedControl(
-                options = displayModeOptions,
-                selectedOption = displayMode,
-                onOptionSelected = { viewModel.setTodayCourseDisplayMode(it) },
-                modifier = Modifier.padding(bottom = Spacing.sm)
-            )
+            if (appThemeMode == AppThemeMode.MIUIX) {
+                val tabs = listOf(
+                    personAName.ifEmpty { "我" },
+                    personBName.ifEmpty { "Ta" },
+                    "全部"
+                )
+                val selectedTabIndex = when (displayMode) {
+                    TodayCourseDisplayMode.SELF_ONLY -> 0
+                    TodayCourseDisplayMode.TA_ONLY -> 1
+                    TodayCourseDisplayMode.BOTH -> 2
+                }
+                TabRow(
+                    tabs = tabs,
+                    selectedTabIndex = selectedTabIndex,
+                    onTabSelected = { index ->
+                        val mode = when (index) {
+                            0 -> TodayCourseDisplayMode.SELF_ONLY
+                            1 -> TodayCourseDisplayMode.TA_ONLY
+                            else -> TodayCourseDisplayMode.BOTH
+                        }
+                        viewModel.setTodayCourseDisplayMode(mode)
+                    },
+                    modifier = Modifier.padding(bottom = Spacing.sm)
+                )
+            } else {
+                val displayModeOptions = listOf(
+                    SegmentOption(TodayCourseDisplayMode.SELF_ONLY, personAName.ifEmpty { "我" }),
+                    SegmentOption(TodayCourseDisplayMode.TA_ONLY, personBName.ifEmpty { "Ta" }),
+                    SegmentOption(TodayCourseDisplayMode.BOTH, "全部")
+                )
+
+                SegmentedControl(
+                    options = displayModeOptions,
+                    selectedOption = displayMode,
+                    onOptionSelected = { viewModel.setTodayCourseDisplayMode(it) },
+                    modifier = Modifier.padding(bottom = Spacing.sm)
+                )
+            }
         }
 
         if (personATodayCourses.isEmpty() && (singleModeEnabled || personBTodayCourses.isEmpty())) {
@@ -348,9 +435,44 @@ private fun TodayScheduleSection(
 private fun EmptyScheduleCard(
     backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
+    val appThemeMode = LocalAppThemeMode.current
     val darkTheme = LocalDarkTheme.current
     val labelsSecondary = getLabelsVibrantSecondary()
     val labelsTertiary = getLabelsVibrantTertiary()
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        Surface(
+            color = MiuixTheme.colorScheme.surfaceContainerHigh,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(vertical = Spacing.xl),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.LocalCafe,
+                    contentDescription = null,
+                    tint = labelsSecondary,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.height(Spacing.sm))
+                Text(
+                    text = "今日无课",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = labelsSecondary
+                )
+                Text(
+                    text = "享受你的自由时光",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = labelsTertiary
+                )
+            }
+        }
+        return
+    }
+
     val density = LocalDensity.current
 
     Column(

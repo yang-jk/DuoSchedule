@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.edit
+package com.duoschedule.ui.edit
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -18,9 +18,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.NumberPicker
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -45,7 +52,82 @@ fun PeriodPickerBottomSheet(
         }
     }
 
+    val appThemeMode = LocalAppThemeMode.current
     val darkTheme = LocalDarkTheme.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowBottomSheet(
+            show = true,
+            title = "选择上课时间",
+            onDismissRequest = onDismiss
+        ) {
+            val days = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(225.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                NumberPicker(
+                    value = currentDayOfWeek,
+                    onValueChange = { currentDayOfWeek = it },
+                    range = 1..7,
+                    label = { days[it - 1] },
+                    modifier = Modifier.weight(1f)
+                )
+
+                NumberPicker(
+                    value = currentStartPeriod,
+                    onValueChange = { currentStartPeriod = it },
+                    range = 1..totalPeriods,
+                    label = { "第${it}节" },
+                    modifier = Modifier.weight(1f)
+                )
+
+                Text(
+                    text = "-",
+                    color = MiuixTheme.colorScheme.onBackgroundVariant
+                )
+
+                NumberPicker(
+                    value = currentEndPeriod,
+                    onValueChange = { currentEndPeriod = it },
+                    range = currentStartPeriod..totalPeriods,
+                    label = { "第${it}节" },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors()
+                ) {
+                    Text("取消")
+                }
+                Button(
+                    onClick = {
+                        onSelectionChange(currentDayOfWeek, currentStartPeriod, currentEndPeriod)
+                        onDismiss()
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColorsPrimary()
+                ) {
+                    Text("确定")
+                }
+            }
+            Spacer(modifier = Modifier.navigationBarsPadding())
+        }
+        return
+    }
 
     GlassBottomSheet(
         onDismiss = onDismiss,

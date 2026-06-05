@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.notification.SilentModeType
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
@@ -45,6 +46,7 @@ import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowDialog
 
 @Composable
 fun NotificationSettingsScreen(
@@ -76,6 +78,7 @@ fun NotificationSettingsScreen(
     var showDurationPickerDialog by remember { mutableStateOf(false) }
     var debugLogs by remember { mutableStateOf(com.duoschedule.notification.NotificationDebugLogger.logs) }
     var scheduledAlarms by remember { mutableStateOf(emptyList<com.duoschedule.notification.AlarmScheduler.AlarmInfo>()) }
+    val appThemeMode = LocalAppThemeMode.current
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -204,11 +207,18 @@ fun NotificationSettingsScreen(
                     titleColor = MiuixTheme.colorScheme.onSurface,
                     defaultWindowInsetsPadding = false,
                     navigationIcon = {
-                        GlassSymbolIconButton(
-                            onClick = onNavigateBack,
-                            style = GlassSymbolButtonStyle.NonTinted
-                        ) {
-                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                        val appThemeMode = LocalAppThemeMode.current
+                        if (appThemeMode == AppThemeMode.MIUIX) {
+                            top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                            }
+                        } else {
+                            GlassSymbolIconButton(
+                                onClick = onNavigateBack,
+                                style = GlassSymbolButtonStyle.NonTinted
+                            ) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                            }
                         }
                     },
                 )
@@ -220,11 +230,9 @@ fun NotificationSettingsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-                    .padding(innerPadding),
+                    .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
                 verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
             ) {
-            Spacer(modifier = Modifier.height(Spacing.sm))
-
             if (!notificationEnabled || !hasNotificationPermission) {
                 SettingsSection(title = "通知状态") {
                     SettingsNavigationRow(
@@ -661,11 +669,12 @@ fun NotificationSettingsScreen(
     }
 
     if (showDebugLogDialog) {
-        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
-        AlertDialog(
-            onDismissRequest = { showDebugLogDialog = false },
-            title = { Text("调度日志") },
-            text = {
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            WindowDialog(
+                show = true,
+                title = "调度日志",
+                onDismissRequest = { showDebugLogDialog = false }
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -673,10 +682,9 @@ fun NotificationSettingsScreen(
                         .verticalScroll(rememberScrollState())
                 ) {
                     if (debugLogs.isEmpty()) {
-                        Text(
+                        top.yukonga.miuix.kmp.basic.Text(
                             text = "暂无日志记录\n\n提示：点击测试按钮后，调度和触发事件会记录在这里",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                         )
                     } else {
                         debugLogs.forEach { log ->
@@ -684,56 +692,129 @@ fun NotificationSettingsScreen(
                                 modifier = Modifier.padding(vertical = 4.dp),
                                 verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
-                                Text(
+                                top.yukonga.miuix.kmp.basic.Text(
                                     text = "[${log.formattedTime}] ${log.type.name}",
-                                    style = MaterialTheme.typography.labelSmall,
                                     color = if (log.result == com.duoschedule.notification.NotificationDebugLog.LogResult.SUCCESS) IOSColors.Green else IOSColors.Red
                                 )
-                                Text(
-                                    text = log.message,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                                top.yukonga.miuix.kmp.basic.Text(text = log.message)
                                 if (log.params.isNotEmpty()) {
-                                    Text(
+                                    top.yukonga.miuix.kmp.basic.Text(
                                         text = log.params.entries.joinToString(", ") { "${it.key}=${it.value}" },
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                                     )
                                 }
                             }
                         }
                     }
                 }
-            },
-            confirmButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = {
-                        viewModel.clearDebugLogs()
-                        debugLogs = emptyList()
-                    }) {
-                        Text("清空")
+                Spacer(modifier = Modifier.height(Spacing.md))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    top.yukonga.miuix.kmp.basic.Button(
+                        onClick = {
+                            viewModel.clearDebugLogs()
+                            debugLogs = emptyList()
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("清空")
                     }
-                    TextButton(onClick = {
-                        val clipboardManager = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                        clipboardManager.setPrimaryClip(android.content.ClipData.newPlainText("调度日志", viewModel.getDebugLogsText()))
-                        Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
-                    }) {
-                        Text("复制")
+                    top.yukonga.miuix.kmp.basic.Button(
+                        onClick = {
+                            val clipboardManager = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            clipboardManager.setPrimaryClip(android.content.ClipData.newPlainText("调度日志", viewModel.getDebugLogsText()))
+                            Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("复制")
                     }
-                    TextButton(onClick = { showDebugLogDialog = false }) {
-                        Text("关闭")
+                    top.yukonga.miuix.kmp.basic.Button(
+                        onClick = { showDebugLogDialog = false },
+                        modifier = Modifier.weight(1f),
+                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("关闭")
                     }
                 }
             }
-        )
+        } else {
+            val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
+            AlertDialog(
+                onDismissRequest = { showDebugLogDialog = false },
+                title = { Text("调度日志") },
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        if (debugLogs.isEmpty()) {
+                            Text(
+                                text = "暂无日志记录\n\n提示：点击测试按钮后，调度和触发事件会记录在这里",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            debugLogs.forEach { log ->
+                                Column(
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(
+                                        text = "[${log.formattedTime}] ${log.type.name}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (log.result == com.duoschedule.notification.NotificationDebugLog.LogResult.SUCCESS) IOSColors.Green else IOSColors.Red
+                                    )
+                                    Text(
+                                        text = log.message,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    if (log.params.isNotEmpty()) {
+                                        Text(
+                                            text = log.params.entries.joinToString(", ") { "${it.key}=${it.value}" },
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = {
+                            viewModel.clearDebugLogs()
+                            debugLogs = emptyList()
+                        }) {
+                            Text("清空")
+                        }
+                        TextButton(onClick = {
+                            val clipboardManager = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            clipboardManager.setPrimaryClip(android.content.ClipData.newPlainText("调度日志", viewModel.getDebugLogsText()))
+                            Toast.makeText(context, "已复制到剪贴板", Toast.LENGTH_SHORT).show()
+                        }) {
+                            Text("复制")
+                        }
+                        TextButton(onClick = { showDebugLogDialog = false }) {
+                            Text("关闭")
+                        }
+                    }
+                }
+            )
+        }
     }
 
     if (showScheduledAlarmsDialog) {
-        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
-        AlertDialog(
-            onDismissRequest = { showScheduledAlarmsDialog = false },
-            title = { Text("已调度闹钟") },
-            text = {
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            WindowDialog(
+                show = true,
+                title = "已调度闹钟",
+                onDismissRequest = { showScheduledAlarmsDialog = false }
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -741,10 +822,9 @@ fun NotificationSettingsScreen(
                         .verticalScroll(rememberScrollState())
                 ) {
                     if (scheduledAlarms.isEmpty()) {
-                        Text(
+                        top.yukonga.miuix.kmp.basic.Text(
                             text = "当前没有已调度的闹钟\n\n提示：点击\"重新调度通知\"来调度闹钟",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                         )
                     } else {
                         scheduledAlarms.forEach { alarm ->
@@ -752,36 +832,89 @@ fun NotificationSettingsScreen(
                                 modifier = Modifier.padding(vertical = 4.dp),
                                 verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
-                                Text(
+                                top.yukonga.miuix.kmp.basic.Text(
                                     text = alarm.type,
-                                    style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.SemiBold
                                 )
-                                Text(
-                                    text = "课程: ${alarm.courseName}",
-                                    style = MaterialTheme.typography.bodySmall
+                                top.yukonga.miuix.kmp.basic.Text(
+                                    text = "课程: ${alarm.courseName}"
                                 )
-                                Text(
-                                    text = "触发时间: ${java.text.SimpleDateFormat("HH:mm:ss", LocalLocale.current.platformLocale).format(java.util.Date(alarm.triggerTime))}",
-                                    style = MaterialTheme.typography.bodySmall
+                                top.yukonga.miuix.kmp.basic.Text(
+                                    text = "触发时间: ${java.text.SimpleDateFormat("HH:mm:ss", LocalLocale.current.platformLocale).format(java.util.Date(alarm.triggerTime))}"
                                 )
-                                Text(
+                                top.yukonga.miuix.kmp.basic.Text(
                                     text = "精确: ${if (alarm.isExact) "是" else "否"} | 请求码: ${alarm.requestCode}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                                 )
                             }
                             HorizontalDivider()
                         }
                     }
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showScheduledAlarmsDialog = false }) {
-                    Text("关闭")
+                Spacer(modifier = Modifier.height(Spacing.md))
+                top.yukonga.miuix.kmp.basic.Button(
+                    onClick = { showScheduledAlarmsDialog = false },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("关闭")
                 }
             }
-        )
+        } else {
+            val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
+            AlertDialog(
+                onDismissRequest = { showScheduledAlarmsDialog = false },
+                title = { Text("已调度闹钟") },
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        if (scheduledAlarms.isEmpty()) {
+                            Text(
+                                text = "当前没有已调度的闹钟\n\n提示：点击\"重新调度通知\"来调度闹钟",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            scheduledAlarms.forEach { alarm ->
+                                Column(
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(
+                                        text = alarm.type,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        text = "课程: ${alarm.courseName}",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    Text(
+                                        text = "触发时间: ${java.text.SimpleDateFormat("HH:mm:ss", LocalLocale.current.platformLocale).format(java.util.Date(alarm.triggerTime))}",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    Text(
+                                        text = "精确: ${if (alarm.isExact) "是" else "否"} | 请求码: ${alarm.requestCode}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                HorizontalDivider()
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showScheduledAlarmsDialog = false }) {
+                        Text("关闭")
+                    }
+                }
+            )
+        }
     }
 
     if (showDurationPickerDialog) {

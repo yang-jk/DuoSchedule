@@ -1,15 +1,9 @@
 package com.duoschedule.ui.edit
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.EnterExitState
-import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.TweenSpec
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -62,6 +56,7 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.TabRow
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import com.kyant.backdrop.drawBackdrop
@@ -71,8 +66,13 @@ import com.kyant.backdrop.effects.vibrancy
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.platform.LocalDensity
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.duoschedule.data.model.AppThemeMode
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.window.WindowDialog
+import androidx.compose.foundation.shape.RoundedCornerShape
 
-private val ContainerTransformSpring: SpringSpec<Dp> = spring(dampingRatio = 0.9f, stiffness = 600f)
 private val MicroTween: TweenSpec<Float> = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing)
 
 @Composable
@@ -142,6 +142,7 @@ fun CourseEditScreen(
 
     Scaffold(
         topBar = {
+            val appThemeMode = LocalAppThemeMode.current
             BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled) {
                 SmallTopAppBar(
                     title = "编辑课程",
@@ -150,18 +151,35 @@ fun CourseEditScreen(
                     titleColor = MiuixTheme.colorScheme.onSurface,
                     defaultWindowInsetsPadding = false,
                     navigationIcon = {
-                        GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
-                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                        if (appThemeMode == AppThemeMode.MIUIX) {
+                            top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                            }
+                        } else {
+                            GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                            }
                         }
                     },
                     actions = {
-                        if (state.isEditing) {
-                            IconButton(onClick = { showDeleteDialog = true }) {
-                                Icon(Icons.Default.Delete, contentDescription = "删除", tint = SemanticColors.ErrorLight)
+                        if (appThemeMode == AppThemeMode.MIUIX) {
+                            if (state.isEditing) {
+                                top.yukonga.miuix.kmp.basic.IconButton(onClick = { showDeleteDialog = true }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "删除", tint = MiuixTheme.colorScheme.error)
+                                }
                             }
-                        }
-                        IconButton(onClick = viewModel::saveCourse) {
-                            Icon(Icons.Default.Check, contentDescription = "保存", tint = Color.White)
+                            top.yukonga.miuix.kmp.basic.IconButton(onClick = viewModel::saveCourse) {
+                                Icon(Icons.Default.Check, contentDescription = "保存", tint = MiuixTheme.colorScheme.primary)
+                            }
+                        } else {
+                            if (state.isEditing) {
+                                IconButton(onClick = { showDeleteDialog = true }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "删除", tint = SemanticColors.ErrorLight)
+                                }
+                            }
+                            IconButton(onClick = viewModel::saveCourse) {
+                                Icon(Icons.Default.Check, contentDescription = "保存", tint = Color.White)
+                            }
                         }
                     },
                 )
@@ -303,17 +321,54 @@ fun CourseEditScreen(
     }
 
     if (showDeleteDialog) {
-        GlassAlert(
-            onDismissRequest = { showDeleteDialog = false },
-            onConfirm = {
-                viewModel.deleteCourse()
-                showDeleteDialog = false
-            },
-            title = "删除课程",
-            text = "确定要删除这门课程吗？此操作不可撤销。",
-            confirmText = "删除",
-            dismissText = "取消"
-        )
+        val appThemeMode = LocalAppThemeMode.current
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            WindowDialog(
+                show = true,
+                title = "删除课程",
+                onDismissRequest = { showDeleteDialog = false }
+            ) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "确定要删除这门课程吗？此操作不可撤销。",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.padding(bottom = Spacing.md)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    Button(
+                        onClick = { showDeleteDialog = false },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("取消")
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.deleteCourse()
+                            showDeleteDialog = false
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("删除")
+                    }
+                }
+            }
+        } else {
+            GlassAlert(
+                onDismissRequest = { showDeleteDialog = false },
+                onConfirm = {
+                    viewModel.deleteCourse()
+                    showDeleteDialog = false
+                },
+                title = "删除课程",
+                text = "确定要删除这门课程吗？此操作不可撤销。",
+                confirmText = "删除",
+                dismissText = "取消"
+            )
+        }
     }
     }
 }
@@ -324,6 +379,23 @@ private fun ErrorMessageCard(
     modifier: Modifier = Modifier,
     backdrop: com.kyant.backdrop.Backdrop = LocalBackdrop.current ?: emptyBackdrop()
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        top.yukonga.miuix.kmp.basic.Surface(
+            modifier = modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = MiuixTheme.colorScheme.errorContainer
+        ) {
+            top.yukonga.miuix.kmp.basic.Text(
+                text = message,
+                color = MiuixTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.padding(Spacing.lg)
+            )
+        }
+        return
+    }
+
     val darkTheme = LocalDarkTheme.current
     val density = LocalDensity.current
 
@@ -373,13 +445,24 @@ private fun CourseNameSection(
         title = "课程名称",
         modifier = modifier
     ) {
-        GlassTextField(
-            value = name,
-            onValueChange = onNameChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = "请输入课程名称",
-            transparentBackground = true
-        )
+        val appThemeMode = LocalAppThemeMode.current
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            TextField(
+                value = name,
+                onValueChange = onNameChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = "请输入课程名称",
+                useLabelAsPlaceholder = true
+            )
+        } else {
+            GlassTextField(
+                value = name,
+                onValueChange = onNameChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = "请输入课程名称",
+                transparentBackground = true
+            )
+        }
 
         AnimatedVisibility(
             visible = showSuggestions && courseHistory.isNotEmpty(),
@@ -427,16 +510,25 @@ private fun PersonTypeSection(
         title = "所属课表",
         modifier = modifier
     ) {
-        val personTypeOptions = listOf(
-            SegmentOption(PersonType.PERSON_A, "我的课表"),
-            SegmentOption(PersonType.PERSON_B, "Ta的课表")
-        )
+        val appThemeMode = LocalAppThemeMode.current
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            TabRow(
+                tabs = listOf("我的课表", "Ta的课表"),
+                selectedTabIndex = if (personType == PersonType.PERSON_A) 0 else 1,
+                onTabSelected = { onPersonTypeChange(if (it == 0) PersonType.PERSON_A else PersonType.PERSON_B) }
+            )
+        } else {
+            val personTypeOptions = listOf(
+                SegmentOption(PersonType.PERSON_A, "我的课表"),
+                SegmentOption(PersonType.PERSON_B, "Ta的课表")
+            )
 
-        SegmentedControl(
-            options = personTypeOptions,
-            selectedOption = personType,
-            onOptionSelected = onPersonTypeChange
-        )
+            SegmentedControl(
+                options = personTypeOptions,
+                selectedOption = personType,
+                onOptionSelected = onPersonTypeChange
+            )
+        }
     }
 }
 
@@ -468,14 +560,23 @@ private fun CourseDetailsSection(
         title = "课程详情",
         modifier = modifier
     ) {
-        SegmentedControl(
-            options = listOf(
-                SegmentOption(false, "按课节"),
-                SegmentOption(true, "自定义时间")
-            ),
-            selectedOption = isCustomTime,
-            onOptionSelected = onTimeModeChange
-        )
+        val appThemeMode = LocalAppThemeMode.current
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            TabRow(
+                tabs = listOf("按课节", "自定义时间"),
+                selectedTabIndex = if (isCustomTime) 1 else 0,
+                onTabSelected = { onTimeModeChange(it == 1) }
+            )
+        } else {
+            SegmentedControl(
+                options = listOf(
+                    SegmentOption(false, "按课节"),
+                    SegmentOption(true, "自定义时间")
+                ),
+                selectedOption = isCustomTime,
+                onOptionSelected = onTimeModeChange
+            )
+        }
 
         Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
 
@@ -531,6 +632,8 @@ private fun CourseEditNavigationRow(
 ) {
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
+    val appThemeMode = LocalAppThemeMode.current
+    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(10.dp) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     
@@ -555,7 +658,7 @@ private fun CourseEditNavigationRow(
         Box(
             modifier = Modifier
                 .size(SettingsDefaults.IconBackgroundSize)
-                .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.icon))
+                .clip(iconShape)
                 .background(iconBackgroundColor),
             contentAlignment = Alignment.Center
         ) {
@@ -605,6 +708,8 @@ private fun LocationInputRow(
 ) {
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
+    val appThemeMode = LocalAppThemeMode.current
+    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(10.dp) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
     
     Row(
         modifier = modifier
@@ -615,7 +720,7 @@ private fun LocationInputRow(
         Box(
             modifier = Modifier
                 .size(SettingsDefaults.IconBackgroundSize)
-                .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.icon))
+                .clip(iconShape)
                 .background(IOSColors.Green),
             contentAlignment = Alignment.Center
         ) {
@@ -638,16 +743,29 @@ private fun LocationInputRow(
             modifier = Modifier.width(72.dp)
         )
         
-        GlassTextField(
-            value = location,
-            onValueChange = onLocationChange,
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = Spacing.sm),
-            placeholder = "点击输入",
-            transparentBackground = true,
-            singleLine = true
-        )
+        val appThemeMode = LocalAppThemeMode.current
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            TextField(
+                value = location,
+                onValueChange = onLocationChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = Spacing.sm),
+                label = "点击输入",
+                useLabelAsPlaceholder = true
+            )
+        } else {
+            GlassTextField(
+                value = location,
+                onValueChange = onLocationChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = Spacing.sm),
+                placeholder = "点击输入",
+                transparentBackground = true,
+                singleLine = true
+            )
+        }
     }
 }
 
@@ -662,6 +780,8 @@ private fun TeacherInputRow(
 ) {
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
+    val appThemeMode = LocalAppThemeMode.current
+    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(10.dp) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
     
     Column(
         modifier = modifier
@@ -675,7 +795,7 @@ private fun TeacherInputRow(
             Box(
                 modifier = Modifier
                     .size(SettingsDefaults.IconBackgroundSize)
-                    .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.icon))
+                    .clip(iconShape)
                     .background(IOSColors.Purple),
                 contentAlignment = Alignment.Center
             ) {
@@ -698,16 +818,29 @@ private fun TeacherInputRow(
                 modifier = Modifier.width(72.dp)
             )
             
-            GlassTextField(
-                value = teacher,
-                onValueChange = onTeacherChange,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = Spacing.sm),
-                placeholder = "点击输入（可选）",
-                transparentBackground = true,
-                singleLine = true
-            )
+            val appThemeMode = LocalAppThemeMode.current
+            if (appThemeMode == AppThemeMode.MIUIX) {
+                TextField(
+                    value = teacher,
+                    onValueChange = onTeacherChange,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = Spacing.sm),
+                    label = "点击输入（可选）",
+                    useLabelAsPlaceholder = true
+                )
+            } else {
+                GlassTextField(
+                    value = teacher,
+                    onValueChange = onTeacherChange,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = Spacing.sm),
+                    placeholder = "点击输入（可选）",
+                    transparentBackground = true,
+                    singleLine = true
+                )
+            }
         }
 
         AnimatedVisibility(
@@ -760,6 +893,25 @@ private fun SuggestionItem(
         label = "suggestion_scale"
     )
     
+    val appThemeMode = LocalAppThemeMode.current
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        top.yukonga.miuix.kmp.basic.Surface(
+            modifier = modifier
+                .fillMaxWidth()
+                .scale(scale),
+            shape = RoundedCornerShape(16.dp),
+            color = MiuixTheme.colorScheme.surfaceVariant,
+            onClick = onClick
+        ) {
+            top.yukonga.miuix.kmp.basic.Text(
+                text = text,
+                modifier = Modifier.padding(Spacing.md),
+                color = MiuixTheme.colorScheme.onBackground
+            )
+        }
+        return
+    }
+    
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -794,6 +946,23 @@ private fun SuggestionChip(
         animationSpec = MicroTween,
         label = "chip_scale"
     )
+    
+    val appThemeMode = LocalAppThemeMode.current
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        top.yukonga.miuix.kmp.basic.Surface(
+            modifier = modifier.scale(scale),
+            shape = RoundedCornerShape(16.dp),
+            color = MiuixTheme.colorScheme.surfaceVariant,
+            onClick = onClick
+        ) {
+            top.yukonga.miuix.kmp.basic.Text(
+                text = text,
+                modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                color = MiuixTheme.colorScheme.onBackground
+            )
+        }
+        return
+    }
     
     Surface(
         modifier = modifier.scale(scale),
@@ -878,7 +1047,6 @@ private fun formatWeekRanges(weeks: Set<Int>): String {
     return if (weeks.size == 1) "第${result}周" else "${result}周"
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CourseEditContent(
     courseId: Long?,
@@ -886,8 +1054,6 @@ fun CourseEditContent(
     initialPeriod: Int? = null,
     initialPersonType: PersonType? = null,
     onNavigateBack: () -> Unit,
-    animatedVisibilityScope: AnimatedVisibilityScope,
-    sharedElementSourceKey: String = "",
     viewModel: CourseEditViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -934,23 +1100,6 @@ fun CourseEditContent(
     var showCourseNameSuggestions by remember { mutableStateOf(false) }
     var showTeacherSuggestions by remember { mutableStateOf(false) }
 
-    val sharedTransitionScope = LocalSharedTransitionScope.current
-
-    val targetCornerRadius = if (sharedElementSourceKey.isNotEmpty()) {
-        when (animatedVisibilityScope.transition.targetState) {
-            EnterExitState.PreEnter -> BorderRadius.iOS26.xxlarge
-            EnterExitState.Visible -> BorderRadius.none
-            EnterExitState.PostExit -> BorderRadius.iOS26.xxlarge
-        }
-    } else {
-        BorderRadius.none
-    }
-    val cornerRadius by animateDpAsState(
-        targetValue = targetCornerRadius,
-        animationSpec = ContainerTransformSpring,
-        label = "edit_corner"
-    )
-
     val hazeState = rememberHazeState()
     val lazyListState = rememberLazyListState()
 
@@ -966,27 +1115,10 @@ fun CourseEditContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .then(
-                if (sharedElementSourceKey.isNotEmpty()) {
-                    sharedTransitionScope?.let { scope ->
-                        with(scope) {
-                            Modifier.sharedElement(
-                            rememberSharedContentState(key = sharedElementSourceKey),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> spring(dampingRatio = 0.9f, stiffness = 600f) },
-                            renderInOverlayDuringTransition = true,
-                            clipInOverlayDuringTransition = OverlayClip(
-                                ContinuousRoundedRectangle(0.dp)
-                            )
-                        )
-                        }
-                    } ?: Modifier
-                } else Modifier
-            )
-            .clip(ContinuousRoundedRectangle(cornerRadius.coerceAtLeast(0.dp)))
     ) {
         Scaffold(
             topBar = {
+                val appThemeMode = LocalAppThemeMode.current
                 BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = editBlurEnabled) {
                     SmallTopAppBar(
                         title = "编辑课程",
@@ -995,18 +1127,35 @@ fun CourseEditContent(
                         titleColor = MiuixTheme.colorScheme.onSurface,
                         defaultWindowInsetsPadding = false,
                         navigationIcon = {
-                            GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
-                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                            if (appThemeMode == AppThemeMode.MIUIX) {
+                                top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
+                                    Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                                }
+                            } else {
+                                GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
+                                    Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                                }
                             }
                         },
                         actions = {
-                            if (state.isEditing) {
-                                IconButton(onClick = { showDeleteDialog = true }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "删除", tint = SemanticColors.ErrorLight)
+                            if (appThemeMode == AppThemeMode.MIUIX) {
+                                if (state.isEditing) {
+                                    top.yukonga.miuix.kmp.basic.IconButton(onClick = { showDeleteDialog = true }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "删除", tint = MiuixTheme.colorScheme.error)
+                                    }
                                 }
-                            }
-                            IconButton(onClick = viewModel::saveCourse) {
-                                Icon(Icons.Default.Check, contentDescription = "保存", tint = Color.White)
+                                top.yukonga.miuix.kmp.basic.IconButton(onClick = viewModel::saveCourse) {
+                                    Icon(Icons.Default.Check, contentDescription = "保存", tint = MiuixTheme.colorScheme.primary)
+                                }
+                            } else {
+                                if (state.isEditing) {
+                                    IconButton(onClick = { showDeleteDialog = true }) {
+                                        Icon(Icons.Default.Delete, contentDescription = "删除", tint = SemanticColors.ErrorLight)
+                                    }
+                                }
+                                IconButton(onClick = viewModel::saveCourse) {
+                                    Icon(Icons.Default.Check, contentDescription = "保存", tint = Color.White)
+                                }
                             }
                         },
                     )
@@ -1150,16 +1299,53 @@ fun CourseEditContent(
     }
 
     if (showDeleteDialog) {
-        GlassAlert(
-            onDismissRequest = { showDeleteDialog = false },
-            onConfirm = {
-                viewModel.deleteCourse()
-                showDeleteDialog = false
-            },
-            title = "删除课程",
-            text = "确定要删除这门课程吗？此操作不可撤销。",
-            confirmText = "删除",
-            dismissText = "取消"
-        )
+        val appThemeMode = LocalAppThemeMode.current
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            WindowDialog(
+                show = true,
+                title = "删除课程",
+                onDismissRequest = { showDeleteDialog = false }
+            ) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "确定要删除这门课程吗？此操作不可撤销。",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.padding(bottom = Spacing.md)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    Button(
+                        onClick = { showDeleteDialog = false },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("取消")
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.deleteCourse()
+                            showDeleteDialog = false
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("删除")
+                    }
+                }
+            }
+        } else {
+            GlassAlert(
+                onDismissRequest = { showDeleteDialog = false },
+                onConfirm = {
+                    viewModel.deleteCourse()
+                    showDeleteDialog = false
+                },
+                title = "删除课程",
+                text = "确定要删除这门课程吗？此操作不可撤销。",
+                confirmText = "删除",
+                dismissText = "取消"
+            )
+        }
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.PersonType
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.backdrops.emptyBackdrop
@@ -27,6 +28,8 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -83,8 +86,15 @@ fun ScheduleSettingsScreen(
                     titleColor = MiuixTheme.colorScheme.onSurface,
                     defaultWindowInsetsPadding = false,
                     navigationIcon = {
-                        GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
-                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                        val appThemeMode = LocalAppThemeMode.current
+                        if (appThemeMode == AppThemeMode.MIUIX) {
+                            top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                            }
+                        } else {
+                            GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
+                            }
                         }
                     },
                 )
@@ -96,11 +106,9 @@ fun ScheduleSettingsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-                    .padding(innerPadding),
+                    .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
                 verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
             ) {
-            Spacer(modifier = Modifier.height(Spacing.sm))
-
             SettingsSection(title = if (singleModeEnabled) "课表设置" else "我的课表设置") {
                 SettingsValueRow(
                     title = "开学时间",
@@ -325,6 +333,7 @@ private fun DatePickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (LocalDate) -> Unit
 ) {
+    val appThemeMode = LocalAppThemeMode.current
     var selectedDate by remember { mutableStateOf(initialDate) }
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -333,25 +342,50 @@ private fun DatePickerDialog(
     androidx.compose.material3.DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            LiquidGlassButton(
-                onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        selectedDate = java.time.Instant.ofEpochMilli(millis)
-                            .atZone(java.time.ZoneId.systemDefault())
-                            .toLocalDate()
-                        onConfirm(selectedDate)
-                    }
-                },
-                text = "确定",
-                style = LiquidGlassButtonStyle.Tinted
-            )
+            if (appThemeMode == AppThemeMode.MIUIX) {
+                Button(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            selectedDate = java.time.Instant.ofEpochMilli(millis)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toLocalDate()
+                            onConfirm(selectedDate)
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColorsPrimary()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("确定")
+                }
+            } else {
+                LiquidGlassButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            selectedDate = java.time.Instant.ofEpochMilli(millis)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .toLocalDate()
+                            onConfirm(selectedDate)
+                        }
+                    },
+                    text = "确定",
+                    style = LiquidGlassButtonStyle.Tinted
+                )
+            }
         },
         dismissButton = {
-            LiquidGlassButton(
-                onClick = onDismiss,
-                text = "取消",
-                style = LiquidGlassButtonStyle.NonTinted
-            )
+            if (appThemeMode == AppThemeMode.MIUIX) {
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("取消")
+                }
+            } else {
+                LiquidGlassButton(
+                    onClick = onDismiss,
+                    text = "取消",
+                    style = LiquidGlassButtonStyle.NonTinted
+                )
+            }
         }
     ) {
         DatePicker(state = datePickerState)

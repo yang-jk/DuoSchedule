@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.edit
+package com.duoschedule.ui.edit
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -18,9 +18,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.NumberPicker
+import top.yukonga.miuix.kmp.basic.NumberPickerDefaults
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import kotlin.math.abs
 
 private val WheelItemHeight = 52.dp
@@ -54,9 +61,126 @@ fun CustomTimePickerBottomSheet(
         (currentEndHour * 60 + currentEndMinute) > (currentStartHour * 60 + currentStartMinute)
     }
 
+    val appThemeMode = LocalAppThemeMode.current
     val darkTheme = LocalDarkTheme.current
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowBottomSheet(
+            show = true,
+            title = "选择自定义时间",
+            onDismissRequest = onDismiss,
+            allowDismiss = false
+        ) {
+            top.yukonga.miuix.kmp.basic.Text(
+                text = if (isValid) "${durationMinutes}分钟" else "结束时间必须晚于开始时间",
+                color = if (isValid) MiuixTheme.colorScheme.onBackgroundVariant else MiuixTheme.colorScheme.error
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(225.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                NumberPicker(
+                    value = currentDayOfWeek,
+                    onValueChange = { currentDayOfWeek = it },
+                    range = 1..7,
+                    label = { listOf("周一","周二","周三","周四","周五","周六","周日")[it - 1] },
+                    modifier = Modifier.weight(1f)
+                )
+
+                NumberPicker(
+                    value = currentStartHour,
+                    onValueChange = { currentStartHour = it },
+                    range = 0..23,
+                    label = { it.toString().padStart(2, '0') },
+                    wrapAround = true,
+                    modifier = Modifier.weight(1f)
+                )
+
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = ":",
+                    color = MiuixTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(horizontal = 2.dp)
+                )
+
+                NumberPicker(
+                    value = currentStartMinute,
+                    onValueChange = { currentStartMinute = it },
+                    range = 0..59,
+                    label = { it.toString().padStart(2, '0') },
+                    wrapAround = true,
+                    modifier = Modifier.weight(1f)
+                )
+
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "-",
+                    color = MiuixTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+
+                NumberPicker(
+                    value = currentEndHour,
+                    onValueChange = { currentEndHour = it },
+                    range = 0..23,
+                    label = { it.toString().padStart(2, '0') },
+                    wrapAround = true,
+                    modifier = Modifier.weight(1f)
+                )
+
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = ":",
+                    color = MiuixTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(horizontal = 2.dp)
+                )
+
+                NumberPicker(
+                    value = currentEndMinute,
+                    onValueChange = { currentEndMinute = it },
+                    range = 0..59,
+                    label = { it.toString().padStart(2, '0') },
+                    wrapAround = true,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("取消")
+                }
+                Button(
+                    onClick = {
+                        if (isValid) {
+                            onSelectionChange(currentDayOfWeek, currentStartHour, currentStartMinute, currentEndHour, currentEndMinute)
+                            onDismiss()
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = isValid,
+                    colors = ButtonDefaults.buttonColorsPrimary()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("确定")
+                }
+            }
+            Spacer(modifier = Modifier.navigationBarsPadding())
+        }
+        return
+    }
 
     GlassBottomSheet(
         onDismiss = onDismiss,

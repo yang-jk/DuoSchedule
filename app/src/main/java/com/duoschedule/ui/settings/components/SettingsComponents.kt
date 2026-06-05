@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.settings.components
+package com.duoschedule.ui.settings.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.clickable
@@ -21,8 +21,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
@@ -33,6 +35,13 @@ import com.kyant.backdrop.effects.colorControls
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowDialog
 
 object SettingsDefaults {
     val CardShape = ContinuousRoundedRectangle(BorderRadius.iOS26.container)
@@ -50,6 +59,35 @@ fun SettingsSection(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+        ) {
+            if (title != null) {
+                SmallTitle(text = title)
+            }
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MiuixTheme.colorScheme.surfaceContainer
+            ) {
+                Column(
+                    modifier = Modifier.padding(
+                        horizontal = SettingsDefaults.ItemHorizontalPadding,
+                        vertical = Spacing.sm
+                    ),
+                    content = content
+                )
+            }
+        }
+        return
+    }
+
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     
@@ -255,6 +293,18 @@ fun IOSSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = modifier,
+            enabled = enabled
+        )
+        return
+    }
+
     val backdrop = LocalBackdrop.current ?: emptyBackdrop()
 
     LiquidToggle(
@@ -377,6 +427,71 @@ fun <T> SettingsOptionDialog(
     onConfirm: (T) -> Unit
 ) {
     var currentSelection by remember { mutableStateOf(selectedOption) }
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        WindowDialog(
+            show = true,
+            title = title,
+            onDismissRequest = onDismiss
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    .padding(vertical = Spacing.sm)
+            ) {
+                options.forEachIndexed { index, option ->
+                    val isSelected = option == currentSelection
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { currentSelection = option }
+                            .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = optionLabel(option),
+                            color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = MiuixTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                }
+            }
+            Spacer(modifier = Modifier.height(Spacing.md))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+            ) {
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("取消")
+                }
+                Button(
+                    onClick = { onConfirm(currentSelection) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColorsPrimary()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("确定")
+                }
+            }
+        }
+        return
+    }
+
     val darkTheme = LocalDarkTheme.current
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()

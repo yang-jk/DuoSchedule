@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.ThemeMode
 import com.duoschedule.ui.settings.components.*
@@ -34,12 +35,16 @@ import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as kyantRememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowDialog
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun SettingsScreen(
@@ -59,6 +64,7 @@ fun SettingsScreen(
     val notificationEnabled by viewModel.notificationEnabled.collectAsState()
     val reminderMinutesBefore by viewModel.reminderMinutesBefore.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
+    val appThemeMode by viewModel.appThemeMode.collectAsState()
 
     val context = LocalContext.current
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -121,19 +127,28 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-                    .padding(innerPadding),
+                    .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
                 verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
             ) {
-            Text(
-                text = "设置",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = labelsPrimary,
-                modifier = Modifier
-                    .padding(horizontal = Spacing.lg)
-                    .padding(top = Spacing.sm)
-            )
+            if (appThemeMode == AppThemeMode.MIUIX) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "设置",
+                    fontWeight = FontWeight.Bold,
+                    color = MiuixTheme.colorScheme.onBackground,
+                    modifier = Modifier
+                        .padding(horizontal = Spacing.lg)
+                )
+            } else {
+                Text(
+                    text = "设置",
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = labelsPrimary,
+                    modifier = Modifier
+                        .padding(horizontal = Spacing.lg)
+                )
+            }
 
             SettingsSection(title = "用户与身份") {
                 SettingsToggleRow(
@@ -189,6 +204,20 @@ fun SettingsScreen(
                         val mode = ThemeMode.entries.find { getThemeModeLabel(it) == selected }
                         mode?.let { viewModel.setThemeMode(it) }
                     } },
+                )
+
+                Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
+
+                SettingsMenuRow(
+                    title = "界面风格",
+                    icon = Icons.Outlined.Brush,
+                    iconBackgroundColor = IOSColors.Indigo,
+                    selectedOption = appThemeMode.displayName,
+                    options = AppThemeMode.entries.map { it.displayName },
+                    onOptionSelected = { displayName ->
+                        val mode = AppThemeMode.entries.find { it.displayName == displayName } ?: AppThemeMode.IOS
+                        viewModel.setAppThemeMode(mode)
+                    }
                 )
 
                 Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
@@ -287,35 +316,108 @@ fun SettingsScreen(
     }
 
     if (showPersonADialog) {
-        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
-        TextInputAlert(
-            backdrop = dialogBackdrop,
-            title = "我的名称",
-            label = "请输入我的名称",
-            initialValue = personAName,
-            onDismiss = { showPersonADialog = false },
-            onConfirm = {
-                viewModel.setPersonName(PersonType.PERSON_A, it)
-                showPersonADialog = false
-            },
-            placeholder = "例如：小明"
-        )
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            MiuixTextInputDialog(
+                title = "我的名称",
+                initialValue = personAName,
+                placeholder = "例如：小明",
+                onDismiss = { showPersonADialog = false },
+                onConfirm = {
+                    viewModel.setPersonName(PersonType.PERSON_A, it)
+                    showPersonADialog = false
+                }
+            )
+        } else {
+            val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
+            TextInputAlert(
+                backdrop = dialogBackdrop,
+                title = "我的名称",
+                label = "请输入我的名称",
+                initialValue = personAName,
+                onDismiss = { showPersonADialog = false },
+                onConfirm = {
+                    viewModel.setPersonName(PersonType.PERSON_A, it)
+                    showPersonADialog = false
+                },
+                placeholder = "例如：小明"
+            )
+        }
     }
 
     if (showPersonBDialog) {
-        val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
-        TextInputAlert(
-            backdrop = dialogBackdrop,
-            title = "Ta的名称",
-            label = "请输入Ta的名称",
-            initialValue = personBName,
-            onDismiss = { showPersonBDialog = false },
-            onConfirm = {
-                viewModel.setPersonName(PersonType.PERSON_B, it)
-                showPersonBDialog = false
-            },
-            placeholder = "例如：小红"
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            MiuixTextInputDialog(
+                title = "Ta的名称",
+                initialValue = personBName,
+                placeholder = "例如：小红",
+                onDismiss = { showPersonBDialog = false },
+                onConfirm = {
+                    viewModel.setPersonName(PersonType.PERSON_B, it)
+                    showPersonBDialog = false
+                }
+            )
+        } else {
+            val dialogBackdrop = LocalBackdrop.current ?: emptyBackdrop()
+            TextInputAlert(
+                backdrop = dialogBackdrop,
+                title = "Ta的名称",
+                label = "请输入Ta的名称",
+                initialValue = personBName,
+                onDismiss = { showPersonBDialog = false },
+                onConfirm = {
+                    viewModel.setPersonName(PersonType.PERSON_B, it)
+                    showPersonBDialog = false
+                },
+                placeholder = "例如：小红"
+            )
+        }
+    }
+}
+
+@Composable
+private fun MiuixTextInputDialog(
+    title: String,
+    initialValue: String,
+    placeholder: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var value by remember(initialValue) { mutableStateOf(initialValue) }
+
+    WindowDialog(
+        show = true,
+        title = title,
+        onDismissRequest = onDismiss
+    ) {
+        TextField(
+            value = value,
+            onValueChange = { value = it },
+            label = placeholder,
+            useLabelAsPlaceholder = true,
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
         )
+        Spacer(modifier = Modifier.height(Spacing.md))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+        ) {
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors()
+            ) {
+                top.yukonga.miuix.kmp.basic.Text("取消")
+            }
+            Button(
+                onClick = { onConfirm(value) },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColorsPrimary(),
+                enabled = value.isNotBlank()
+            ) {
+                top.yukonga.miuix.kmp.basic.Text("确定")
+            }
+        }
     }
 }
 
