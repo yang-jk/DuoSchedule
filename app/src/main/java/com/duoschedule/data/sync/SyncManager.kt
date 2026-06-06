@@ -3,8 +3,10 @@ package com.duoschedule.data.sync
 import android.util.Log
 import com.duoschedule.data.local.CourseDao
 import com.duoschedule.data.local.SettingsDataStore
+import com.duoschedule.data.local.TodoDao
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
+import com.duoschedule.data.model.Todo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -24,29 +26,13 @@ class SyncManager @Inject constructor(
     private val webDavClient: WebDavClient,
     private val syncPreferences: SyncPreferences,
     private val courseDao: CourseDao,
+    private val todoDao: TodoDao,
     private val settingsDataStore: SettingsDataStore
 ) {
     private val TAG = "SyncManager"
     private val syncMutex = Mutex()
 
     val syncStatus = MutableStateFlow(SyncStatus())
-
-    private data class ProfileMapping(
-        val myProfileId: String,
-        val partnerProfileId: String?
-    ) {
-        fun profileIdFor(personType: PersonType): String? {
-            return if (personType == PersonType.PERSON_A) myProfileId else partnerProfileId
-        }
-
-        fun personTypeFor(profileId: String): PersonType? {
-            return when (profileId) {
-                myProfileId -> PersonType.PERSON_A
-                partnerProfileId -> PersonType.PERSON_B
-                else -> null
-            }
-        }
-    }
 
     suspend fun createRoom(config: SyncConfig): Result<String> {
         return withContext(Dispatchers.IO) {
@@ -64,14 +50,16 @@ class SyncManager @Inject constructor(
                     }
                 }
 
+                val roomCode = SyncCodeGenerator.generateRoomCode()
                 val mapping = ensureProfileMapping(config)
                 val profiles = getLocalProfiles(mapping)
                 val meta = JSONObject().apply {
                     put("roomId", config.roomId)
+                    put("roomCode", roomCode)
                     put("createdAt", Instant.now().toString())
                     put("createdBy", config.deviceId)
                     put("members", JSONArray().apply { put(config.deviceId) })
-                    put("currentVersion", 0)
+                    put("currentVersion", 0L)
                     put("schemaVersion", CLOUD_SCHEMA_VERSION)
                     put("profiles", profilesToJson(profiles))
                 }
@@ -80,11 +68,20 @@ class SyncManager @Inject constructor(
                     return@withContext Result.failure(metaResult.exceptionOrNull() ?: Exception("Upload metadata failed"))
                 }
 
+                val localCourses = courseDao.getAllCoursesSync().map { it.toCloudCourse(mapping.myProfileId) }
+                val localTodos = todoDao.getAllTodosSync().map { it.toCloudTodo(mapping.myProfileId) }
+                val initialData = buildCloudDataJson(config, localCourses, localTodos, null, mapping)
+                val dataResult = webDavClient.uploadJson(config, webDavClient.getDataPath(config.roomId), initialData)
+                if (dataResult.isFailure) {
+                    return@withContext Result.failure(dataResult.exceptionOrNull() ?: Exception("Upload initial data failed"))
+                }
+
                 syncPreferences.saveSyncConfig(config)
                 syncPreferences.setSyncEnabled(true)
-                syncPreferences.updateLastSyncVersion(0)
+                syncPreferences.updateLastSyncVersion(0L)
+                syncPreferences.saveRoomCode(roomCode)
 
-                Result.success(SyncCodeGenerator.generate(config, mapping.myProfileId, mapping.partnerProfileId))
+                Result.success(roomCode)
             } catch (e: Exception) {
                 Log.e(TAG, "createRoom failed", e)
                 Result.failure(e)
@@ -92,15 +89,28 @@ class SyncManager @Inject constructor(
         }
     }
 
-    suspend fun joinRoom(syncCode: String): Result<Unit> {
+    suspend fun joinRoom(roomCode: String): Result<JoinRoomInfo> {
         return withContext(Dispatchers.IO) {
             try {
-                val parseResult = SyncCodeGenerator.parse(syncCode)
-                if (parseResult.isFailure) {
-                    return@withContext Result.failure(parseResult.exceptionOrNull() ?: Exception("Invalid sync code"))
+                val findResult = findRoomByCode(roomCode)
+                if (findResult.isFailure) {
+                    return@withContext Result.failure(findResult.exceptionOrNull() ?: Exception("Room not found"))
                 }
+                Result.success(findResult.getOrThrow())
+            } catch (e: Exception) {
+                Log.e(TAG, "joinRoom failed", e)
+                Result.failure(e)
+            }
+        }
+    }
 
-                val config = parseResult.getOrThrow()
+    suspend fun joinRoomWithRoleSelection(
+        joinInfo: JoinRoomInfo,
+        selectedProfileId: String
+    ): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val config = joinInfo.config
 
                 val testResult = webDavClient.testConnection(config)
                 if (testResult.isFailure) {
@@ -117,9 +127,45 @@ class SyncManager @Inject constructor(
                 }
 
                 val metaJson = metaResult.getOrThrow()
-                val mapping = determineJoinMapping(config, metaJson)
-                val profiles = mergeProfiles(parseProfiles(metaJson.optJSONArray("profiles")), getLocalProfiles(mapping))
 
+                // 根据用户选择确定 ProfileMapping
+                val myProfileId: String
+                val partnerProfileId: String
+                if (selectedProfileId == joinInfo.profileA.id) {
+                    myProfileId = joinInfo.profileA.id
+                    partnerProfileId = joinInfo.profileB.id
+                } else {
+                    myProfileId = joinInfo.profileB.id
+                    partnerProfileId = joinInfo.profileA.id
+                }
+                val mapping = ProfileMapping(myProfileId, partnerProfileId)
+
+                // 下载云端数据用于合并
+                val dataResult = webDavClient.downloadJson(config, webDavClient.getDataPath(config.roomId))
+                val existingCloudData = dataResult.getOrNull()?.let { parseCloudData(it) }
+
+                // 合并数据：首次同步使用 smartMerge
+                val localCourses = courseDao.getAllCoursesSync()
+                val localTodos = todoDao.getAllTodosSync()
+                val mergedCourses = if (existingCloudData != null) {
+                    smartMergeForFirstSync(localCourses, existingCloudData, mapping)
+                } else {
+                    localCourses.mapNotNull { course ->
+                        mapping.profileIdFor(course.personType)?.let { course.toCloudCourse(it) }
+                    }
+                }
+                val mergedTodos = if (existingCloudData != null) {
+                    smartMergeTodosForFirstSync(localTodos, existingCloudData, mapping)
+                } else {
+                    localTodos.mapNotNull { todo ->
+                        mapping.profileIdFor(todo.personType)?.let { todo.toCloudTodo(it) }
+                    }
+                }
+
+                val profiles = mergeProfiles(
+                    parseProfiles(metaJson.optJSONArray("profiles")),
+                    getLocalProfiles(mapping)
+                )
                 metaJson.put("schemaVersion", CLOUD_SCHEMA_VERSION)
                 metaJson.put("members", addUnique(metaJson.optJSONArray("members") ?: JSONArray(), config.deviceId))
                 metaJson.put("profiles", profilesToJson(profiles))
@@ -129,22 +175,106 @@ class SyncManager @Inject constructor(
                     Log.w(TAG, "Failed to update meta members, continuing anyway")
                 }
 
+                // 上传合并后的数据
+                backupCloudData(config)
+                if (existingCloudData != null) {
+                    val mergedData = buildCloudDataJson(config, mergedCourses, mergedTodos, existingCloudData, mapping)
+                    webDavClient.uploadJson(config, webDavClient.getDataPath(config.roomId), mergedData)
+                } else {
+                    val dataJson = buildCloudDataJson(config, mergedCourses, mergedTodos, null, mapping)
+                    webDavClient.uploadJson(config, webDavClient.getDataPath(config.roomId), dataJson)
+                }
+
+                // 应用合并后的数据到本地
+                val appliedData = if (existingCloudData != null) {
+                    parseCloudData(buildCloudDataJson(config, mergedCourses, mergedTodos, existingCloudData, mapping))
+                } else {
+                    parseCloudData(buildCloudDataJson(config, mergedCourses, mergedTodos, null, mapping))
+                }
+                applyCloudData(appliedData, mapping)
+                applyCloudTodos(appliedData, mapping)
+
                 syncPreferences.saveSyncConfig(config)
                 syncPreferences.saveProfileMapping(mapping.myProfileId, mapping.partnerProfileId)
                 syncPreferences.setSyncEnabled(true)
+                syncPreferences.saveRoomCode(joinInfo.roomCode)
 
                 Result.success(Unit)
             } catch (e: Exception) {
-                Log.e(TAG, "joinRoom failed", e)
+                Log.e(TAG, "joinRoomWithRoleSelection failed", e)
                 Result.failure(e)
             }
         }
     }
 
-    suspend fun getSyncCode(): String? {
-        val config = syncPreferences.getSyncConfigSync() ?: return null
-        val mapping = ensureProfileMapping(config)
-        return SyncCodeGenerator.generate(config, mapping.myProfileId, mapping.partnerProfileId)
+    /**
+     * 通过房间码在 WebDAV 的 duoschedule/sync/ 目录下查找匹配的房间
+     * 遍历子目录，下载每个 meta.json 检查 roomCode 是否匹配
+     */
+    private suspend fun findRoomByCode(roomCode: String): Result<JoinRoomInfo> {
+        return withContext(Dispatchers.IO) {
+            try {
+                // 获取当前 WebDAV 配置（用户需要先配置好 WebDAV）
+                val config = syncPreferences.getSyncConfigSync()
+                if (config == null) {
+                    return@withContext Result.failure(Exception("请先配置 WebDAV 连接"))
+                }
+
+                val testResult = webDavClient.testConnection(config)
+                if (testResult.isFailure) {
+                    return@withContext Result.failure(testResult.exceptionOrNull() ?: Exception("WebDAV 连接失败"))
+                }
+
+                val dirsResult = webDavClient.listDirectories(config, "duoschedule/sync/")
+                if (dirsResult.isFailure) {
+                    return@withContext Result.failure(dirsResult.exceptionOrNull() ?: Exception("无法列出同步目录"))
+                }
+
+                val directories = dirsResult.getOrThrow()
+                for (dirName in directories) {
+                    val metaPath = "duoschedule/sync/$dirName/meta.json"
+                    val metaResult = webDavClient.downloadJson(config, metaPath)
+                    if (metaResult.isFailure) continue
+
+                    val metaJson = metaResult.getOrThrow()
+                    val metaRoomCode = metaJson.optString("roomCode", "")
+
+                    if (metaRoomCode == roomCode) {
+                        // 找到匹配的房间，提取信息
+                        val roomId = metaJson.optString("roomId", dirName)
+                        val profiles = parseProfiles(metaJson.optJSONArray("profiles"))
+                        val personAName = metaJson.optString("personAName", "Me")
+                        val personBName = metaJson.optString("personBName", "Ta")
+
+                        // 从 profiles 或 meta 中获取 profile 信息
+                        val profileA = profiles.getOrElse(0) { CloudProfile(SyncCodeGenerator.generateProfileId(), personAName) }
+                        val profileB = profiles.getOrElse(1) { CloudProfile(SyncCodeGenerator.generateProfileId(), personBName) }
+
+                        val matchedConfig = config.copy(roomId = roomId)
+
+                        return@withContext Result.success(
+                            JoinRoomInfo(
+                                roomCode = roomCode,
+                                config = matchedConfig,
+                                profileA = profileA,
+                                profileB = profileB,
+                                personAName = profileA.name.ifBlank { personAName },
+                                personBName = profileB.name.ifBlank { personBName }
+                            )
+                        )
+                    }
+                }
+
+                Result.failure(Exception("未找到房间码为 $roomCode 的房间"))
+            } catch (e: Exception) {
+                Log.e(TAG, "findRoomByCode failed", e)
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun getRoomCode(): String? {
+        return syncPreferences.getRoomCodeSync()
     }
 
     suspend fun sync(): SyncResult = syncMutex.withLock {
@@ -169,7 +299,7 @@ class SyncManager @Inject constructor(
                 }
 
                 val metaJson = metaResult.getOrThrow()
-                val cloudVersion = metaJson.optInt("currentVersion", 0)
+                val cloudVersion = metaJson.optLong("currentVersion", 0L)
                 val localLastSyncVersion = syncPreferences.lastSyncVersion.first()
 
                 val dataResult = webDavClient.downloadJson(config, webDavClient.getDataPath(config.roomId))
@@ -187,9 +317,12 @@ class SyncManager @Inject constructor(
                 val mapping = ensureProfileMapping(config, metaJson, cloudData)
 
                 val localCourses = courseDao.getAllCoursesSync()
-                val localDiffers = localDataDiffersFromCloud(localCourses, cloudData, mapping)
+                val localTodos = todoDao.getAllTodosSync()
+                val courseDiffers = localDataDiffersFromCloud(localCourses, cloudData, mapping)
+                val todoDiffers = todoDataDiffersFromCloud(localTodos, cloudData, mapping)
 
-                if (!localDiffers) {
+                // 课程和 Todo 都无差异时才返回 NoChanges
+                if (!courseDiffers && !todoDiffers) {
                     syncPreferences.updateLastSyncVersion(cloudVersion)
                     syncPreferences.updateLastSyncTime(System.currentTimeMillis())
                     syncStatus.value = SyncStatus(
@@ -204,36 +337,47 @@ class SyncManager @Inject constructor(
                     return@withContext pushLocalToCloud(config, metaJson, cloudData, localLastSyncVersion)
                 }
 
-                val conflicts = detectConflicts(cloudData, mapping)
-                if (conflicts.isNotEmpty()) {
+                // 课程和 Todo 冲突分别检测，合并返回
+                val courseConflicts = detectConflicts(cloudData, mapping)
+                val todoConflicts = detectTodoConflicts(cloudData, mapping)
+                val allConflicts = courseConflicts + todoConflicts
+                if (allConflicts.isNotEmpty()) {
                     syncStatus.value = SyncStatus(state = SyncState.CONFLICT, lastSyncVersion = localLastSyncVersion)
                     return@withContext SyncResult.Conflict(
                         localVersion = localLastSyncVersion,
                         cloudVersion = cloudVersion,
-                        conflictItems = conflicts
+                        conflictItems = allConflicts
                     )
                 }
 
-                val mergedCourses = if (localLastSyncVersion == 0) {
+                val mergedCourses = if (localLastSyncVersion == 0L) {
                     smartMergeForFirstSync(localCourses, cloudData, mapping)
                 } else {
                     mergeCourses(localCourses, cloudData, mapping)
                 }
-                val mergedData = buildCloudDataJson(config, mergedCourses, cloudData, mapping)
+                val mergedTodos = if (localLastSyncVersion == 0L) {
+                    smartMergeTodosForFirstSync(localTodos, cloudData, mapping)
+                } else {
+                    mergeTodos(localTodos, cloudData, mapping)
+                }
+                val mergedData = buildCloudDataJson(config, mergedCourses, mergedTodos, cloudData, mapping)
 
+                backupCloudData(config)
                 val uploadResult = webDavClient.uploadJson(config, webDavClient.getDataPath(config.roomId), mergedData)
                 if (uploadResult.isFailure) {
                     syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = uploadResult.exceptionOrNull()?.message)
                     return@withContext SyncResult.Error(uploadResult.exceptionOrNull()?.message ?: "Upload merged data failed")
                 }
 
-                val newVersion = metaJson.optInt("currentVersion", 0) + 1
+                val newVersion = System.currentTimeMillis()
                 metaJson.put("currentVersion", newVersion)
                 metaJson.put("schemaVersion", CLOUD_SCHEMA_VERSION)
                 metaJson.put("profiles", profilesToJson(mergeProfiles(cloudData.profiles, getLocalProfiles(mapping))))
                 webDavClient.uploadJson(config, webDavClient.getMetaPath(config.roomId), metaJson)
 
-                applyCloudData(parseCloudData(mergedData), mapping)
+                val parsedMergedData = parseCloudData(mergedData)
+                applyCloudData(parsedMergedData, mapping)
+                applyCloudTodos(parsedMergedData, mapping)
 
                 syncPreferences.updateLastSyncVersion(newVersion)
                 syncPreferences.updateLastSyncTime(System.currentTimeMillis())
@@ -295,22 +439,23 @@ class SyncManager @Inject constructor(
                 val metaJson = metaResult.getOrNull()
                 val cloudData = parseCloudData(dataResult.getOrThrow())
                 val mapping = ensureProfileMapping(config, metaJson, cloudData)
-                val localCourses = courseDao.getAllCoursesSync()
 
+                // ===== 课程冲突解决 =====
+                val localCourses = courseDao.getAllCoursesSync()
                 val cloudCourseMap = cloudData.courses.associateBy { it.syncId }
                 val localCourseMap = localCourses.associateBy { it.syncId }
-                val merged = linkedMapOf<String, CloudCourse>()
+                val mergedCourses = linkedMapOf<String, CloudCourse>()
 
                 for (course in cloudData.courses) {
                     if (!resolution.resolutions.containsKey(course.syncId)) {
-                        merged[course.syncId] = course
+                        mergedCourses[course.syncId] = course
                     }
                 }
 
                 for (course in localCourses) {
-                    if (!resolution.resolutions.containsKey(course.syncId) && !merged.containsKey(course.syncId)) {
+                    if (!resolution.resolutions.containsKey(course.syncId) && !mergedCourses.containsKey(course.syncId)) {
                         mapping.profileIdFor(course.personType)?.let { ownerProfileId ->
-                            merged[course.syncId] = course.toCloudCourse(ownerProfileId)
+                            mergedCourses[course.syncId] = course.toCloudCourse(ownerProfileId)
                         }
                     }
                 }
@@ -320,37 +465,88 @@ class SyncManager @Inject constructor(
                         ConflictChoice.KEEP_LOCAL -> {
                             localCourseMap[courseKey]?.let { course ->
                                 mapping.profileIdFor(course.personType)?.let { ownerProfileId ->
-                                    merged[course.syncId] = course.toCloudCourse(ownerProfileId)
+                                    mergedCourses[course.syncId] = course.toCloudCourse(ownerProfileId)
                                 }
                             }
                         }
 
                         ConflictChoice.KEEP_CLOUD -> {
-                            cloudCourseMap[courseKey]?.let { merged[it.syncId] = it }
+                            cloudCourseMap[courseKey]?.let { mergedCourses[it.syncId] = it }
                         }
 
                         ConflictChoice.KEEP_BOTH -> {
                             localCourseMap[courseKey]?.let { course ->
                                 mapping.profileIdFor(course.personType)?.let { ownerProfileId ->
-                                    merged[course.syncId] = course.toCloudCourse(ownerProfileId)
+                                    mergedCourses[course.syncId] = course.toCloudCourse(ownerProfileId)
                                 }
                             }
                             cloudCourseMap[courseKey]?.let { cloud ->
                                 val copied = cloud.copy(id = 0, syncId = UUID.randomUUID().toString())
-                                merged[copied.syncId] = copied
+                                mergedCourses[copied.syncId] = copied
                             }
                         }
                     }
                 }
 
-                val mergedData = buildCloudDataJson(config, merged.values.toList(), cloudData, mapping)
+                // ===== Todo 冲突解决 =====
+                val localTodos = todoDao.getAllTodosSync()
+                val cloudTodoMap = cloudData.todos.associateBy { it.syncId }
+                val localTodoMap = localTodos.associateBy { it.syncId }
+                val mergedTodos = linkedMapOf<String, CloudTodo>()
+
+                for (todo in cloudData.todos) {
+                    if (!resolution.resolutions.containsKey(todo.syncId)) {
+                        mergedTodos[todo.syncId] = todo
+                    }
+                }
+
+                for (todo in localTodos) {
+                    if (!resolution.resolutions.containsKey(todo.syncId) && !mergedTodos.containsKey(todo.syncId)) {
+                        mapping.profileIdFor(todo.personType)?.let { ownerProfileId ->
+                            mergedTodos[todo.syncId] = todo.toCloudTodo(ownerProfileId)
+                        }
+                    }
+                }
+
+                for ((todoKey, choice) in resolution.resolutions) {
+                    when (choice) {
+                        ConflictChoice.KEEP_LOCAL -> {
+                            localTodoMap[todoKey]?.let { todo ->
+                                mapping.profileIdFor(todo.personType)?.let { ownerProfileId ->
+                                    mergedTodos[todo.syncId] = todo.toCloudTodo(ownerProfileId)
+                                }
+                            }
+                        }
+
+                        ConflictChoice.KEEP_CLOUD -> {
+                            cloudTodoMap[todoKey]?.let { mergedTodos[it.syncId] = it }
+                        }
+
+                        ConflictChoice.KEEP_BOTH -> {
+                            localTodoMap[todoKey]?.let { todo ->
+                                mapping.profileIdFor(todo.personType)?.let { ownerProfileId ->
+                                    mergedTodos[todo.syncId] = todo.toCloudTodo(ownerProfileId)
+                                }
+                            }
+                            cloudTodoMap[todoKey]?.let { cloud ->
+                                val copied = cloud.copy(syncId = UUID.randomUUID().toString())
+                                mergedTodos[copied.syncId] = copied
+                            }
+                        }
+                    }
+                }
+
+                val mergedData = buildCloudDataJson(
+                    config, mergedCourses.values.toList(), mergedTodos.values.toList(), cloudData, mapping
+                )
+                backupCloudData(config)
                 val uploadResult = webDavClient.uploadJson(config, webDavClient.getDataPath(config.roomId), mergedData)
                 if (uploadResult.isFailure) {
                     return@withContext SyncResult.Error(uploadResult.exceptionOrNull()?.message ?: "Upload merged data failed")
                 }
 
                 if (metaJson != null) {
-                    val newVersion = metaJson.optInt("currentVersion", 0) + 1
+                    val newVersion = System.currentTimeMillis()
                     metaJson.put("currentVersion", newVersion)
                     metaJson.put("schemaVersion", CLOUD_SCHEMA_VERSION)
                     metaJson.put("profiles", profilesToJson(mergeProfiles(cloudData.profiles, getLocalProfiles(mapping))))
@@ -358,15 +554,37 @@ class SyncManager @Inject constructor(
                     syncPreferences.updateLastSyncVersion(newVersion)
                 }
 
-                applyCloudData(parseCloudData(mergedData), mapping)
+                val parsedMergedData = parseCloudData(mergedData)
+                applyCloudData(parsedMergedData, mapping)
+                applyCloudTodos(parsedMergedData, mapping)
 
                 syncPreferences.updateLastSyncTime(System.currentTimeMillis())
                 syncStatus.value = SyncStatus(state = SyncState.SYNCED)
 
-                SyncResult.Success(pulledCourses = merged.size, pushedCourses = merged.size)
+                SyncResult.Success(pulledCourses = mergedCourses.size, pushedCourses = mergedCourses.size)
             } catch (e: Exception) {
                 Log.e(TAG, "resolveConflicts failed", e)
                 SyncResult.Error(e.message ?: "Resolve conflict failed", e)
+            }
+        }
+    }
+
+    suspend fun restoreFromBackup(): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val config = syncPreferences.getSyncConfigSync() ?: return@withContext Result.failure(Exception("未配置同步"))
+                val backupResult = webDavClient.downloadJson(config, webDavClient.getBackupPath(config.roomId))
+                if (backupResult.isFailure) {
+                    return@withContext Result.failure(Exception("备份文件不存在"))
+                }
+                val backupJson = backupResult.getOrThrow()
+                val uploadResult = webDavClient.uploadJson(config, webDavClient.getDataPath(config.roomId), backupJson)
+                if (uploadResult.isFailure) {
+                    return@withContext Result.failure(Exception("恢复失败"))
+                }
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
             }
         }
     }
@@ -392,17 +610,30 @@ class SyncManager @Inject constructor(
         }
     }
 
+    private suspend fun backupCloudData(config: SyncConfig) {
+        try {
+            val dataResult = webDavClient.downloadJson(config, webDavClient.getDataPath(config.roomId))
+            if (dataResult.isSuccess) {
+                val dataJson = dataResult.getOrThrow()
+                webDavClient.uploadJson(config, webDavClient.getBackupPath(config.roomId), dataJson)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Backup cloud data failed, continuing anyway", e)
+        }
+    }
+
     private suspend fun pushLocalToCloud(
         config: SyncConfig,
         metaJson: JSONObject,
         existingCloudData: CloudData? = null,
-        localLastSyncVersion: Int = 0
+        localLastSyncVersion: Long = 0L
     ): SyncResult {
         return try {
             val mapping = ensureProfileMapping(config, metaJson, existingCloudData)
             val localCourses = courseDao.getAllCoursesSync()
+            val localTodos = todoDao.getAllTodosSync()
 
-            val cloudCourses = if (localLastSyncVersion == 0 && existingCloudData != null) {
+            val cloudCourses = if (localLastSyncVersion == 0L && existingCloudData != null) {
                 smartMergeForFirstSync(localCourses, existingCloudData, mapping)
             } else {
                 val myProfileCloudCourses = localCourses
@@ -419,15 +650,18 @@ class SyncManager @Inject constructor(
                 preservedCloudCourses + partnerProfileCloudCourses + myProfileCloudCourses
             }
 
-            val dataJson = buildCloudDataJson(config, cloudCourses, existingCloudData, mapping)
+            val cloudTodos = pushLocalTodosToCloud(localTodos, existingCloudData, mapping)
 
+            val dataJson = buildCloudDataJson(config, cloudCourses, cloudTodos, existingCloudData, mapping)
+
+            backupCloudData(config)
             val uploadResult = webDavClient.uploadJson(config, webDavClient.getDataPath(config.roomId), dataJson)
             if (uploadResult.isFailure) {
                 syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = uploadResult.exceptionOrNull()?.message)
                 return SyncResult.Error(uploadResult.exceptionOrNull()?.message ?: "Upload data failed")
             }
 
-            val newVersion = metaJson.optInt("currentVersion", 0) + 1
+            val newVersion = System.currentTimeMillis()
             metaJson.put("currentVersion", newVersion)
             metaJson.put("schemaVersion", CLOUD_SCHEMA_VERSION)
             metaJson.put("profiles", profilesToJson(mergeProfiles(existingCloudData?.profiles.orEmpty(), getLocalProfiles(mapping))))
@@ -448,6 +682,209 @@ class SyncManager @Inject constructor(
             SyncResult.Error(e.message ?: "Push failed", e)
         }
     }
+
+    // ========== Todo 同步方法 ==========
+
+    /**
+     * 将本地 Todo 推送到云端
+     * 与课程推送逻辑一致：只替换 myProfileId 的 CloudTodo，保留 partnerProfileId 和未知 profile 的 CloudTodo
+     */
+    private fun pushLocalTodosToCloud(
+        localTodos: List<Todo>,
+        existingCloudData: CloudData?,
+        mapping: ProfileMapping
+    ): List<CloudTodo> {
+        // 将本地 PERSON_A 的 Todo 转为 CloudTodo，ownerProfileId = myProfileId
+        val myProfileCloudTodos = localTodos
+            .filter { mapping.profileIdFor(it.personType) == mapping.myProfileId }
+            .map { todo -> todo.toCloudTodo(mapping.myProfileId) }
+
+        // 保留 partnerProfileId 的 CloudTodo（对方的 Todo 不动）
+        val partnerProfileCloudTodos = existingCloudData?.todos.orEmpty()
+            .filter { it.ownerProfileId == mapping.partnerProfileId }
+
+        // 保留无法映射到本地 personType 的 CloudTodo（未知 profile 的数据保留）
+        val preservedCloudTodos = existingCloudData?.todos.orEmpty().filter { todo ->
+            mapping.personTypeFor(todo.ownerProfileId) == null
+        }
+
+        return preservedCloudTodos + partnerProfileCloudTodos + myProfileCloudTodos
+    }
+
+    /**
+     * 将云端 Todo 应用到本地数据库
+     * 与课程 applyCloudData 逻辑一致：按 ownerProfileId 映射 personType，删除本地不在云端的，upsert 云端数据
+     */
+    private suspend fun applyCloudTodos(cloudData: CloudData, mapping: ProfileMapping) {
+        try {
+            val existingTodos = todoDao.getAllTodosSync()
+            val existingBySyncId = existingTodos.associateBy { it.syncId }
+
+            // 按 ownerProfileId 筛选可映射的 CloudTodo，映射为 personType
+            val selectedCloudTodos = cloudData.todos.mapNotNull { cloudTodo ->
+                mapping.personTypeFor(cloudTodo.ownerProfileId)?.let { personType -> cloudTodo to personType }
+            }
+            val cloudSyncIds = selectedCloudTodos.map { it.first.syncId }.toSet()
+
+            // 删除本地不在云端列表中的 Todo（按 syncId 匹配）
+            for (todo in existingTodos) {
+                if (!cloudSyncIds.contains(todo.syncId)) {
+                    todoDao.deleteTodoById(todo.id)
+                }
+            }
+
+            // 更新或插入云端 Todo 到本地数据库
+            for ((cloudTodo, personType) in selectedCloudTodos) {
+                val existing = existingBySyncId[cloudTodo.syncId]
+                val todo = cloudTodo.toTodo(personType).copy(
+                    id = existing?.id ?: 0,
+                    syncId = cloudTodo.syncId
+                )
+                if (existing != null) {
+                    todoDao.updateTodo(todo)
+                } else {
+                    todoDao.insertTodo(todo)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "applyCloudTodos failed", e)
+        }
+    }
+
+    /**
+     * 比较本地 Todo 与云端 Todo 是否有差异
+     * 与课程 localDataDiffersFromCloud 逻辑一致
+     */
+    private fun todoDataDiffersFromCloud(
+        localTodos: List<Todo>,
+        cloudData: CloudData,
+        mapping: ProfileMapping
+    ): Boolean {
+        val selectedCloudTodos = cloudData.todos.mapNotNull { cloudTodo ->
+            mapping.personTypeFor(cloudTodo.ownerProfileId)?.let { personType -> cloudTodo to personType }
+        }
+        if (localTodos.size != selectedCloudTodos.size) return true
+
+        val cloudTodoMap = selectedCloudTodos.associateBy { it.first.syncId }
+        for (local in localTodos) {
+            val cloud = cloudTodoMap[local.syncId] ?: return true
+            if (!todoContentEquals(local, cloud.first, cloud.second)) return true
+        }
+        return false
+    }
+
+    /**
+     * 检测 Todo 冲突
+     * 与课程 detectConflicts 逻辑一致：遍历云端 Todo，查找本地有相同 syncId 但内容不同的
+     */
+    private suspend fun detectTodoConflicts(
+        cloudData: CloudData,
+        mapping: ProfileMapping
+    ): List<ConflictItem> {
+        val localTodos = todoDao.getAllTodosSync()
+        val localMap = localTodos.associateBy { it.syncId }
+        val selectedCloudTodos = cloudData.todos.mapNotNull { cloudTodo ->
+            mapping.personTypeFor(cloudTodo.ownerProfileId)?.let { personType -> cloudTodo to personType }
+        }
+        val conflicts = mutableListOf<ConflictItem>()
+
+        for ((cloud, personType) in selectedCloudTodos) {
+            val local = localMap[cloud.syncId]
+            if (local != null && !todoContentEquals(local, cloud, personType)) {
+                conflicts.add(
+                    ConflictItem(
+                        courseName = local.title,
+                        localVersion = null,
+                        cloudVersion = null,
+                        conflictType = ConflictType.BOTH_MODIFIED,
+                        courseKey = cloud.syncId,
+                        localTodoVersion = mapping.profileIdFor(local.personType)?.let { local.toCloudTodo(it) },
+                        cloudTodoVersion = cloud
+                    )
+                )
+            }
+        }
+        return conflicts
+    }
+
+    /**
+     * 合并 Todo：以云端为基础，用本地 Todo 覆盖同 syncId 的云端 Todo，添加本地独有的 Todo
+     * 与课程 mergeCourses 逻辑一致
+     */
+    private fun mergeTodos(
+        localTodos: List<Todo>,
+        cloudData: CloudData,
+        mapping: ProfileMapping
+    ): List<CloudTodo> {
+        val merged = linkedMapOf<String, CloudTodo>()
+        for (todo in cloudData.todos) {
+            merged[todo.syncId] = todo
+        }
+        for (todo in localTodos) {
+            mapping.profileIdFor(todo.personType)?.let { ownerProfileId ->
+                merged[todo.syncId] = todo.toCloudTodo(ownerProfileId)
+            }
+        }
+        return merged.values.toList()
+    }
+
+    /**
+     * 首次同步智能合并 Todo
+     * 与课程 smartMergeForFirstSync 逻辑一致，使用 contentMatchKey: title|date|startHour|startMinute|endHour|endMinute
+     */
+    private suspend fun smartMergeTodosForFirstSync(
+        localTodos: List<Todo>,
+        cloudData: CloudData,
+        mapping: ProfileMapping
+    ): List<CloudTodo> {
+        // 将本地 Todo 按 personType 转为 CloudTodo
+        val localCloudTodos = localTodos.mapNotNull { todo ->
+            mapping.profileIdFor(todo.personType)?.let { ownerProfileId ->
+                todo.toCloudTodo(ownerProfileId)
+            }
+        }
+
+        val result = SmartMergeTodoHelper.smartMergeTodosLogic(
+            localTodos = localCloudTodos,
+            cloudTodos = cloudData.todos,
+            myProfileId = mapping.myProfileId,
+            partnerProfileId = mapping.partnerProfileId
+        )
+
+        // 更新本地数据库中匹配成功的 Todo 的 syncId
+        // 构建 contentMatchKey → 新 syncId 的映射（仅匹配成功的）
+        val localKeyToOriginalSyncId = localCloudTodos.associateBy {
+            SmartMergeTodoHelper.todoContentMatchKey(it) to it.ownerProfileId
+        }
+        for (matchedSyncId in result.matchedCloudSyncIds) {
+            val mergedTodo = result.mergedTodos.find { it.syncId == matchedSyncId } ?: continue
+            val key = SmartMergeTodoHelper.todoContentMatchKey(mergedTodo) to mergedTodo.ownerProfileId
+            val originalCloudTodo = localKeyToOriginalSyncId[key] ?: continue
+            // 找到对应的本地 Todo，更新 syncId
+            val localTodo = localTodos.find { it.syncId == originalCloudTodo.syncId }
+            if (localTodo != null && localTodo.syncId != matchedSyncId) {
+                todoDao.updateTodo(localTodo.copy(syncId = matchedSyncId))
+            }
+        }
+
+        return result.mergedTodos
+    }
+
+    /**
+     * 比较本地 Todo 与云端 CloudTodo 的内容是否一致
+     */
+    private fun todoContentEquals(local: Todo, cloud: CloudTodo, cloudPersonType: PersonType): Boolean {
+        return SyncComparatorHelper.todoContentEquals(local, cloud, cloudPersonType)
+    }
+
+    /**
+     * Todo 内容匹配键，用于首次同步智能合并
+     */
+    private fun todoContentMatchKey(todo: CloudTodo): String {
+        return SmartMergeTodoHelper.todoContentMatchKey(todo)
+    }
+
+    // ========== 课程同步方法（原有） ==========
 
     private suspend fun applyCloudData(cloudData: CloudData, mapping: ProfileMapping): SyncResult {
         var pulledCourses = 0
@@ -601,22 +1038,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun courseContentEquals(local: Course, cloud: CloudCourse, cloudPersonType: PersonType): Boolean {
-        return local.name == cloud.name &&
-            local.location == cloud.location &&
-            local.teacher == cloud.teacher &&
-            local.dayOfWeek == cloud.dayOfWeek &&
-            local.startHour == cloud.startHour &&
-            local.startMinute == cloud.startMinute &&
-            local.endHour == cloud.endHour &&
-            local.endMinute == cloud.endMinute &&
-            local.weekType.name == cloud.weekType &&
-            local.startWeek == cloud.startWeek &&
-            local.endWeek == cloud.endWeek &&
-            local.customWeeks == cloud.customWeeks &&
-            local.personType == cloudPersonType &&
-            local.startPeriod == cloud.startPeriod &&
-            local.endPeriod == cloud.endPeriod &&
-            local.isCustomTime == cloud.isCustomTime
+        return SyncComparatorHelper.courseContentEquals(local, cloud, cloudPersonType)
     }
 
     private fun contentMatchKey(course: CloudCourse): String {
@@ -676,9 +1098,12 @@ class SyncManager @Inject constructor(
         return merged
     }
 
+    // ========== JSON 序列化/反序列化 ==========
+
     private suspend fun buildCloudDataJson(
         config: SyncConfig,
         courses: List<CloudCourse>,
+        todos: List<CloudTodo>,
         existingCloudData: CloudData?,
         mapping: ProfileMapping
     ): JSONObject {
@@ -691,11 +1116,13 @@ class SyncManager @Inject constructor(
         val profileSettings = linkedMapOf<String, CloudSettings>()
         existingCloudData?.profileSettings?.let { profileSettings.putAll(it) }
         profileSettings[mapping.myProfileId] = settingsA
-        mapping.partnerProfileId?.let { profileSettings[it] = settingsB }
 
         return buildCloudDataJson(
             config = config,
             courses = courses,
+            todos = todos,
+            todoTags = existingCloudData?.todoTags.orEmpty(),
+            repeatRules = existingCloudData?.repeatRules.orEmpty(),
             profiles = profiles,
             profileSettings = profileSettings,
             settingsA = settingsA,
@@ -708,6 +1135,9 @@ class SyncManager @Inject constructor(
     private fun buildCloudDataJson(
         config: SyncConfig,
         courses: List<CloudCourse>,
+        todos: List<CloudTodo>,
+        todoTags: List<CloudTodoTag>,
+        repeatRules: List<CloudRepeatRule>,
         profiles: List<CloudProfile>,
         profileSettings: Map<String, CloudSettings>,
         settingsA: CloudSettings? = null,
@@ -718,7 +1148,7 @@ class SyncManager @Inject constructor(
         return JSONObject().apply {
             put("schemaVersion", CLOUD_SCHEMA_VERSION)
             put("roomId", config.roomId)
-            put("version", 0)
+            put("version", System.currentTimeMillis())
             put("lastModified", Instant.now().toString())
             put("lastModifiedBy", config.deviceId)
             put("profiles", profilesToJson(profiles))
@@ -751,6 +1181,52 @@ class SyncManager @Inject constructor(
                         put("startPeriod", course.startPeriod)
                         put("endPeriod", course.endPeriod)
                         put("isCustomTime", course.isCustomTime)
+                    })
+                }
+            })
+            // Todo 数据（schema v3 新增）
+            put("todos", JSONArray().apply {
+                for (todo in todos) {
+                    put(JSONObject().apply {
+                        put("syncId", todo.syncId)
+                        put("ownerProfileId", todo.ownerProfileId)
+                        put("title", todo.title)
+                        put("description", todo.description)
+                        put("date", todo.date)
+                        put("startHour", todo.startHour)
+                        put("startMinute", todo.startMinute)
+                        put("endHour", todo.endHour)
+                        put("endMinute", todo.endMinute)
+                        put("priority", todo.priority)
+                        put("status", todo.status)
+                        put("tags", todo.tags)
+                        put("linkedCourseSyncId", todo.linkedCourseSyncId ?: JSONObject.NULL)
+                        put("repeatRuleId", todo.repeatRuleId ?: JSONObject.NULL)
+                        put("completedAt", todo.completedAt ?: JSONObject.NULL)
+                    })
+                }
+            })
+            // Todo 标签（schema v3 新增）
+            put("todoTags", JSONArray().apply {
+                for (tag in todoTags) {
+                    put(JSONObject().apply {
+                        put("id", tag.id)
+                        put("name", tag.name)
+                        put("color", tag.color)
+                        put("isPreset", tag.isPreset)
+                    })
+                }
+            })
+            // 重复规则（schema v3 新增）
+            put("repeatRules", JSONArray().apply {
+                for (rule in repeatRules) {
+                    put(JSONObject().apply {
+                        put("id", rule.id)
+                        put("frequency", rule.frequency)
+                        put("interval", rule.interval)
+                        put("daysOfWeek", rule.daysOfWeek)
+                        put("customDates", rule.customDates)
+                        put("endDate", rule.endDate ?: JSONObject.NULL)
                     })
                 }
             })
@@ -817,6 +1293,64 @@ class SyncManager @Inject constructor(
             )
         }
 
+        // 解析 Todo 数据（schema v3 新增，向后兼容：缺失时使用空数组）
+        val todosArray = json.optJSONArray("todos") ?: JSONArray()
+        val todos = mutableListOf<CloudTodo>()
+        for (i in 0 until todosArray.length()) {
+            val todoJson = todosArray.getJSONObject(i)
+            todos.add(
+                CloudTodo(
+                    syncId = todoJson.optString("syncId", ""),
+                    ownerProfileId = todoJson.optString("ownerProfileId", ""),
+                    title = todoJson.optString("title", ""),
+                    description = todoJson.optString("description", ""),
+                    date = todoJson.optLong("date", 0),
+                    startHour = todoJson.optInt("startHour", -1),
+                    startMinute = todoJson.optInt("startMinute", -1),
+                    endHour = todoJson.optInt("endHour", -1),
+                    endMinute = todoJson.optInt("endMinute", -1),
+                    priority = todoJson.optString("priority", "MEDIUM"),
+                    status = todoJson.optString("status", "PENDING"),
+                    tags = todoJson.optString("tags", ""),
+                    linkedCourseSyncId = if (todoJson.isNull("linkedCourseSyncId")) null else todoJson.optString("linkedCourseSyncId"),
+                    repeatRuleId = if (todoJson.isNull("repeatRuleId")) null else todoJson.optString("repeatRuleId"),
+                    completedAt = if (todoJson.isNull("completedAt")) null else todoJson.optLong("completedAt")
+                )
+            )
+        }
+
+        // 解析 Todo 标签（schema v3 新增）
+        val todoTagsArray = json.optJSONArray("todoTags") ?: JSONArray()
+        val todoTags = mutableListOf<CloudTodoTag>()
+        for (i in 0 until todoTagsArray.length()) {
+            val tagJson = todoTagsArray.getJSONObject(i)
+            todoTags.add(
+                CloudTodoTag(
+                    id = tagJson.optString("id", ""),
+                    name = tagJson.optString("name", ""),
+                    color = tagJson.optLong("color", 0),
+                    isPreset = tagJson.optBoolean("isPreset", false)
+                )
+            )
+        }
+
+        // 解析重复规则（schema v3 新增）
+        val repeatRulesArray = json.optJSONArray("repeatRules") ?: JSONArray()
+        val repeatRules = mutableListOf<CloudRepeatRule>()
+        for (i in 0 until repeatRulesArray.length()) {
+            val ruleJson = repeatRulesArray.getJSONObject(i)
+            repeatRules.add(
+                CloudRepeatRule(
+                    id = ruleJson.optString("id", ""),
+                    frequency = ruleJson.optString("frequency", "DAILY"),
+                    interval = ruleJson.optInt("interval", 1),
+                    daysOfWeek = ruleJson.optString("daysOfWeek", ""),
+                    customDates = ruleJson.optString("customDates", ""),
+                    endDate = if (ruleJson.isNull("endDate")) null else ruleJson.optLong("endDate")
+                )
+            )
+        }
+
         val profileSettings = linkedMapOf<String, CloudSettings>()
         json.optJSONObject("profileSettings")?.let { settingsJson ->
             val keys = settingsJson.keys()
@@ -840,7 +1374,7 @@ class SyncManager @Inject constructor(
 
         return CloudData(
             roomId = json.optString("roomId", ""),
-            version = json.optInt("version", 0),
+            version = json.optLong("version", 0L),
             lastModified = json.optString("lastModified", ""),
             lastModifiedBy = json.optString("lastModifiedBy", ""),
             courses = courses,
@@ -850,7 +1384,10 @@ class SyncManager @Inject constructor(
             personBName = personBName,
             schemaVersion = schemaVersion,
             profiles = profiles,
-            profileSettings = profileSettings
+            profileSettings = profileSettings,
+            todos = todos,
+            todoTags = todoTags,
+            repeatRules = repeatRules
         )
     }
 
@@ -904,17 +1441,6 @@ class SyncManager @Inject constructor(
 
         syncPreferences.saveProfileMapping(mapping.myProfileId, mapping.partnerProfileId)
         return mapping
-    }
-
-    private suspend fun determineJoinMapping(config: SyncConfig, metaJson: JSONObject): ProfileMapping {
-        if (!config.inviteReceiverProfileId.isNullOrBlank()) {
-            return ProfileMapping(config.inviteReceiverProfileId, config.inviteSenderProfileId)
-        }
-
-        val profiles = parseProfiles(metaJson.optJSONArray("profiles"))
-        val creatorProfileId = profiles.firstOrNull()?.id
-        val myProfileId = SyncCodeGenerator.generateProfileId()
-        return ProfileMapping(myProfileId, creatorProfileId)
     }
 
     private suspend fun getLocalProfiles(mapping: ProfileMapping): List<CloudProfile> {
@@ -974,7 +1500,7 @@ class SyncManager @Inject constructor(
     }
 
     companion object {
-        private const val CLOUD_SCHEMA_VERSION = 2
+        private const val CLOUD_SCHEMA_VERSION = 3
         private const val LEGACY_PERSON_A_PROFILE_ID = "legacy-person-a"
         private const val LEGACY_PERSON_B_PROFILE_ID = "legacy-person-b"
     }

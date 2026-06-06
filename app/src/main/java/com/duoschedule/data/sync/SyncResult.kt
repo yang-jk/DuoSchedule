@@ -9,8 +9,8 @@ sealed class SyncResult {
     ) : SyncResult()
 
     data class Conflict(
-        val localVersion: Int,
-        val cloudVersion: Int,
+        val localVersion: Long,
+        val cloudVersion: Long,
         val conflictItems: List<ConflictItem>
     ) : SyncResult()
 
@@ -28,7 +28,10 @@ data class ConflictItem(
     val localVersion: CloudCourse?,
     val cloudVersion: CloudCourse?,
     val conflictType: ConflictType,
-    val courseKey: String = localVersion?.syncId ?: cloudVersion?.syncId ?: courseName
+    val courseKey: String = localVersion?.syncId ?: cloudVersion?.syncId ?: courseName,
+    // Todo 冲突数据
+    val localTodoVersion: CloudTodo? = null,
+    val cloudTodoVersion: CloudTodo? = null
 )
 
 enum class ConflictType {

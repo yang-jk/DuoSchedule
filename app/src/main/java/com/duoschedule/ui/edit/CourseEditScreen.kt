@@ -109,6 +109,8 @@ fun CourseEditScreen(
     LaunchedEffect(courseId) {
         if (courseId != null && courseId > 0) {
             viewModel.loadCourse(courseId)
+        } else {
+            viewModel.resetForNewCourse()
         }
     }
 
@@ -123,6 +125,7 @@ fun CourseEditScreen(
     LaunchedEffect(state.saved, state.deleted) {
         if (state.saved || state.deleted) {
             onNavigateBack()
+            viewModel.resetNavigationState()
         }
     }
 
@@ -1070,6 +1073,8 @@ fun CourseEditContent(
     LaunchedEffect(courseId) {
         if (courseId != null && courseId > 0) {
             viewModel.loadCourse(courseId)
+        } else {
+            viewModel.resetForNewCourse()
         }
     }
 
@@ -1084,6 +1089,7 @@ fun CourseEditContent(
     LaunchedEffect(state.saved, state.deleted) {
         if (state.saved || state.deleted) {
             onNavigateBack()
+            viewModel.resetNavigationState()
         }
     }
 

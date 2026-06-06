@@ -64,6 +64,7 @@ fun NotificationSettingsScreen(
     val autoSilentEnabled by viewModel.autoSilentEnabled.collectAsState()
     val autoSilentModeType by viewModel.autoSilentModeType.collectAsState()
     val autoSilentAdvanceTime by viewModel.autoSilentAdvanceTime.collectAsState()
+    val todoNotificationEnabled by viewModel.todoNotificationEnabled.collectAsState()
     val hasAnyCourses by viewModel.hasAnyCourses.collectAsState()
 
     var showReminderDialog by remember { mutableStateOf(false) }
@@ -252,6 +253,17 @@ fun NotificationSettingsScreen(
                         iconBackgroundColor = IOSColors.Orange,
                         value = "${reminderMinutesBefore} 分钟",
                         onClick = { showReminderDialog = true }
+                    )
+                }
+
+                SettingsSection(title = "待办提醒") {
+                    SettingsToggleRow(
+                        title = "待办提醒",
+                        subtitle = "在待办开始前5分钟或截止前30分钟提醒",
+                        icon = Icons.Outlined.Checklist,
+                        iconBackgroundColor = IOSColors.Blue,
+                        checked = todoNotificationEnabled,
+                        onCheckedChange = { viewModel.setTodoNotificationEnabled(it) }
                     )
                 }
 

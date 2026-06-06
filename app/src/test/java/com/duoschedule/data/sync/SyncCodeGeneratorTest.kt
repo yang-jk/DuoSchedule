@@ -6,46 +6,27 @@ import org.junit.Test
 class SyncCodeGeneratorTest {
 
     @Test
-    fun generate_and_parse_roundTrip() {
-        val config = SyncConfig(
-            webDavUrl = "https://dav.jianguoyun.com/dav/",
-            username = "test@example.com",
-            password = "app-password-123",
-            roomId = "a3f2b8c1-d4e5-6f7a-8b9c-0d1e2f3a4b5c",
-            deviceId = "device-abc12345"
-        )
-        val syncCode = SyncCodeGenerator.generate(config)
-        assertTrue(syncCode.startsWith("DSYNC:"))
-
-        val parsed = SyncCodeGenerator.parse(syncCode)
-        assertTrue(parsed.isSuccess)
-        val parsedConfig = parsed.getOrThrow()
-        assertEquals(config.webDavUrl, parsedConfig.webDavUrl)
-        assertEquals(config.username, parsedConfig.username)
-        assertEquals(config.password, parsedConfig.password)
-        assertEquals(config.roomId, parsedConfig.roomId)
+    fun generateRoomCode_isSixDigits() {
+        val code = SyncCodeGenerator.generateRoomCode()
+        assertEquals(6, code.length)
+        assertTrue(code.matches(Regex("\\d{6}")))
     }
 
     @Test
-    fun parse_invalidPrefix_returnsFailure() {
-        val result = SyncCodeGenerator.parse("INVALID:abc123")
-        assertTrue(result.isFailure)
+    fun generateRoomCode_isInRange() {
+        repeat(100) {
+            val code = SyncCodeGenerator.generateRoomCode()
+            val value = code.toInt()
+            assertTrue("Room code should be >= 100000, got $value", value >= 100000)
+            assertTrue("Room code should be <= 999999, got $value", value <= 999999)
+        }
     }
 
     @Test
-    fun parse_garbageData_returnsFailure() {
-        val result = SyncCodeGenerator.parse("DSYNC:not-valid-base64!!!")
-        assertTrue(result.isFailure)
-    }
-
-    @Test
-    fun isValidSyncCode_valid_returnsTrue() {
-        assertTrue(SyncCodeGenerator.isValidSyncCode("DSYNC:abc123"))
-    }
-
-    @Test
-    fun isValidSyncCode_invalid_returnsFalse() {
-        assertFalse(SyncCodeGenerator.isValidSyncCode("abc123"))
+    fun generateRoomCode_multipleCallsReturnDifferentValues() {
+        val codes = (1..50).map { SyncCodeGenerator.generateRoomCode() }
+        val uniqueCodes = codes.toSet()
+        assertTrue("Multiple calls should generate different codes", uniqueCodes.size > 1)
     }
 
     @Test

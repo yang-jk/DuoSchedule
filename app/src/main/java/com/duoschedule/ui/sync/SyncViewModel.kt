@@ -40,12 +40,15 @@ class SyncViewModel @Inject constructor(
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
 
-    private val _syncCode = MutableStateFlow("")
-    val syncCode: StateFlow<String> = _syncCode.asStateFlow()
+    private val _roomCode = MutableStateFlow("")
+    val roomCode: StateFlow<String> = _roomCode.asStateFlow()
+
+    private val _pendingJoinInfo = MutableStateFlow<JoinRoomInfo?>(null)
+    val pendingJoinInfo: StateFlow<JoinRoomInfo?> = _pendingJoinInfo.asStateFlow()
 
     init {
         viewModelScope.launch {
-            _syncCode.value = syncManager.getSyncCode().orEmpty()
+            _roomCode.value = syncManager.getRoomCode().orEmpty()
         }
     }
 
@@ -55,11 +58,11 @@ class SyncViewModel @Inject constructor(
     private val _conflictResult = MutableStateFlow<SyncResult.Conflict?>(null)
     val conflictResult: StateFlow<SyncResult.Conflict?> = _conflictResult.asStateFlow()
 
-    fun createRoom(webDavUrl: String, username: String, password: String) {
+    fun createRoom(username: String, password: String) {
         viewModelScope.launch {
             _isCreating.value = true
             val config = SyncConfig(
-                webDavUrl = webDavUrl,
+                webDavUrl = "https://dav.jianguoyun.com/dav/",
                 username = username,
                 password = password,
                 roomId = SyncCodeGenerator.generateRoomId(),
@@ -68,7 +71,7 @@ class SyncViewModel @Inject constructor(
             val result = syncManager.createRoom(config)
             _isCreating.value = false
             if (result.isSuccess) {
-                _syncCode.value = result.getOrThrow()
+                _roomCode.value = result.getOrThrow()
                 _message.value = "房间创建成功"
             } else {
                 _message.value = result.exceptionOrNull()?.message ?: "创建房间失败"
@@ -76,13 +79,28 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    fun joinRoom(syncCodeInput: String) {
+    fun joinRoom(roomCode: String) {
         viewModelScope.launch {
             _isJoining.value = true
-            val result = syncManager.joinRoom(syncCodeInput.trim())
+            val result = syncManager.joinRoom(roomCode.trim())
             _isJoining.value = false
             if (result.isSuccess) {
-                _syncCode.value = syncManager.getSyncCode().orEmpty()
+                _pendingJoinInfo.value = result.getOrThrow()
+            } else {
+                _message.value = result.exceptionOrNull()?.message ?: "加入房间失败"
+            }
+        }
+    }
+
+    fun confirmJoinRoom(selectedProfileId: String) {
+        val joinInfo = _pendingJoinInfo.value ?: return
+        viewModelScope.launch {
+            _isJoining.value = true
+            val result = syncManager.joinRoomWithRoleSelection(joinInfo, selectedProfileId)
+            _isJoining.value = false
+            _pendingJoinInfo.value = null
+            if (result.isSuccess) {
+                _roomCode.value = joinInfo.roomCode
                 _message.value = "加入房间成功"
             } else {
                 _message.value = result.exceptionOrNull()?.message ?: "加入房间失败"
@@ -127,25 +145,21 @@ class SyncViewModel @Inject constructor(
     fun leaveRoom() {
         viewModelScope.launch {
             syncManager.leaveRoom()
-            _syncCode.value = ""
+            _roomCode.value = ""
             _message.value = "已离开房间"
         }
     }
 
-    fun copySyncCode() {
-        val code = _syncCode.value
+    fun copyRoomCode() {
+        val code = _roomCode.value
         if (code.isNotEmpty()) {
             val clipboard = application.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText("同步码", code))
-            _message.value = "同步码已复制"
+            clipboard.setPrimaryClip(ClipData.newPlainText("房间码", code))
+            _message.value = "房间码已复制"
         }
     }
 
     fun clearMessage() {
         _message.value = null
-    }
-
-    fun isValidSyncCode(text: String): Boolean {
-        return SyncCodeGenerator.isValidSyncCode(text.trim())
     }
 }

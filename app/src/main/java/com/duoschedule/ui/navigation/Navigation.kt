@@ -23,6 +23,7 @@ import com.duoschedule.ui.schedule.ScheduleScreen
 import com.duoschedule.ui.settings.*
 import com.duoschedule.ui.settings.SettingsViewModel
 import com.duoschedule.ui.sync.SyncSettingsScreen
+import com.duoschedule.ui.todo.TodoEditScreen
 import com.duoschedule.ui.theme.BackgroundsLight
 import com.duoschedule.ui.theme.BackgroundsDark
 import com.duoschedule.ui.theme.LocalDarkTheme
@@ -41,6 +42,7 @@ import com.duoschedule.ui.theme.miuixPushExit
 import com.duoschedule.ui.theme.miuixPopEnter
 import com.duoschedule.ui.theme.miuixPopExit
 import kotlinx.coroutines.launch
+import androidx.hilt.navigation.compose.hiltViewModel
 
 private val bottomNavRoutes = listOf(
     BottomNavItem.Home.route,
@@ -142,19 +144,31 @@ fun DuoScheduleNavGraph(
                 onNavigateToEdit = { courseId, dayOfWeek, period, personType ->
                     val route = buildEditRoute(courseId, dayOfWeek, period, personType)
                     navController.navigate(route)
+                },
+                onNavigateToTodoEdit = { todoId ->
+                    navController.navigate("todo_edit?todoId=$todoId")
+                },
+                onNavigateToTodoAdd = {
+                    navController.navigate("todo_edit")
                 }
             )
         }
 
         composable(BottomNavItem.ScheduleA.route) {
             ScheduleScreen(
-                personType = PersonType.PERSON_A
+                personType = PersonType.PERSON_A,
+                onNavigateToTodoEdit = { todoId, date, startHour, startMinute, endHour, endMinute, personType ->
+                    navController.navigate(buildTodoEditRoute(todoId, date, startHour, startMinute, endHour, endMinute, personType))
+                }
             )
         }
 
         composable(BottomNavItem.ScheduleB.route) {
             ScheduleScreen(
-                personType = PersonType.PERSON_B
+                personType = PersonType.PERSON_B,
+                onNavigateToTodoEdit = { todoId, date, startHour, startMinute, endHour, endMinute, personType ->
+                    navController.navigate(buildTodoEditRoute(todoId, date, startHour, startMinute, endHour, endMinute, personType))
+                }
             )
         }
 
@@ -359,6 +373,69 @@ fun DuoScheduleNavGraph(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
+
+        // 待办编辑路由
+        composable(
+            route = "todo_edit?todoId={todoId}&date={date}&startHour={startHour}&startMinute={startMinute}&endHour={endHour}&endMinute={endMinute}&personType={personType}",
+            arguments = listOf(
+                navArgument("todoId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = ""
+                },
+                navArgument("date") {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument("startHour") {
+                    type = NavType.StringType
+                    defaultValue = "-1"
+                },
+                navArgument("startMinute") {
+                    type = NavType.StringType
+                    defaultValue = "-1"
+                },
+                navArgument("endHour") {
+                    type = NavType.StringType
+                    defaultValue = "-1"
+                },
+                navArgument("endMinute") {
+                    type = NavType.StringType
+                    defaultValue = "-1"
+                },
+                navArgument("personType") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = ""
+                }
+            )
+        ) { backStackEntry ->
+            val todoIdStr = backStackEntry.arguments?.getString("todoId")
+            val todoId = todoIdStr?.takeIf { it.isNotEmpty() }?.toLongOrNull()
+            val dateStr = backStackEntry.arguments?.getString("date") ?: ""
+            val initialDate = dateStr.takeIf { it.isNotEmpty() }?.toLongOrNull()
+            val startHour = backStackEntry.arguments?.getString("startHour")?.toIntOrNull() ?: -1
+            val startMinute = backStackEntry.arguments?.getString("startMinute")?.toIntOrNull() ?: -1
+            val endHour = backStackEntry.arguments?.getString("endHour")?.toIntOrNull() ?: -1
+            val endMinute = backStackEntry.arguments?.getString("endMinute")?.toIntOrNull() ?: -1
+            val personTypeStr = backStackEntry.arguments?.getString("personType")?.takeIf { it.isNotEmpty() }
+            val initialPersonType = personTypeStr?.let {
+                try { PersonType.valueOf(it) } catch (_: Exception) { null }
+            }
+
+            val viewModelKey = "todo_edit_${todoId ?: "new"}_${initialDate}_${initialPersonType?.name ?: ""}"
+            TodoEditScreen(
+                todoId = todoId,
+                initialDate = initialDate,
+                initialPersonType = initialPersonType,
+                initialStartHour = startHour,
+                initialStartMinute = startMinute,
+                initialEndHour = endHour,
+                initialEndMinute = endMinute,
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = hiltViewModel(key = viewModelKey)
+            )
+        }
     }
     
     if (showExternalImportDialog && externalImportUri != null) {
@@ -501,4 +578,24 @@ private fun buildEditRoute(courseId: Long?, dayOfWeek: Int?, period: Int?, perso
     val periodStr = period?.toString() ?: "-1"
     val personTypeStr = personType?.name ?: ""
     return "edit?courseId=$courseIdStr&dayOfWeek=$dayOfWeekStr&period=$periodStr&personType=$personTypeStr"
+}
+
+/** 构建待办编辑路由 */
+private fun buildTodoEditRoute(
+    todoId: Long?,
+    date: Long?,
+    startHour: Int?,
+    startMinute: Int?,
+    endHour: Int?,
+    endMinute: Int?,
+    personType: PersonType?
+): String {
+    val todoIdStr = todoId?.toString() ?: ""
+    val dateStr = date?.toString() ?: ""
+    val sh = startHour?.toString() ?: "-1"
+    val sm = startMinute?.toString() ?: "-1"
+    val eh = endHour?.toString() ?: "-1"
+    val em = endMinute?.toString() ?: "-1"
+    val pt = personType?.name ?: ""
+    return "todo_edit?todoId=$todoIdStr&date=$dateStr&startHour=$sh&startMinute=$sm&endHour=$eh&endMinute=$em&personType=$pt"
 }

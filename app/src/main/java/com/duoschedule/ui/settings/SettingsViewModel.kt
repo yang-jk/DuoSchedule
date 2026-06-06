@@ -20,6 +20,7 @@ import com.duoschedule.notification.BootReceiverManager
 import com.duoschedule.notification.CourseNotificationManager
 import com.duoschedule.notification.RingerModeManager
 import com.duoschedule.notification.SilentModeType
+import com.duoschedule.notification.TodoAlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -33,6 +34,7 @@ class SettingsViewModel @Inject constructor(
     private val alarmScheduler: AlarmScheduler,
     private val ringerModeManager: RingerModeManager,
     private val courseDao: CourseDao,
+    private val todoAlarmScheduler: TodoAlarmScheduler,
     private val application: Application
 ) : ViewModel() {
 
@@ -131,6 +133,9 @@ class SettingsViewModel @Inject constructor(
 
     val autoSilentAdvanceTime: StateFlow<Int> = repository.getAutoSilentAdvanceTime()
         .stateIn(viewModelScope, SharingStarted.Lazily, 5)
+
+    val todoNotificationEnabled: StateFlow<Boolean> = repository.getTodoNotificationEnabled()
+        .stateIn(viewModelScope, SharingStarted.Lazily, true)
 
     val courseNameFontSize: StateFlow<Int> = repository.getCourseNameFontSize()
         .stateIn(viewModelScope, SharingStarted.Lazily, 12)
@@ -277,6 +282,17 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             repository.setAutoSilentAdvanceTime(minutes)
             notificationManager.scheduleAutoSilentTasks()
+        }
+    }
+
+    fun setTodoNotificationEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.setTodoNotificationEnabled(enabled)
+            if (enabled) {
+                todoAlarmScheduler.scheduleAllTodoReminders()
+            } else {
+                todoAlarmScheduler.cancelAllTodoReminders()
+            }
         }
     }
 

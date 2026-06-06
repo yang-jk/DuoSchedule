@@ -64,6 +64,8 @@ class SettingsDataStore @Inject constructor(
         private val AUTO_SILENT_ENABLED = booleanPreferencesKey("auto_silent_enabled")
         private val AUTO_SILENT_MODE_TYPE = stringPreferencesKey("auto_silent_mode_type")
         private val AUTO_SILENT_ADVANCE_TIME = intPreferencesKey("auto_silent_advance_time")
+
+        private val TODO_NOTIFICATION_ENABLED = booleanPreferencesKey("todo_notification_enabled")
         
         private val COURSE_NAME_FONT_SIZE = intPreferencesKey("course_name_font_size")
         private val COURSE_LOCATION_FONT_SIZE = intPreferencesKey("course_location_font_size")
@@ -188,6 +190,10 @@ class SettingsDataStore @Inject constructor(
 
     val autoSilentAdvanceTime: Flow<Int> = context.dataStore.data.map { preferences ->
         preferences[AUTO_SILENT_ADVANCE_TIME] ?: 5
+    }
+
+    val todoNotificationEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[TODO_NOTIFICATION_ENABLED] ?: true
     }
 
     val courseNameFontSize: Flow<Int> = context.dataStore.data.map { preferences ->
@@ -364,9 +370,21 @@ class SettingsDataStore @Inject constructor(
         }.first()
     }
 
+    suspend fun getTodoNotificationEnabled(): Boolean {
+        return context.dataStore.data.map { preferences ->
+            preferences[TODO_NOTIFICATION_ENABLED] ?: true
+        }.first()
+    }
+
     suspend fun setAutoSilentAdvanceTime(minutes: Int) {
         context.dataStore.edit { preferences ->
             preferences[AUTO_SILENT_ADVANCE_TIME] = minutes
+        }
+    }
+
+    suspend fun setTodoNotificationEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[TODO_NOTIFICATION_ENABLED] = enabled
         }
     }
 

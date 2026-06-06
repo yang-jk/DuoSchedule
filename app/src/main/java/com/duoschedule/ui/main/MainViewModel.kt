@@ -5,8 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.TodayCourseDisplayMode
+import com.duoschedule.data.model.Todo
 import com.duoschedule.data.repository.CourseRepository
+import com.duoschedule.data.repository.TodoRepository
 import com.duoschedule.notification.AlarmScheduler
+import com.duoschedule.ui.main.components.TodayTimelineItem
 import com.duoschedule.ui.model.CurrentCourseState
 import com.duoschedule.ui.model.FreeTimeSlot
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,6 +33,7 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModel @Inject constructor(
     private val repository: CourseRepository,
+    private val todoRepository: TodoRepository,
     private val alarmScheduler: AlarmScheduler
 ) : ViewModel() {
 
@@ -190,6 +194,74 @@ class MainViewModel @Inject constructor(
     ) { coursesA, coursesB, time ->
         calculateFreeTimeSlots(coursesA, coursesB, time.hour, time.minute)
     }.distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** 今日待办列表，按时间排序：有开始时间 > 仅有截止时间 > 无时间 */
+    val todayTodos: StateFlow<List<Todo>> = todoRepository.getTodosByDate(LocalDate.now().toEpochDay())
+        .combine(singleModeEnabled) { todos, singleMode ->
+            val filtered = if (singleMode) {
+                todos.filter { it.personType == PersonType.PERSON_A }
+            } else {
+                todos
+            }
+            filtered.sortedWith(
+                compareBy<Todo> { todo ->
+                    when {
+                        todo.hasStartTime() -> 0
+                        todo.isDeadlineOnly() -> 1
+                        else -> 2
+                    }
+                }.thenBy { todo ->
+                    when {
+                        todo.hasStartTime() -> todo.startHour * 60 + todo.startMinute
+                        todo.isDeadlineOnly() -> todo.endHour * 60 + todo.endMinute
+                        else -> Int.MAX_VALUE
+                    }
+                }
+            )
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** 合并时间线：将今日课程和待办按时间排序合并展示，根据显示模式过滤 */
+    val mergedTimeline: StateFlow<List<TodayTimelineItem>> = combine(
+        personATodayCourses, personBTodayCourses, todayTodos, singleModeEnabled, todayCourseDisplayMode
+    ) { aCourses, bCourses, todos, singleMode, displayMode ->
+        val courseItems = mutableListOf<TodayTimelineItem.CourseItem>()
+
+        // 根据显示模式过滤课程
+        val showPersonA = singleMode || displayMode == TodayCourseDisplayMode.SELF_ONLY || displayMode == TodayCourseDisplayMode.BOTH
+        val showPersonB = !singleMode && (displayMode == TodayCourseDisplayMode.TA_ONLY || displayMode == TodayCourseDisplayMode.BOTH)
+
+        if (showPersonA) courseItems.addAll(aCourses.map { TodayTimelineItem.CourseItem(it) })
+        if (showPersonB) courseItems.addAll(bCourses.map { TodayTimelineItem.CourseItem(it) })
+
+        // 根据显示模式过滤待办
+        val filteredTodos = if (singleMode) {
+            todos  // 单人模式下 todayTodos 已过滤
+        } else {
+            when (displayMode) {
+                TodayCourseDisplayMode.SELF_ONLY -> todos.filter { it.personType == PersonType.PERSON_A }
+                TodayCourseDisplayMode.TA_ONLY -> todos.filter { it.personType == PersonType.PERSON_B }
+                TodayCourseDisplayMode.BOTH -> todos
+            }
+        }
+
+        // 有时间的待办条目
+        val timedTodoItems = filteredTodos.filter { it.hasStartTime() || it.isDeadlineOnly() }
+            .map { TodayTimelineItem.TimedTodoItem(it) }
+        // 无时间的待办条目
+        val untimedTodoItems = filteredTodos.filter { !it.hasStartTime() && !it.isDeadlineOnly() }
+            .map { TodayTimelineItem.UntimedTodoItem(it) }
+
+        // 按时间排序：课程和有时间的待办混排，无时间待办排末尾
+        (courseItems + timedTodoItems).sortedBy { it.sortKey } + untimedTodoItems
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** 切换待办完成状态 */
+    fun toggleTodoStatus(id: Long) {
+        viewModelScope.launch {
+            todoRepository.toggleTodoStatus(id)
+        }
+    }
 
     private var lastDate: LocalDate = LocalDate.now()
 

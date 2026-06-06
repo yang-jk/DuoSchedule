@@ -4,9 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
+import com.duoschedule.data.model.Todo
 import com.duoschedule.data.repository.CourseRepository
+import com.duoschedule.data.repository.TodoRepository
 import com.duoschedule.notification.AlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -19,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ScheduleViewModel @Inject constructor(
     private val repository: CourseRepository,
+    private val todoRepository: TodoRepository,
     private val alarmScheduler: AlarmScheduler
 ) : ViewModel() {
 
@@ -153,6 +157,10 @@ class ScheduleViewModel @Inject constructor(
 
     fun getWeekDates(semesterStartDate: LocalDate, currentWeek: Int): List<LocalDate> =
         repository.getWeekDates(semesterStartDate, currentWeek)
+
+    /** 获取指定人物在日期范围内的待办 */
+    fun getTodosForWeek(personType: PersonType, startEpochDay: Long, endEpochDay: Long): Flow<List<Todo>> =
+        todoRepository.getTodosByPersonAndDateRange(personType, startEpochDay, endEpochDay)
 
     fun getCourseCellHeight(personType: PersonType): StateFlow<Int> = courseCellHeight
 

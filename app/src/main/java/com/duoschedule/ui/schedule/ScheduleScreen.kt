@@ -31,12 +31,18 @@ import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -50,6 +56,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -57,6 +65,7 @@ import androidx.lifecycle.viewModelScope
 import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
+import com.duoschedule.data.model.Todo
 import com.duoschedule.ui.edit.CoursePreviewBottomSheet
 import com.duoschedule.ui.edit.CourseEditContent
 import com.duoschedule.ui.theme.*
@@ -120,6 +129,7 @@ data class EditTarget(
 @Composable
 fun ScheduleScreen(
     personType: PersonType,
+    onNavigateToTodoEdit: (todoId: Long?, date: Long?, startHour: Int?, startMinute: Int?, endHour: Int?, endMinute: Int?, personType: PersonType?) -> Unit = { _, _, _, _, _, _, _ -> },
     viewModel: ScheduleViewModel = hiltViewModel()
 ) {
     val courses by viewModel.getCoursesByPerson(personType).collectAsState(initial = emptyList())
@@ -176,6 +186,9 @@ fun ScheduleScreen(
     val previewSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showPreview by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    
+    var showAddMenu by remember { mutableStateOf(false) }
+    var addMenuButtonBounds by remember { mutableStateOf(CellBounds(0, 0, 0, 0)) }
     
     var showContextMenu by remember { mutableStateOf(false) }
     var contextMenuCellBounds by remember { mutableStateOf(CellBounds(0, 0, 0, 0)) }
@@ -273,8 +286,20 @@ fun ScheduleScreen(
                         color = MiuixTheme.colorScheme.onBackground,
                         modifier = Modifier.clickable { showWeekSelector = !showWeekSelector }
                     )
-                    IconButton(onClick = { editTarget = EditTarget(null, null, null) }) {
-                        Icon(Icons.Default.Add, contentDescription = "添加课程", tint = MiuixTheme.colorScheme.onBackground)
+                    IconButton(
+                        onClick = { showAddMenu = !showAddMenu },
+                        modifier = Modifier.onGloballyPositioned { coordinates ->
+                            val position = coordinates.positionInWindow()
+                            val size = coordinates.size
+                            addMenuButtonBounds = CellBounds(
+                                x = position.x.roundToInt(),
+                                y = position.y.roundToInt(),
+                                width = size.width,
+                                height = size.height
+                            )
+                        }
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "添加", tint = MiuixTheme.colorScheme.onBackground)
                     }
                 }
             )
@@ -308,10 +333,20 @@ fun ScheduleScreen(
                 contentAlignment = Alignment.CenterEnd
             ) {
                 GlassSymbolIconButton(
-                    onClick = { editTarget = EditTarget(null, null, null) },
-                    style = GlassSymbolButtonStyle.NonTinted
+                    onClick = { showAddMenu = !showAddMenu },
+                    style = GlassSymbolButtonStyle.NonTinted,
+                    modifier = Modifier.onGloballyPositioned { coordinates ->
+                        val position = coordinates.positionInWindow()
+                        val size = coordinates.size
+                        addMenuButtonBounds = CellBounds(
+                            x = position.x.roundToInt(),
+                            y = position.y.roundToInt(),
+                            width = size.width,
+                            height = size.height
+                        )
+                    }
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "添加课程", tint = labelsPrimary)
+                    Icon(Icons.Default.Add, contentDescription = "添加", tint = labelsPrimary)
                 }
             }
         }
@@ -365,6 +400,20 @@ fun ScheduleScreen(
                         if (showNonCurrentWeekCourses) courses else courses.filter { it.isInWeek(week) }
                     }
                     
+                    // 获取当前周的待办数据
+                    val weekTodosFlow = remember(weekDates) {
+                        if (weekDates.isEmpty()) {
+                            kotlinx.coroutines.flow.flowOf(emptyList<Todo>())
+                        } else {
+                            viewModel.getTodosForWeek(
+                                personType,
+                                weekDates.first().toEpochDay(),
+                                weekDates.last().toEpochDay()
+                            )
+                        }
+                    }
+                    val weekTodos by weekTodosFlow.collectAsState(initial = emptyList())
+                    
                     val courseSlotMap = remember(weekCourses, parsedPeriodTimes) {
                         buildCourseSlotMap(weekCourses, parsedPeriodTimes)
                     }
@@ -392,6 +441,7 @@ fun ScheduleScreen(
                         courseNameFontSize = courseNameFontSize,
                         courseLocationFontSize = courseLocationFontSize,
                         selectedContextMenuSlot = selectedContextMenuSlot,
+                        todos = weekTodos,
                         onCourseClick = handleCourseClick,
                         onEmptySlotClick = { dayOfWeek, periodIndex ->
                             editTarget = EditTarget(null, dayOfWeek, periodIndex)
@@ -458,9 +508,45 @@ fun ScheduleScreen(
                                     editTarget = EditTarget(null, dayOfWeek, period)
                                 }
                             )
+
+                            // 添加待办选项
+                            val dateForSlot = if (dayOfWeek - 1 < weekDates.size) weekDates[dayOfWeek - 1] else null
+                            val timeRange = displayPeriodTimes.getOrNull(period - 1)
+                            val slotStartHour: Int
+                            val slotStartMinute: Int
+                            val slotEndHour: Int
+                            val slotEndMinute: Int
+                            if (timeRange != null) {
+                                val parts = timeRange.split("-")
+                                val sp = parts.getOrNull(0)?.split(":") ?: listOf("8", "0")
+                                val ep = parts.getOrNull(1)?.split(":") ?: listOf("8", "45")
+                                slotStartHour = sp.getOrNull(0)?.toIntOrNull() ?: 8
+                                slotStartMinute = sp.getOrNull(1)?.toIntOrNull() ?: 0
+                                slotEndHour = ep.getOrNull(0)?.toIntOrNull() ?: 8
+                                slotEndMinute = ep.getOrNull(1)?.toIntOrNull() ?: 45
+                            } else {
+                                slotStartHour = 8
+                                slotStartMinute = 0
+                                slotEndHour = 8
+                                slotEndMinute = 45
+                            }
+                            items.add(
+                                ContextMenuItem(label = "添加待办") {
+                                    showContextMenu = false
+                                    onNavigateToTodoEdit(
+                                        null,
+                                        dateForSlot?.toEpochDay(),
+                                        slotStartHour, slotStartMinute, slotEndHour, slotEndMinute,
+                                        personType
+                                    )
+                                }
+                            )
                             
                             contextMenuItems = items
                             showContextMenu = true
+                        },
+                        onTodoClick = { todo ->
+                            onNavigateToTodoEdit(todo.id, null, null, null, null, null, null)
                         },
                         editingCourseId = editTarget?.courseId,
                         animatedVisibilityScope = animatedVisibilityScope,
@@ -656,6 +742,24 @@ fun ScheduleScreen(
         cellBounds = contextMenuCellBounds,
         backdrop = LocalBackdrop.current ?: emptyBackdrop()
     )
+
+    // 添加菜单（"+"按钮弹出）
+    AddMenuPopup(
+        expanded = showAddMenu,
+        onDismiss = { showAddMenu = false },
+        buttonBounds = addMenuButtonBounds,
+        onAddCourse = {
+            showAddMenu = false
+            editTarget = EditTarget(null, null, null)
+        },
+        onAddTodo = {
+            showAddMenu = false
+            // 使用今天的日期
+            val today = LocalDate.now()
+            onNavigateToTodoEdit(null, today.toEpochDay(), null, null, null, null, personType)
+        },
+        backdrop = LocalBackdrop.current ?: emptyBackdrop()
+    )
 }
 
 @Composable
@@ -822,6 +926,365 @@ private fun WeekSelectorDropdown(
     }
 }
 
+/** 有时间段的待办块，使用虚线边框和半透明背景区分于课程块 */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun TodoOverlayCard(
+    todo: Todo,
+    dayIndex: Int,
+    startPeriod: Float,
+    span: Float,
+    columnWidth: Int,
+    cellHeight: Dp,
+    cellSpacing: Int,
+    timeColumnWidth: Int,
+    onTodoClick: (Todo) -> Unit
+) {
+    val darkTheme = LocalDarkTheme.current
+    val appThemeMode = LocalAppThemeMode.current
+    val shape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(BorderRadius.lg) else ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
+    
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val cellPaddingPx = with(density) { ScheduleDimensions.CellPadding.toPx().toInt() }
+    
+    val cardWidth = (columnWidth - cellPaddingPx * 2).coerceAtLeast(1)
+    val singleCellHeightPx = with(density) { cellHeight.toPx().toInt() }
+    val totalHeightPx = (singleCellHeightPx * span + cellSpacing * (span - 1)).roundToInt().coerceAtLeast(1)
+    
+    val offsetX = timeColumnWidth + dayIndex * columnWidth + cellPaddingPx
+    val offsetY = ((startPeriod - 1) * (singleCellHeightPx + cellSpacing) + cellPaddingPx).roundToInt()
+    
+    // 根据人物类型选择颜色
+    val personColor = if (todo.personType == PersonType.PERSON_A) getPersonAColor() else getPersonBColor()
+    val todoBackgroundColor = personColor.copy(alpha = 0.15f)
+    val todoBorderColor = personColor.copy(alpha = 0.5f)
+    val todoTextColor = if (darkTheme) Color.White.copy(alpha = 0.9f) else Color.Black.copy(alpha = 0.8f)
+    val todoTimeColor = if (darkTheme) Color.White.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.5f)
+    
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = MicroTween,
+        label = "todo_card_scale"
+    )
+    
+    Box(
+        modifier = Modifier
+            .offset { IntOffset(offsetX, offsetY) }
+            .width(with(density) { cardWidth.toDp() })
+            .height(with(density) { totalHeightPx.toDp() })
+            .scale(scale)
+            .clip(shape)
+            .background(todoBackgroundColor)
+            // 虚线边框，用于与课程块视觉区分
+            .drawBehind {
+                val pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                val outline = shape.createOutline(size, layoutDirection, this)
+                val borderPath = Path().apply { addOutline(outline) }
+                drawPath(
+                    path = borderPath,
+                    color = todoBorderColor,
+                    style = Stroke(width = 1.5.dp.toPx(), pathEffect = pathEffect)
+                )
+            }
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = { onTodoClick(todo) }
+            )
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // 右上角复选框图标
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(14.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "待办",
+                tint = personColor.copy(alpha = 0.6f),
+                modifier = Modifier.size(14.dp)
+            )
+        }
+        
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            val nameMaxLines = ((cellHeight * span - 20.dp) / 14.dp).toInt().coerceIn(1, 4)
+            Text(
+                text = todo.title,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                maxLines = nameMaxLines,
+                overflow = TextOverflow.Ellipsis,
+                color = todoTextColor,
+                textAlign = TextAlign.Center
+            )
+            
+            if (span >= 1.5f) {
+                Spacer(modifier = Modifier.height(1.dp))
+                Text(
+                    text = todo.getTimeString(),
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                    maxLines = 1,
+                    color = todoTimeColor,
+                    textAlign = TextAlign.Center,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+/** "+"按钮的添加菜单弹出框 */
+@Composable
+private fun AddMenuPopup(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    buttonBounds: CellBounds,
+    onAddCourse: () -> Unit,
+    onAddTodo: () -> Unit,
+    backdrop: com.kyant.backdrop.Backdrop
+) {
+    val appThemeMode = LocalAppThemeMode.current
+    val localDensity = LocalDensity.current
+
+    if (!expanded) return
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        // Miuix 风格：菜单在按钮下方弹出
+        val menuOffsetY = buttonBounds.bottom + with(localDensity) { 4.dp.roundToPx() }
+
+        Popup(
+            alignment = Alignment.TopStart,
+            offset = IntOffset(buttonBounds.x, menuOffsetY),
+            properties = PopupProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+                focusable = true
+            ),
+            onDismissRequest = onDismiss
+        ) {
+            Surface(
+                shape = RoundedCornerShape(ContextMenuDefaults.CornerRadius),
+                color = MiuixTheme.colorScheme.surface,
+                modifier = Modifier.wrapContentSize()
+            ) {
+                Column(
+                    modifier = Modifier.wrapContentSize()
+                ) {
+                    // 添加课程选项
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = "添加课程",
+                        color = MiuixTheme.colorScheme.onBackground,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onAddCourse()
+                                onDismiss()
+                            }
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    )
+                    // 分隔线
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(0.5.dp)
+                            .padding(horizontal = 12.dp)
+                            .background(MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.1f))
+                    )
+                    // 添加待办选项
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = "添加待办",
+                        color = MiuixTheme.colorScheme.onBackground,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onAddTodo()
+                                onDismiss()
+                            }
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    )
+                }
+            }
+        }
+    } else {
+        // iOS 风格：毛玻璃水平菜单在按钮下方弹出
+        val darkTheme = LocalDarkTheme.current
+        val labelsPrimary = getLabelsVibrantPrimary()
+        val menuOffsetY = buttonBounds.bottom + with(localDensity) { 4.dp.roundToPx() }
+
+        val containerColor = if (darkTheme) {
+            Color(0xFF121212).copy(alpha = 0.4f)
+        } else {
+            Color(0xFFFAFAFA).copy(alpha = 0.6f)
+        }
+
+        val separatorColor = if (darkTheme) {
+            Color(0x26FFFFFF)
+        } else {
+            Color(0x14000000)
+        }
+
+        Popup(
+            alignment = Alignment.TopStart,
+            offset = IntOffset(buttonBounds.x, menuOffsetY),
+            properties = PopupProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+                focusable = true
+            ),
+            onDismissRequest = onDismiss
+        ) {
+            Box(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .drawBackdrop(
+                        backdrop = backdrop,
+                        shape = { ContinuousRoundedRectangle(ContextMenuDefaults.CornerRadius) },
+                        effects = {
+                            colorControls(
+                                brightness = if (darkTheme) 0f else 0.2f,
+                                saturation = 1.5f
+                            )
+                            blur(with(localDensity) { 8.dp.toPx() })
+                            lens(
+                                refractionHeight = with(localDensity) { 24.dp.toPx() },
+                                refractionAmount = with(localDensity) { 48.dp.toPx() },
+                                chromaticAberration = true,
+                                depthEffect = true
+                            )
+                        },
+                        highlight = { Highlight.Plain },
+                        onDrawSurface = { drawRect(containerColor) }
+                    )
+                    .padding(horizontal = 4.dp, vertical = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.wrapContentSize(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 添加课程选项
+                    AddMenuItem(
+                        label = "添加课程",
+                        onClick = {
+                            onAddCourse()
+                            onDismiss()
+                        }
+                    )
+                    // 分隔线
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(20.dp)
+                            .background(separatorColor)
+                    )
+                    // 添加待办选项
+                    AddMenuItem(
+                        label = "添加待办",
+                        onClick = {
+                            onAddTodo()
+                            onDismiss()
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** iOS 风格添加菜单项 */
+@Composable
+private fun AddMenuItem(
+    label: String,
+    onClick: () -> Unit
+) {
+    val darkTheme = LocalDarkTheme.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = tween(100),
+        label = "add_menu_item_scale"
+    )
+    val pressedBackgroundColor = if (darkTheme) {
+        Color(0x33FFFFFF)
+    } else {
+        Color(0x14000000)
+    }
+
+    Box(
+        modifier = Modifier
+            .scale(scale)
+            .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.medium))
+            .background(if (isPressed) pressedBackgroundColor else Color.Transparent)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .padding(horizontal = 16.dp, vertical = 16.dp)
+            .wrapContentSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 20.sp
+            ),
+            color = getLabelsVibrantPrimary(),
+            maxLines = 1,
+            softWrap = false
+        )
+    }
+}
+
+/** 截止日期类型的待办标记，显示在日期列顶部 */
+@Composable
+private fun DeadlineMarker(
+    todo: Todo,
+    dayIndex: Int,
+    columnWidth: Int,
+    timeColumnWidth: Int
+) {
+    val darkTheme = LocalDarkTheme.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val cellPaddingPx = with(density) { ScheduleDimensions.CellPadding.toPx().toInt() }
+    
+    val personColor = if (todo.personType == PersonType.PERSON_A) getPersonAColor() else getPersonBColor()
+    val markerColor = personColor.copy(alpha = 0.7f)
+    
+    val offsetX = timeColumnWidth + dayIndex * columnWidth + cellPaddingPx
+    val markerWidth = (columnWidth - cellPaddingPx * 2).coerceAtLeast(1)
+    
+    Box(
+        modifier = Modifier
+            .offset { IntOffset(offsetX, 0) }
+            .width(with(density) { markerWidth.toDp() })
+            .height(18.dp)
+            .clip(RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp))
+            .background(markerColor.copy(alpha = 0.12f))
+            .padding(horizontal = 4.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Text(
+            text = "⏰ ${todo.title}",
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = markerColor
+        )
+    }
+}
+
 data class PeriodTimeRange(
     val startMinutes: Int,
     val endMinutes: Int
@@ -959,6 +1422,22 @@ private data class CourseLayoutInfo(
     val isCustomTime: Boolean = false
 )
 
+/** 待办在课表网格中的布局信息 */
+@Immutable
+private data class TodoLayoutInfo(
+    val todo: Todo,
+    val dayIndex: Int,
+    val startPeriod: Float,
+    val span: Float
+)
+
+/** 截止日期类型的待办标记信息 */
+@Immutable
+private data class DeadlineTodoInfo(
+    val todo: Todo,
+    val dayIndex: Int
+)
+
 @Composable
 fun WeeklyScheduleGrid(
     courseSlotMap: Map<Pair<Int, Int>, CourseSlotInfo>,
@@ -976,10 +1455,12 @@ fun WeeklyScheduleGrid(
     courseNameFontSize: Int,
     courseLocationFontSize: Int,
     selectedContextMenuSlot: EmptySlotPosition?,
+    todos: List<Todo> = emptyList(),
     onCourseClick: (Course) -> Unit,
     onEmptySlotClick: (Int, Int) -> Unit,
     onCourseLongPress: (Course, CellBounds) -> Unit,
     onEmptySlotLongPress: (Int, Int, CellBounds) -> Unit,
+    onTodoClick: (Todo) -> Unit = {},
     editingCourseId: Long? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     scrollState: ScrollState
@@ -1036,6 +1517,35 @@ fun WeeklyScheduleGrid(
                 }
             }
             .filter { seen.add(it.course.id) }
+    }
+    
+    // 计算有时间段待办（SCHEDULE类型）的布局信息
+    val scheduleTodos = remember(todos, parsedPeriodTimes, totalPeriods, weekDates) {
+        todos.filter { it.hasTimeRange() }.mapNotNull { todo ->
+            val dayIndex = weekDates.indexOf(LocalDate.ofEpochDay(todo.date))
+            if (dayIndex < 0) return@mapNotNull null
+            val (fractionalStart, fractionalSpan) = calculateCustomTimePosition(
+                todo.startHour, todo.startMinute,
+                todo.endHour, todo.endMinute,
+                parsedPeriodTimes,
+                totalPeriods
+            )
+            TodoLayoutInfo(
+                todo = todo,
+                dayIndex = dayIndex,
+                startPeriod = fractionalStart,
+                span = fractionalSpan
+            )
+        }
+    }
+    
+    // 计算截止日期类型待办的标记信息
+    val deadlineTodos = remember(todos, weekDates) {
+        todos.filter { it.isDeadlineOnly() }.mapNotNull { todo ->
+            val dayIndex = weekDates.indexOf(LocalDate.ofEpochDay(todo.date))
+            if (dayIndex < 0) return@mapNotNull null
+            DeadlineTodoInfo(todo = todo, dayIndex = dayIndex)
+        }
     }
     
     var columnWidth by remember { mutableStateOf(0) }
@@ -1178,6 +1688,45 @@ fun WeeklyScheduleGrid(
                                 gridOffsetY = gridOffsetY,
                                 sharedElementKey = if (layoutInfo.course.id == editingCourseId) "course_${layoutInfo.course.id}" else null,
                                 animatedVisibilityScope = animatedVisibilityScope
+                            )
+                        }
+                    }
+                }
+                
+                // 渲染有时间段的待办块
+                scheduleTodos.forEach { layoutInfo ->
+                    key("todo_${layoutInfo.todo.id}") {
+                        val dayIndex = layoutInfo.dayIndex
+                        if (dayIndex >= 0 && dayIndex < dayOfWeekIndices.size) {
+                            TodoOverlayCard(
+                                todo = layoutInfo.todo,
+                                dayIndex = dayIndex,
+                                startPeriod = layoutInfo.startPeriod,
+                                span = layoutInfo.span,
+                                columnWidth = columnWidth,
+                                cellHeight = cellHeight,
+                                cellSpacing = cellSpacingPx,
+                                timeColumnWidth = with(androidx.compose.ui.platform.LocalDensity.current) {
+                                    ScheduleDimensions.TimeColumnWidth.toPx().toInt()
+                                },
+                                onTodoClick = onTodoClick
+                            )
+                        }
+                    }
+                }
+                
+                // 渲染截止日期标记
+                deadlineTodos.forEach { deadlineInfo ->
+                    key("deadline_${deadlineInfo.todo.id}") {
+                        val dayIndex = deadlineInfo.dayIndex
+                        if (dayIndex >= 0 && dayIndex < dayOfWeekIndices.size) {
+                            DeadlineMarker(
+                                todo = deadlineInfo.todo,
+                                dayIndex = dayIndex,
+                                columnWidth = columnWidth,
+                                timeColumnWidth = with(androidx.compose.ui.platform.LocalDensity.current) {
+                                    ScheduleDimensions.TimeColumnWidth.toPx().toInt()
+                                }
                             )
                         }
                     }

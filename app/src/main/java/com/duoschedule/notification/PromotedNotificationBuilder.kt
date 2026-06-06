@@ -19,6 +19,7 @@ object PromotedNotificationBuilder {
     const val CHANNEL_ID_REMINDER = "course_reminder_channel"
     const val CHANNEL_ID_ONGOING = "course_ongoing_channel"
     const val CHANNEL_ID_LIVE = "course_live_channel"
+    const val CHANNEL_ID_TODO_REMINDER = "todo_reminder_channel"
 
     fun createNotificationChannels(context: Context) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -56,7 +57,17 @@ object PromotedNotificationBuilder {
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
         }
 
-        notificationManager.createNotificationChannels(listOf(reminderChannel, ongoingChannel, liveChannel))
+        val todoReminderChannel = NotificationChannel(
+            CHANNEL_ID_TODO_REMINDER,
+            "待办提醒",
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "待办事项的提醒通知"
+            enableVibration(true)
+            setShowBadge(true)
+        }
+
+        notificationManager.createNotificationChannels(listOf(reminderChannel, ongoingChannel, liveChannel, todoReminderChannel))
         Log.d(TAG, "Notification channels created")
     }
 

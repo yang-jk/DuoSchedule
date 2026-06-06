@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -29,8 +28,9 @@ class SyncPreferences @Inject constructor(
         private val DEVICE_ID = stringPreferencesKey("device_id")
         private val MY_PROFILE_ID = stringPreferencesKey("my_profile_id")
         private val PARTNER_PROFILE_ID = stringPreferencesKey("partner_profile_id")
-        private val LAST_SYNC_VERSION = intPreferencesKey("last_sync_version")
+        private val LAST_SYNC_VERSION = longPreferencesKey("last_sync_version")
         private val LAST_SYNC_TIME = longPreferencesKey("last_sync_time")
+        private val ROOM_CODE = stringPreferencesKey("room_code")
         private val SYNC_ENABLED = stringPreferencesKey("sync_enabled")
     }
 
@@ -49,8 +49,8 @@ class SyncPreferences @Inject constructor(
         prefs[SYNC_ENABLED] == "true"
     }
 
-    val lastSyncVersion: Flow<Int> = context.syncDataStore.data.map { prefs ->
-        prefs[LAST_SYNC_VERSION] ?: 0
+    val lastSyncVersion: Flow<Long> = context.syncDataStore.data.map { prefs ->
+        prefs[LAST_SYNC_VERSION] ?: 0L
     }
 
     val lastSyncTime: Flow<Long> = context.syncDataStore.data.map { prefs ->
@@ -73,7 +73,7 @@ class SyncPreferences @Inject constructor(
         }
     }
 
-    suspend fun updateLastSyncVersion(version: Int) {
+    suspend fun updateLastSyncVersion(version: Long) {
         context.syncDataStore.edit { prefs ->
             prefs[LAST_SYNC_VERSION] = version
         }
@@ -91,6 +91,20 @@ class SyncPreferences @Inject constructor(
 
     suspend fun getPartnerProfileIdSync(): String? {
         return context.syncDataStore.data.map { prefs -> prefs[PARTNER_PROFILE_ID] }.first()
+    }
+
+    val roomCode: Flow<String?> = context.syncDataStore.data.map { prefs ->
+        prefs[ROOM_CODE]
+    }
+
+    suspend fun saveRoomCode(code: String) {
+        context.syncDataStore.edit { prefs ->
+            prefs[ROOM_CODE] = code
+        }
+    }
+
+    suspend fun getRoomCodeSync(): String? {
+        return context.syncDataStore.data.map { prefs -> prefs[ROOM_CODE] }.first()
     }
 
     suspend fun saveProfileMapping(myProfileId: String, partnerProfileId: String?) {
@@ -119,6 +133,7 @@ class SyncPreferences @Inject constructor(
             prefs.remove(PARTNER_PROFILE_ID)
             prefs.remove(LAST_SYNC_VERSION)
             prefs.remove(LAST_SYNC_TIME)
+            prefs.remove(ROOM_CODE)
             prefs[SYNC_ENABLED] = "false"
         }
     }

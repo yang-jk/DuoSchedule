@@ -188,5 +188,77 @@ class WebDavClient @Inject constructor() {
 
     fun getDataPath(roomId: String): String = "duoschedule/sync/$roomId/data.json"
 
+    fun getBackupPath(roomId: String): String = "duoschedule/sync/$roomId/data_backup.json"
+
     fun getMetaPath(roomId: String): String = "duoschedule/sync/$roomId/meta.json"
+
+    /**
+     * 列出指定目录下的子目录名称
+     * 使用 PROPFIND Depth:1 获取目录列表，解析 XML 响应中的 collection 类型资源
+     */
+    fun listDirectories(config: SyncConfig, path: String): Result<List<String>> {
+        val fullPath = buildPath(config.webDavUrl, path)
+        val propfindDirBody = """<?xml version="1.0" encoding="utf-8"?>
+            |<propfind xmlns="DAV:">
+            |<prop>
+            |<resourcetype/>
+            |<displayname/>
+            |</prop>
+            |</propfind>""".trimMargin().toRequestBody(xmlMediaType)
+        val request = Request.Builder()
+            .url(fullPath.trimEnd('/') + "/")
+            .header("Authorization", Credentials.basic(config.username, config.password))
+            .header("Depth", "1")
+            .method("PROPFIND", propfindDirBody)
+            .build()
+        return try {
+            val response = client.newCall(request).execute()
+            try {
+                if (response.isSuccessful || response.code == 207) {
+                    val body = response.body?.string() ?: return Result.success(emptyList())
+                    val directories = parsePropfindDirectories(body, path)
+                    Result.success(directories)
+                } else {
+                    Result.failure(IOException("列出目录失败: HTTP ${response.code}"))
+                }
+            } finally {
+                response.close()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "listDirectories failed for $path", e)
+            Result.failure(IOException("列出目录失败: ${e.message}"))
+        }
+    }
+
+    /**
+     * 解析 PROPFIND 多状态响应，提取子目录名称
+     * 过滤掉自身（href 与请求路径相同），只保留 collection 类型资源
+     */
+    private fun parsePropfindDirectories(xmlBody: String, parentPath: String): List<String> {
+        val directories = mutableListOf<String>()
+        val normalizedParent = parentPath.trim('/')
+
+        // 使用简单的正则解析，避免引入 XML 解析库
+        val responseRegex = Regex("""<D:response[^>]*>(.*?)</D:response>""", RegexOption.DOT_MATCHES_ALL)
+        val hrefRegex = Regex("""<D:href[^>]*>(.*?)</D:href>""")
+        val collectionRegex = Regex("""<D:collection\s*/?>""")
+
+        for (responseMatch in responseRegex.findAll(xmlBody)) {
+            val responseBlock = responseMatch.groupValues[1]
+            val hrefMatch = hrefRegex.find(responseBlock)
+            if (hrefMatch != null) {
+                val href = hrefMatch.groupValues[1].trim()
+                // 只保留 collection 类型
+                if (collectionRegex.containsMatchIn(responseBlock)) {
+                    // 提取目录名：去掉末尾 /，取最后一段
+                    val dirName = href.trimEnd('/').substringAfterLast('/')
+                    // 过滤掉自身（父目录）和空名
+                    if (dirName.isNotBlank() && !href.trimEnd('/').endsWith(normalizedParent)) {
+                        directories.add(dirName)
+                    }
+                }
+            }
+        }
+        return directories
+    }
 }

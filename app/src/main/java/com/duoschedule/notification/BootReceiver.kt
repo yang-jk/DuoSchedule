@@ -21,6 +21,9 @@ class BootReceiver : BroadcastReceiver() {
     @Inject
     lateinit var courseDao: CourseDao
 
+    @Inject
+    lateinit var todoAlarmScheduler: TodoAlarmScheduler
+
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED,
@@ -41,11 +44,14 @@ class BootReceiver : BroadcastReceiver() {
                         if (!hasCourses) {
                             Log.i(TAG, "No courses found, skipping notification reschedule")
                             BootReceiverManager.updateBootReceiverEnabled(context, courseDao)
-                            return@launch
+                        } else {
+                            notificationManager.scheduleReminderNotifications()
+                            Log.d(TAG, "Notifications rescheduled after ${intent.action}")
                         }
 
-                        notificationManager.scheduleReminderNotifications()
-                        Log.d(TAG, "Notifications rescheduled after ${intent.action}")
+                        // 重新调度待办提醒闹钟
+                        todoAlarmScheduler.scheduleAllTodoReminders()
+                        Log.d(TAG, "Todo reminders rescheduled after ${intent.action}")
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to reschedule notifications after ${intent.action}", e)
                     } finally {

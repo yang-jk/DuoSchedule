@@ -7,9 +7,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.Icon
 import com.duoschedule.ui.theme.GlassSymbolIconButton
 import com.duoschedule.ui.theme.GlassSymbolButtonStyle
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -23,7 +23,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.sync.*
 import com.duoschedule.ui.settings.components.*
-import com.duoschedule.ui.theme.getRoundedCorner
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.backdrops.emptyBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
@@ -58,19 +57,18 @@ fun SyncSettingsScreen(
     val isCreating by viewModel.isCreating.collectAsState()
     val isJoining by viewModel.isJoining.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
-    val syncCode by viewModel.syncCode.collectAsState()
+    val roomCode by viewModel.roomCode.collectAsState()
     val message by viewModel.message.collectAsState()
     val conflictResult by viewModel.conflictResult.collectAsState()
+    val pendingJoinInfo by viewModel.pendingJoinInfo.collectAsState()
 
     val context = LocalContext.current
     val backdrop = LocalBackdrop.current ?: emptyBackdrop()
     val appThemeMode = LocalAppThemeMode.current
 
-    var selectedProvider by remember { mutableIntStateOf(0) }
-    var webDavUrl by remember { mutableStateOf("https://dav.jianguoyun.com/dav/") }
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var syncCodeInput by remember { mutableStateOf("") }
+    var roomCodeInput by remember { mutableStateOf("") }
     var showLeaveConfirm by remember { mutableStateOf(false) }
 
     val labelsPrimary = getLabelsVibrantPrimary()
@@ -161,108 +159,6 @@ fun SyncSettingsScreen(
 
                 if (!syncEnabled) {
                     SettingsSection(title = "创建房间") {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = Spacing.sm),
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
-                        ) {
-                            if (appThemeMode == AppThemeMode.MIUIX) {
-                                listOf("坚果云" to 0, "数据胶囊" to 1, "自定义" to 2).forEach { (label, idx) ->
-                                    Surface(
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(16.dp),
-                                        color = if (selectedProvider == idx) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f) else MiuixTheme.colorScheme.surfaceContainer,
-                                        onClick = {
-                                            selectedProvider = idx
-                                            webDavUrl = when (idx) {
-                                                0 -> "https://dav.jianguoyun.com/dav/"
-                                                1 -> "https://dbox.cstcloud.cn/dav/"
-                                                else -> ""
-                                            }
-                                        }
-                                    ) {
-                                        Box(
-                                            modifier = Modifier.padding(vertical = 10.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            top.yukonga.miuix.kmp.basic.Text(
-                                                text = label,
-                                                color = if (selectedProvider == idx) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground,
-                                                fontWeight = if (selectedProvider == idx) FontWeight.SemiBold else FontWeight.Normal
-                                            )
-                                        }
-                                    }
-                                }
-                            } else {
-                                GlassSelectableChip(
-                                    selected = selectedProvider == 0,
-                                    onClick = {
-                                        selectedProvider = 0
-                                        webDavUrl = "https://dav.jianguoyun.com/dav/"
-                                    },
-                                    label = "坚果云",
-                                    selectedColor = IOSColors.Blue,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                GlassSelectableChip(
-                                    selected = selectedProvider == 1,
-                                    onClick = {
-                                        selectedProvider = 1
-                                        webDavUrl = "https://dbox.cstcloud.cn/dav/"
-                                    },
-                                    label = "数据胶囊",
-                                    selectedColor = IOSColors.Green,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                GlassSelectableChip(
-                                    selected = selectedProvider == 2,
-                                    onClick = {
-                                        selectedProvider = 2
-                                        webDavUrl = ""
-                                    },
-                                    label = "自定义",
-                                    selectedColor = IOSColors.Indigo,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-
-                        if (selectedProvider == 2) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = Spacing.xs)
-                            ) {
-                                Text(
-                                    text = "WebDAV 地址",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = labelsSecondary,
-                                    modifier = Modifier.padding(bottom = Spacing.xs)
-                                )
-                                if (appThemeMode == AppThemeMode.MIUIX) {
-                                    TextField(
-                                        value = webDavUrl,
-                                        onValueChange = { webDavUrl = it },
-                                        label = "WebDAV 地址",
-                                        useLabelAsPlaceholder = true,
-                                        singleLine = true,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                } else {
-                                    GlassTextField(
-                                        value = webDavUrl,
-                                        onValueChange = { webDavUrl = it },
-                                        placeholder = "https://example.com/dav/",
-                                        singleLine = true,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
-                            }
-                        }
-
-                        Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
-
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -287,7 +183,7 @@ fun SyncSettingsScreen(
                                 GlassTextField(
                                     value = username,
                                     onValueChange = { username = it },
-                                    placeholder = "WebDAV 账号",
+                                    placeholder = "坚果云账号",
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth()
                                 )
@@ -309,7 +205,7 @@ fun SyncSettingsScreen(
                                 TextField(
                                     value = password,
                                     onValueChange = { password = it },
-                                    label = "WebDAV 密码/应用密码",
+                                    label = "坚果云应用密码",
                                     useLabelAsPlaceholder = true,
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth()
@@ -318,7 +214,7 @@ fun SyncSettingsScreen(
                                 GlassTextField(
                                     value = password,
                                     onValueChange = { password = it },
-                                    placeholder = "WebDAV 密码/应用密码",
+                                    placeholder = "坚果云应用密码",
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth()
                                 )
@@ -329,33 +225,19 @@ fun SyncSettingsScreen(
 
                         if (appThemeMode == AppThemeMode.MIUIX) {
                             Button(
-                                onClick = {
-                                    val url = when (selectedProvider) {
-                                        0 -> "https://dav.jianguoyun.com/dav/"
-                                        1 -> "https://dbox.cstcloud.cn/dav/"
-                                        else -> webDavUrl
-                                    }
-                                    viewModel.createRoom(url, username, password)
-                                },
+                                onClick = { viewModel.createRoom(username, password) },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColorsPrimary(),
-                                enabled = username.isNotBlank() && password.isNotBlank() && (selectedProvider != 2 || webDavUrl.isNotBlank())
+                                enabled = username.isNotBlank() && password.isNotBlank()
                             ) {
                                 top.yukonga.miuix.kmp.basic.Text("创建房间")
                             }
                         } else {
                             LiquidGlassButton(
                                 text = "创建房间",
-                                onClick = {
-                                    val url = when (selectedProvider) {
-                                        0 -> "https://dav.jianguoyun.com/dav/"
-                                        1 -> "https://dbox.cstcloud.cn/dav/"
-                                        else -> webDavUrl
-                                    }
-                                    viewModel.createRoom(url, username, password)
-                                },
+                                onClick = { viewModel.createRoom(username, password) },
                                 style = LiquidGlassButtonStyle.Tinted,
-                                enabled = username.isNotBlank() && password.isNotBlank() && (selectedProvider != 2 || webDavUrl.isNotBlank()),
+                                enabled = username.isNotBlank() && password.isNotBlank(),
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -368,25 +250,25 @@ fun SyncSettingsScreen(
                                 .padding(vertical = Spacing.xs)
                         ) {
                             Text(
-                                text = "同步码",
+                                text = "房间码",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = labelsSecondary,
                                 modifier = Modifier.padding(bottom = Spacing.xs)
                             )
                             if (appThemeMode == AppThemeMode.MIUIX) {
                                 TextField(
-                                    value = syncCodeInput,
-                                    onValueChange = { syncCodeInput = it },
-                                    label = "输入对方分享的同步码",
+                                    value = roomCodeInput,
+                                    onValueChange = { roomCodeInput = it },
+                                    label = "输入6位房间码",
                                     useLabelAsPlaceholder = true,
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             } else {
                                 GlassTextField(
-                                    value = syncCodeInput,
-                                    onValueChange = { syncCodeInput = it },
-                                    placeholder = "输入对方分享的同步码",
+                                    value = roomCodeInput,
+                                    onValueChange = { roomCodeInput = it },
+                                    placeholder = "输入6位房间码",
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth()
                                 )
@@ -395,32 +277,34 @@ fun SyncSettingsScreen(
 
                         Spacer(modifier = Modifier.height(Spacing.xs))
 
+                        val roomCodeValid = roomCodeInput.length == 6 && roomCodeInput.all { it.isDigit() }
+
                         if (appThemeMode == AppThemeMode.MIUIX) {
                             Button(
-                                onClick = { viewModel.joinRoom(syncCodeInput) },
+                                onClick = { viewModel.joinRoom(roomCodeInput) },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColorsPrimary(),
-                                enabled = syncCodeInput.isNotBlank() && viewModel.isValidSyncCode(syncCodeInput)
+                                enabled = roomCodeValid
                             ) {
                                 top.yukonga.miuix.kmp.basic.Text("加入房间")
                             }
                         } else {
                             LiquidGlassButton(
                                 text = "加入房间",
-                                onClick = { viewModel.joinRoom(syncCodeInput) },
+                                onClick = { viewModel.joinRoom(roomCodeInput) },
                                 style = LiquidGlassButtonStyle.Tinted,
-                                enabled = syncCodeInput.isNotBlank() && viewModel.isValidSyncCode(syncCodeInput),
+                                enabled = roomCodeValid,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
 
-                    SettingsFooter(text = "通过 WebDAV 云存储实现双人课表同步，创建房间后分享同步码给对方即可")
+                    SettingsFooter(text = "创建房间后分享房间码给对方，对方输入房间码即可加入")
                 } else {
-                    SettingsSection(title = "同步码") {
+                    SettingsSection(title = "房间码") {
                         SettingsRow(
-                            title = "同步码",
-                            subtitle = if (syncCode.isNotEmpty()) syncCode else syncConfig?.roomId ?: "",
+                            title = "房间码",
+                            subtitle = roomCode,
                             icon = Icons.Outlined.QrCode,
                             iconBackgroundColor = IOSColors.Indigo
                         )
@@ -429,16 +313,16 @@ fun SyncSettingsScreen(
 
                         if (appThemeMode == AppThemeMode.MIUIX) {
                             Button(
-                                onClick = remember { { viewModel.copySyncCode() } },
+                                onClick = remember { { viewModel.copyRoomCode() } },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColorsPrimary()
                             ) {
-                                top.yukonga.miuix.kmp.basic.Text("复制同步码")
+                                top.yukonga.miuix.kmp.basic.Text("复制房间码")
                             }
                         } else {
                             LiquidGlassButton(
-                                text = "复制同步码",
-                                onClick = remember { { viewModel.copySyncCode() } },
+                                text = "复制房间码",
+                                onClick = remember { { viewModel.copyRoomCode() } },
                                 style = LiquidGlassButtonStyle.Tinted,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -618,6 +502,69 @@ fun SyncSettingsScreen(
                     viewModel.leaveRoom()
                 },
                 onDismiss = { showLeaveConfirm = false }
+            )
+        }
+    }
+
+    // 名字选择弹窗
+    if (pendingJoinInfo != null) {
+        val info = pendingJoinInfo!!
+        val sameName = info.personAName == info.personBName
+        val nameALabel = if (sameName) "用户A" else info.personAName
+        val nameBLabel = if (sameName) "用户B" else info.personBName
+
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            WindowDialog(
+                show = true,
+                title = "选择你的名字",
+                onDismissRequest = {}
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+                ) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MiuixTheme.colorScheme.surfaceContainer,
+                        onClick = { viewModel.confirmJoinRoom(info.profileA.id) }
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            top.yukonga.miuix.kmp.basic.Text(
+                                text = nameALabel,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MiuixTheme.colorScheme.surfaceContainer,
+                        onClick = { viewModel.confirmJoinRoom(info.profileB.id) }
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            top.yukonga.miuix.kmp.basic.Text(
+                                text = nameBLabel,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            GlassConfirmDialog(
+                backdrop = backdrop,
+                title = "选择你的名字",
+                confirmText = nameALabel,
+                dismissText = nameBLabel,
+                onConfirm = { viewModel.confirmJoinRoom(info.profileA.id) },
+                onDismiss = { viewModel.confirmJoinRoom(info.profileB.id) }
             )
         }
     }

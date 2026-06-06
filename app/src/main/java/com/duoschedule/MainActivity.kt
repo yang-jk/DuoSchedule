@@ -48,15 +48,22 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop as miuixLayerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as miuixRememberLayerBackdrop
+import com.duoschedule.data.sync.SyncManager
+import com.duoschedule.data.sync.SyncPreferences
 import com.duoschedule.util.PerformanceMonitor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject lateinit var syncManager: SyncManager
+    @Inject lateinit var syncPreferences: SyncPreferences
+
     private var pendingImportUri: Uri? = null
     private var backInvokedCallback: Any? = null
 
@@ -137,6 +144,18 @@ class MainActivity : ComponentActivity() {
                     }
                     val routeIndex = bottomNavItems.indexOfFirst { it.route == currentRoute }.coerceAtLeast(0)
                     selectedTabIndex = routeIndex
+                }
+
+                // 处理待办提醒通知点击
+                LaunchedEffect(intent) {
+                    if (intent?.getBooleanExtra("navigate_to_todo_edit", false) == true) {
+                        val todoId = intent.getLongExtra("todo_id", 0L)
+                        if (todoId > 0) {
+                            navController.navigate("todo_edit?todoId=$todoId")
+                        }
+                        intent.removeExtra("navigate_to_todo_edit")
+                        intent.removeExtra("todo_id")
+                    }
                 }
 
                 val backgroundColor = MaterialTheme.colorScheme.background
@@ -265,9 +284,27 @@ class MainActivity : ComponentActivity() {
         }
     }
     
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            val enabled = syncPreferences.syncEnabled.first()
+            if (!enabled) return@launch
+            val lastSyncTime = syncPreferences.lastSyncTime.first()
+            val now = System.currentTimeMillis()
+            if (now - lastSyncTime > 30_000) {
+                try {
+                    syncManager.sync()
+                } catch (_: Exception) {
+                    // 静默失败
+                }
+            }
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         pendingImportUri = extractFileUri(intent)
+        setIntent(intent)
     }
 
     @Suppress("NewApi")

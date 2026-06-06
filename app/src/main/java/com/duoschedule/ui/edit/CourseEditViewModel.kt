@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.edit
+package com.duoschedule.ui.edit
 
 import android.app.Application
 import android.util.Log
@@ -510,6 +510,15 @@ class CourseEditViewModel @Inject constructor(
         }
         
         return defaultTime
+    }
+
+    fun resetForNewCourse(personType: PersonType = _state.value.personType) {
+        _state.value = CourseEditState(personType = personType)
+        loadSettings(personType)
+    }
+
+    fun resetNavigationState() {
+        _state.value = _state.value.copy(saved = false, deleted = false)
     }
 
     fun clearError() {

@@ -212,6 +212,12 @@ class CourseRepository @Inject constructor(
     suspend fun setAutoSilentAdvanceTime(minutes: Int) =
         settingsDataStore.setAutoSilentAdvanceTime(minutes)
 
+    fun getTodoNotificationEnabled(): Flow<Boolean> =
+        settingsDataStore.todoNotificationEnabled
+
+    suspend fun setTodoNotificationEnabled(enabled: Boolean) =
+        settingsDataStore.setTodoNotificationEnabled(enabled)
+
     suspend fun setCourseNameFontSize(size: Int) =
         settingsDataStore.setCourseNameFontSize(size)
 

@@ -6,6 +6,332 @@
 
 ---
 
+## [4.22.0] - 2026-06-10
+
+### 变更类型：功能更新
+
+### 状态：已实现
+
+### 变更内容
+
+**同步流程重构：从同步码模式简化为房间码模式**
+
+1. **修改**：创建房间固定使用坚果云 WebDAV，移除提供商选择（坚果云/数据胶囊/自定义）和自定义 URL 输入
+2. **修改**：加入房间改为输入6位房间码，移除同步码输入和角色选择器（"我是我/我是Ta"）
+3. **新增**：加入房间后弹出名字选择弹窗，用户从两个名字中选择自己的身份
+4. **修改**：已同步状态区域"同步码"改为"房间码"，复制按钮改为"复制房间码"
+5. **修改**：底部说明文字更新为"创建房间后分享房间码给对方，对方输入房间码即可加入"
+6. **新增**：App从后台恢复时自动同步
+7. **新增**：`SyncCodeGenerator.generateRoomCode()` 方法，生成6位随机数字字符串（100000-999999范围）
+8. **移除**：`SyncCodeGenerator.generate()`、`parse()`、`isValidSyncCode()` 方法及所有DSYNC相关常量
+9. **移除**：`SyncViewModel.isValidSyncCode()` 方法
+10. **移除**：`SyncManager.getSyncCode()` 方法，替换为 `getRoomCode(config)` 从云端 meta.json 读取房间码
+11. **修改**：`SyncViewModel.createRoom(url, username, password)` 简化为 `createRoom(username, password)`
+12. **修改**：`SyncViewModel.joinRoom(syncCodeInput, chosenRole)` 简化为 `joinRoom(roomCode)`
+13. **新增**：`SyncViewModel.pendingJoinInfo` 状态和 `confirmJoinRoom(selectedProfileId)` 方法
+14. **新增**：`JoinRoomInfo` 数据类，包含 roomCode、config、profileA、profileB、personAName、personBName
+15. **新增**：`findRoomByCode()` 私有方法，遍历 WebDAV 子目录匹配房间码
+16. **新增**：`joinRoomWithRoleSelection()` 方法，基于名字选择完成加入
+17. **新增**：`WebDavClient.listDirectories()` 和 `parsePropfindDirectories()` 方法
+18. **新增**：同步备份机制，上传 data.json 前自动备份云端数据，支持从备份恢复
+19. **修复**：`buildCloudDataJson` 推送设置时不再覆盖对方 profileSettings
+20. **修复**：`SyncManager` 中 `List<Course>`/`List<Todo>` 到 `List<CloudCourse>`/`List<CloudTodo>` 的类型转换
+21. **修复**：`localLastSyncVersion` Long/Int 类型比较错误
+22. **修复**：`WebDavClient.parsePropfindDirectories` 中 `hrefRegex.find()` 参数类型错误
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/data/sync/SyncCodeGenerator.kt`（重构为房间码生成器）
+- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（新增 getRoomCode/findRoomByCode/joinRoomWithRoleSelection/backupCloudData/restoreFromBackup，移除 getSyncCode/determineJoinMapping，修复类型错误）
+- `app/src/main/java/com/duoschedule/data/sync/SyncModels.kt`（新增 JoinRoomInfo 数据类）
+- `app/src/main/java/com/duoschedule/data/sync/WebDavClient.kt`（新增 listDirectories/parsePropfindDirectories/getBackupPath，修复类型错误）
+- `app/src/main/java/com/duoschedule/ui/sync/SyncSettingsScreen.kt`（UI 重构：移除提供商选择/角色选择器，新增名字选择弹窗，同步码→房间码）
+- `app/src/main/java/com/duoschedule/ui/sync/SyncViewModel.kt`（API 简化：createRoom/joinRoom/confirmJoinRoom/pendingJoinInfo/roomCode/copyRoomCode）
+- `app/build.gradle.kts`（versionCode 42100→42200，versionName 4.21.0→4.22.0）
+
+---
+
+## [4.21.0] - 2026-06-09
+
+### 变更类型：功能更新
+
+### 状态：已实现
+
+### 变更内容
+
+**今日时间线新增"我的/Ta/全部"显示模式切换**
+
+1. **新增**：TodayTimeline 组件添加 `displayMode` 和 `onDisplayModeChange` 参数
+2. **新增**：非单人模式下，标题行下方显示模式切换控件（Miuix 风格使用 TabRow，iOS 风格使用 SegmentedControl）
+3. **修改**：MainViewModel 的 `mergedTimeline` 合并 `todayCourseDisplayMode`，根据显示模式过滤课程和待办
+4. **修改**：MainScreen 传递 `displayMode` 和 `onDisplayModeChange` 给 TodayTimeline
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/ui/main/components/TodayTimeline.kt`（新增 DisplayModeSelector 组件，添加 displayMode/onDisplayModeChange 参数）
+- `app/src/main/java/com/duoschedule/ui/main/MainViewModel.kt`（mergedTimeline 加入 displayMode 过滤逻辑）
+- `app/src/main/java/com/duoschedule/ui/main/MainScreen.kt`（传递 displayMode 和回调）
+- `app/build.gradle.kts`（versionCode 42000→42100，versionName 4.20.0→4.21.0）
+
+---
+
+## [4.20.0] - 2026-06-09
+
+### 变更类型：功能更新
+
+### 状态：已实现
+
+### 变更内容
+
+**课表页"+"按钮改为弹出菜单，支持添加课程和添加待办**
+
+1. **修改**：课表页右上角"+"按钮不再直接跳转课程编辑，改为弹出选择菜单
+2. **新增**：弹出菜单包含"添加课程"和"添加待办"两个选项
+3. **修改**：Miuix 主题使用竖向列表弹出菜单样式，iOS 主题使用横向毛玻璃弹出菜单样式
+4. **修改**：空白格子长按菜单增加"添加待办"选项（已有"添加课程"），选择后导航到待办编辑页并预填日期和时间
+5. **新增**：`AddMenuPopup` 组件 — "+"按钮的弹出菜单，Miuix/iOS 双主题适配
+6. **新增**：`AddMenuItem` 组件 — iOS 风格弹出菜单项，支持按压缩放动画
+
+### 交互说明
+
+- 点击"+"按钮弹出菜单，选择"添加课程"跳转课程编辑页，选择"添加待办"跳转待办编辑页（预填当天日期）
+- 长按空白格子弹出上下文菜单，"添加待办"选项预填对应日期和时间段
+- 点击菜单外部或按返回键关闭弹出菜单
+
+---
+
+## [4.19.2] - 2026-06-09
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复新增课程时残留上一次课程信息**
+
+1. **新增**：`CourseEditViewModel.resetForNewCourse()` 方法 — 将整个 `CourseEditState` 重置为默认值，保留 personType 并重新加载设置
+2. **修改**：`CourseEditContent` 和 `CourseEditScreen` 的 `LaunchedEffect(courseId)` — 当 `courseId` 为 null（新增课程）时调用 `viewModel.resetForNewCourse()` 清空表单
+
+### 修复问题
+
+- 修复新增课程时表单残留上一次编辑的课程信息（课程名、地点、老师等），因 ViewModel 复用导致状态未重置
+
+---
+
+## [4.19.1] - 2026-06-09
+
+### 变更类型：Bug修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复课程编辑页面 ViewModel 复用导致导航状态残留**
+
+1. **新增**：`CourseEditViewModel.resetNavigationState()` 方法 — 将 `saved` 和 `deleted` 标志重置为 `false`
+2. **修改**：`CourseEditContent` 的导航 LaunchedEffect — 在 `onNavigateBack()` 后调用 `viewModel.resetNavigationState()`
+3. **修改**：`CourseEditScreen` 的导航 LaunchedEffect — 在 `onNavigateBack()` 后调用 `viewModel.resetNavigationState()`
+
+### 修复问题
+
+- 修复新增课程保存后，再次点击新增按钮编辑页面立即关闭的问题（ViewModel 复用时 `saved` 状态残留导致 `LaunchedEffect` 立即触发导航返回）
+
+---
+
+## [4.19.0] - 2026-06-09
+
+### 变更类型：功能更新
+
+### 状态：已实现
+
+### 变更内容
+
+**待办重复规则功能实现**
+
+1. **新增**：`TodoRepository.generateRepeatInstances` 方法 — 根据重复规则和基准待办，生成指定日期范围内的重复实例，支持每天/每周/自定义三种频率
+2. **新增**：`TodoRepository.ensureRepeatInstancesForDateRange` 方法 — 确保指定日期范围内的重复实例已生成，自动查找有重复规则的待办并补充缺失实例
+3. **新增**：`TodoDao.getTodosByRepeatRuleIdSync` 查询 — 获取指定重复规则的所有待办（同步用）
+4. **新增**：`TodoDao.getTodosWithRepeatRule` 查询 — 获取所有有重复规则的待办
+5. **新增**：`TodoDao.getTodoByRepeatRuleIdAndDateAndPerson` 查询 — 检查指定重复规则+日期+人物是否已存在待办
+6. **新增**：`RepeatRuleDialog` 对话框 — 重复规则设置界面，支持频率选择（不重复/每天/每周/自定义）、间隔设置、周几选择、自定义日期选择、结束日期设置
+7. **新增**：`RepeatRuleDialogContent` 组件 — 重复规则对话框内容区域，同时支持 MIUIX 和 iOS 两种主题
+8. **修改**：`RepeatRuleSection` 组件 — 接受 `repeatRule` 和 `onClick` 参数，根据当前规则显示对应文本
+9. **修改**：`TodoEditState` 新增 `repeatRule` 字段 — 存储当前编辑的重复规则对象
+10. **修改**：`TodoEditViewModel.setRepeatRule` 方法 — 设置重复规则，同步更新 repeatRuleId
+11. **修改**：`TodoEditViewModel.loadTodo` — 加载待办时同时加载关联的 RepeatRule
+12. **修改**：`TodoEditViewModel.saveTodo` — 保存待办时同时保存 RepeatRule
+
+### 重复实例生成规则
+
+- DAILY：从基准日期开始，每隔 `interval` 天生成一个实例
+- WEEKLY：从基准日期所在周开始，每隔 `interval` 周在指定 `daysOfWeek` 生成实例
+- CUSTOM：在 `customDates` 中指定的日期生成实例
+- 所有实例均遵守规则的 `endDate`（如有）
+- 通过 repeatRuleId + date + personType 三元组去重，避免重复生成
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/data/local/TodoDao.kt`（新增 3 个查询方法）
+- `app/src/main/java/com/duoschedule/data/repository/TodoRepository.kt`（新增 generateRepeatInstances、ensureRepeatInstancesForDateRange、createRepeatInstance 方法）
+- `app/src/main/java/com/duoschedule/ui/todo/TodoEditScreen.kt`（新增 RepeatRuleDialog、RepeatRuleDialogContent、RepeatFrequencyOption，修改 RepeatRuleSection）
+- `app/src/main/java/com/duoschedule/ui/todo/TodoEditViewModel.kt`（新增 repeatRule 状态、setRepeatRule 方法，修改 loadTodo/saveTodo）
+- `app/build.gradle.kts`（versionCode 41800→41900，versionName 4.18.0→4.19.0）
+
+---
+
+## [4.18.0] - 2026-06-09
+
+### 变更类型：功能更新
+
+### 状态：已实现
+
+### 变更内容
+
+**待办提醒通知**
+
+1. **新增**：`TodoAlarmScheduler` — 待办提醒闹钟调度器，支持调度/取消/重新调度待办提醒闹钟
+2. **新增**：`TodoNotificationReceiver` — 待办提醒广播接收器，接收闹钟并显示通知
+3. **新增**：`todo_reminder_channel` 通知渠道 — 待办提醒专用通知渠道
+4. **新增**：`SettingsDataStore.TODO_NOTIFICATION_ENABLED` 设置项 — 待办提醒开关
+5. **新增**：`TodoDao.getPendingTodosWithTime` 查询 — 获取所有未完成且有时间的待办
+6. **新增**：`TodoRepository` 集成 `TodoAlarmScheduler` — 插入/更新/删除/完成待办时自动调度或取消闹钟
+7. **新增**：`BootReceiver` 集成待办提醒重新调度 — 设备重启后自动恢复待办闹钟
+8. **新增**：通知设置页新增"待办提醒"开关
+9. **新增**：点击待办提醒通知可跳转到待办编辑页
+10. **修改**：`PromotedNotificationBuilder.createNotificationChannels` 新增待办提醒渠道
+11. **修改**：通知渠道数量从2个增加到3个（课程提醒 + 上课状态 + 待办提醒）
+
+### 提醒规则
+
+- 有开始时间的待办：提前5分钟提醒
+- 仅有截止时间的待办：提前30分钟提醒
+- 没有时间信息的待办：不提醒
+- 已完成的待办：不提醒
+
+---
+
+## [4.17.0] - 2026-06-09
+
+### 变更类型：功能更新
+
+### 状态：已实现
+
+### 变更内容
+
+**课表界面集成待办显示**
+
+1. **新增**：`TodoDao.getTodosByPersonAndDateRange` 方法 — 按人物和日期范围查询待办
+2. **新增**：`TodoRepository.getTodosByPersonAndDateRange` 方法 — 仓库层日期范围查询
+3. **新增**：`ScheduleViewModel` 构造函数新增 `todoRepository: TodoRepository` 参数
+4. **新增**：`ScheduleViewModel.getTodosForWeek` 方法 — 获取指定周的待办数据
+5. **新增**：`TodoEditViewModel.setInitialStartTime` / `setInitialEndTime` 方法 — 设置初始时间
+6. **新增**：`TodoEditScreen` 新增 `initialStartHour` / `initialStartMinute` / `initialEndHour` / `initialEndMinute` 参数
+7. **新增**：Navigation 中 `todo_edit` 路由 — 支持从课表页导航到待办编辑页
+8. **新增**：`ScheduleScreen` 新增 `onNavigateToTodoEdit` 回调参数
+9. **新增**：SCHEDULE 类型待办在课表网格中渲染为带边框的半透明色块，右上角显示勾选图标，人物A蓝色调、人物B粉色调
+10. **新增**：DEADLINE 类型待办在日期列顶部显示 ⏰ 标记
+11. **新增**：点击待办块导航到待办编辑页
+12. **新增**：长按空白区域右键菜单新增"添加待办"选项，预填日期和时间
+13. **新增**：`TodoLayoutInfo` / `DeadlineTodoInfo` 数据类 — 待办布局信息
+14. **新增**：`TodoOverlayCard` / `DeadlineMarker` 组件 — 待办渲染组件
+
+---
+
+## [4.16.0] - 2026-06-09
+
+### 变更类型：功能更新
+
+### 状态：已实现
+
+### 变更内容
+
+**SyncManager Todo 同步扩展**
+
+1. **新增**：`SyncManager` 构造函数新增 `todoDao: TodoDao` 参数
+2. **新增**：`pushLocalTodosToCloud` 方法 — 将本地 Todo 推送到云端，只替换 myProfileId 的 CloudTodo，保留 partnerProfileId 和未知 profile 的 CloudTodo
+3. **新增**：`applyCloudTodos` 方法 — 将云端 Todo 应用到本地数据库，按 ownerProfileId 映射 personType，删除本地不在云端的，upsert 云端数据
+4. **新增**：`todoDataDiffersFromCloud` 方法 — 比较本地 Todo 与云端 Todo 是否有差异
+5. **新增**：`detectTodoConflicts` 方法 — 检测 Todo 冲突（同 syncId 内容不同）
+6. **新增**：`mergeTodos` 方法 — 合并 Todo（以云端为基础，用本地覆盖同 syncId，添加本地独有）
+7. **新增**：`smartMergeTodosForFirstSync` 方法 — 首次同步智能合并 Todo，使用 contentMatchKey: title|date|startHour|startMinute|endHour|endMinute
+8. **新增**：`todoContentEquals` 方法 — 比较本地 Todo 与云端 CloudTodo 内容是否一致
+9. **新增**：`todoContentMatchKey` 方法 — Todo 内容匹配键
+10. **变更**：`sync()` 方法同时处理课程和 Todo 的差异检测、冲突检测、合并和应用
+11. **变更**：`pushLocalToCloud()` 方法同时推送课程和 Todo
+12. **变更**：`resolveConflicts()` 方法同时解决课程和 Todo 冲突
+13. **变更**：`buildCloudDataJson()` 新增 todos/todoTags/repeatRules 字段序列化
+14. **变更**：`parseCloudData()` 新增 todos/todoTags/repeatRules 字段反序列化（向后兼容）
+15. **变更**：`SyncModule` DI 新增 TodoDao 注入
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（新增 Todo 同步方法，修改 sync/pushChanges/resolveConflicts/buildCloudDataJson/parseCloudData）
+- `app/src/main/java/com/duoschedule/di/SyncModule.kt`（新增 TodoDao 参数）
+
+---
+
+## [4.15.0] - 2026-06-09
+
+### 变更类型：功能更新
+
+### 状态：已实现
+
+### 变更内容
+
+**Todo 数据模型与数据库层**
+
+1. **新增**：`Priority` 枚举（HIGH / MEDIUM / LOW）
+2. **新增**：`TodoStatus` 枚举（PENDING / COMPLETED）
+3. **新增**：`Todo` Room Entity，包含 id、syncId、title、description、personType、date、时间字段、priority、status、tags、linkedCourseSyncId、repeatRuleId、completedAt，以及时间辅助方法
+4. **新增**：`TodoTag` Room Entity，包含 id、name、color、isPreset
+5. **新增**：`RepeatFrequency` 枚举（DAILY / WEEKLY / CUSTOM）
+6. **新增**：`RepeatRule` Room Entity，包含 id、frequency、interval、daysOfWeek、customDates、endDate
+7. **新增**：`TodoDao`、`TodoTagDao`、`RepeatRuleDao` 数据访问对象
+8. **变更**：`AppDatabase` 版本 8→9，新增 MIGRATION_8_9 创建 todos、todo_tags、repeat_rules 表
+9. **变更**：`Converters` 新增 Priority、TodoStatus、RepeatFrequency 类型转换器
+10. **变更**：`DatabaseModule` 新增 todoDao、todoTagDao、repeatRuleDao 的 DI 提供
+11. **新增**：`CloudTodo` 云端 Todo 数据模型，包含 syncId、ownerProfileId、title、description、date、时间字段、priority、status、tags、linkedCourseSyncId、repeatRuleId、completedAt
+12. **新增**：`CloudTodoTag` 云端标签数据模型，包含 id、name、color、isPreset
+13. **新增**：`CloudRepeatRule` 云端重复规则数据模型，包含 id、frequency、interval、daysOfWeek、customDates、endDate
+14. **新增**：`Todo.toCloudTodo()` 和 `CloudTodo.toTodo()` 转换函数，遵循与课程相同的 Profile 映射机制
+15. **变更**：`CloudData` 新增 `todos`、`todoTags`、`repeatRules` 字段（默认空数组，向后兼容）
+16. **变更**：`CLOUD_SCHEMA_VERSION` 从 2 升级至 3
+
+### 涉及文件
+
+- `app/src/main/java/com/duoschedule/data/model/Priority.kt`（新增）
+- `app/src/main/java/com/duoschedule/data/model/TodoStatus.kt`（新增）
+- `app/src/main/java/com/duoschedule/data/model/Todo.kt`（新增）
+- `app/src/main/java/com/duoschedule/data/model/TodoTag.kt`（新增）
+- `app/src/main/java/com/duoschedule/data/model/RepeatRule.kt`（新增，含 RepeatFrequency 枚举）
+- `app/src/main/java/com/duoschedule/data/local/TodoDao.kt`（新增）
+- `app/src/main/java/com/duoschedule/data/local/TodoTagDao.kt`（新增）
+- `app/src/main/java/com/duoschedule/data/local/RepeatRuleDao.kt`（新增）
+- `app/src/main/java/com/duoschedule/data/local/AppDatabase.kt`（版本 8→9，新增实体和迁移）
+- `app/src/main/java/com/duoschedule/data/local/Converters.kt`（新增 Priority、TodoStatus、RepeatFrequency 转换器）
+- `app/src/main/java/com/duoschedule/di/DatabaseModule.kt`（新增 DAO 提供）
+- `app/src/main/java/com/duoschedule/data/sync/SyncModels.kt`（新增 CloudTodo、CloudTodoTag、CloudRepeatRule 数据类及转换函数，CloudData 新增字段）
+- `app/src/main/java/com/duoschedule/data/sync/SyncManager.kt`（CLOUD_SCHEMA_VERSION 2→3）
+- `app/build.gradle.kts`（versionCode 41401→41500，versionName 4.14.1→4.15.0）
+
+---
+
+## [4.14.1] - 2026-06-09
+
+### 变更类型：修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复 Miuix 主题设置页字号层级**
+
+1. **修复**：SettingsRow Miuix 分支中菜单项标题添加 `body1`（16sp）样式，替代默认 `main`（17sp）
+2. **修复**：SettingsRow Miuix 分支中菜单项副标题添加 `body2`（14sp）样式，替代默认 `main`（17sp），使副标题明显小于标题
+
+---
+
 ## [4.14.0] - 2026-06-07
 
 ### 变更类型：功能更新

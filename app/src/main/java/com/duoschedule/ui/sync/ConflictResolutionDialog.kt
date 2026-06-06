@@ -172,17 +172,33 @@ private fun ConflictItemSection(
 
         when (item.conflictType) {
             ConflictType.BOTH_MODIFIED -> {
-                if (isMiuix) {
-                    top.yukonga.miuix.kmp.basic.Text(
-                        text = "双方均修改了此课程",
-                        color = MiuixTheme.colorScheme.onBackgroundVariant
-                    )
+                val isTodoConflict = item.localTodoVersion != null || item.cloudTodoVersion != null
+                if (isTodoConflict) {
+                    if (isMiuix) {
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = "双方均修改了此待办",
+                            color = MiuixTheme.colorScheme.onBackgroundVariant
+                        )
+                    } else {
+                        Text(
+                            text = "双方均修改了此待办",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = labelsTertiary
+                        )
+                    }
                 } else {
-                    Text(
-                        text = "双方均修改了此课程",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = labelsTertiary
-                    )
+                    if (isMiuix) {
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = "双方均修改了此课程",
+                            color = MiuixTheme.colorScheme.onBackgroundVariant
+                        )
+                    } else {
+                        Text(
+                            text = "双方均修改了此课程",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = labelsTertiary
+                        )
+                    }
                 }
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
@@ -225,12 +241,21 @@ private fun ConflictItemSection(
                         )
                     }
                 }
-                CourseSummaryText(
-                    localVersion = item.localVersion,
-                    cloudVersion = item.cloudVersion,
-                    selectedChoice = selectedChoice,
-                    isMiuix = isMiuix
-                )
+                if (isTodoConflict) {
+                    TodoSummaryText(
+                        localVersion = item.localTodoVersion,
+                        cloudVersion = item.cloudTodoVersion,
+                        selectedChoice = selectedChoice,
+                        isMiuix = isMiuix
+                    )
+                } else {
+                    CourseSummaryText(
+                        localVersion = item.localVersion,
+                        cloudVersion = item.cloudVersion,
+                        selectedChoice = selectedChoice,
+                        isMiuix = isMiuix
+                    )
+                }
             }
             ConflictType.LOCAL_DELETED_CLOUD_MODIFIED -> {
                 if (isMiuix) {
@@ -472,4 +497,94 @@ private fun formatCourseSummary(course: CloudCourse?): String {
     }
     val locationStr = if (course.location.isNotBlank()) " ${course.location}" else ""
     return "$dayOfWeekStr $timeStr$locationStr"
+}
+
+@Composable
+private fun TodoSummaryText(
+    localVersion: CloudTodo?,
+    cloudVersion: CloudTodo?,
+    selectedChoice: ConflictChoice?,
+    isMiuix: Boolean = false
+) {
+    val labelsSecondary = getLabelsVibrantSecondary()
+    when (selectedChoice) {
+        ConflictChoice.KEEP_LOCAL -> {
+            if (localVersion != null) {
+                if (isMiuix) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = formatTodoSummary(localVersion),
+                        color = MiuixTheme.colorScheme.onBackgroundVariant
+                    )
+                } else {
+                    Text(
+                        text = formatTodoSummary(localVersion),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = labelsSecondary
+                    )
+                }
+            }
+        }
+        ConflictChoice.KEEP_CLOUD -> {
+            if (cloudVersion != null) {
+                if (isMiuix) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = formatTodoSummary(cloudVersion),
+                        color = MiuixTheme.colorScheme.onBackgroundVariant
+                    )
+                } else {
+                    Text(
+                        text = formatTodoSummary(cloudVersion),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = labelsSecondary
+                    )
+                }
+            }
+        }
+        ConflictChoice.KEEP_BOTH -> {
+            if (localVersion != null) {
+                if (isMiuix) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = "本地: ${formatTodoSummary(localVersion)}",
+                        color = MiuixTheme.colorScheme.onBackgroundVariant
+                    )
+                } else {
+                    Text(
+                        text = "本地: ${formatTodoSummary(localVersion)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = labelsSecondary
+                    )
+                }
+            }
+            if (cloudVersion != null) {
+                if (isMiuix) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = "云端: ${formatTodoSummary(cloudVersion)}",
+                        color = MiuixTheme.colorScheme.onBackgroundVariant
+                    )
+                } else {
+                    Text(
+                        text = "云端: ${formatTodoSummary(cloudVersion)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = labelsSecondary
+                    )
+                }
+            }
+        }
+        null -> {}
+    }
+}
+
+private fun formatTodoSummary(todo: CloudTodo?): String {
+    if (todo == null) return "已删除"
+    val timeStr = when {
+        todo.startHour >= 0 && todo.endHour >= 0 -> {
+            "${todo.startHour}:${todo.startMinute.toString().padStart(2, '0')}-${todo.endHour}:${todo.endMinute.toString().padStart(2, '0')}"
+        }
+        todo.endHour >= 0 -> {
+            "${todo.endHour}:${todo.endMinute.toString().padStart(2, '0')}前"
+        }
+        else -> ""
+    }
+    val statusStr = if (todo.status == "COMPLETED") " ✓" else ""
+    return "${todo.title} $timeStr$statusStr".trim()
 }

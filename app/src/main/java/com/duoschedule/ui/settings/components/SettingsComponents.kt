@@ -198,11 +198,13 @@ fun SettingsRow(
             if (appThemeMode == AppThemeMode.MIUIX) {
                 top.yukonga.miuix.kmp.basic.Text(
                     text = title,
+                    style = MiuixTheme.textStyles.body1,
                     color = labelsPrimary
                 )
                 if (subtitle != null) {
                     top.yukonga.miuix.kmp.basic.Text(
                         text = subtitle,
+                        style = MiuixTheme.textStyles.body2,
                         color = labelsSecondary
                     )
                 }
