@@ -156,7 +156,15 @@ fun ScheduleScreen(
     var selectedWeek by remember(currentWeek) { mutableIntStateOf(currentWeek) }
     var showWeekSelector by remember { mutableStateOf(false) }
     var isDataLoaded by remember { mutableStateOf(false) }
-    val sharedScrollState = rememberScrollState()
+    val currentScrollState = rememberScrollState()
+    val prevScrollState = rememberScrollState()
+    val nextScrollState = rememberScrollState()
+
+    LaunchedEffect(selectedWeek) {
+        val currentPosition = currentScrollState.value
+        prevScrollState.scrollTo(currentPosition)
+        nextScrollState.scrollTo(currentPosition)
+    }
 
     LaunchedEffect(totalPeriods, currentWeek, totalWeeks) {
         if (totalPeriods > 0 && currentWeek > 0 && totalWeeks > 0) {
@@ -579,7 +587,7 @@ fun ScheduleScreen(
                             },
                             editingCourseId = editTarget?.courseId,
                             animatedVisibilityScope = animatedVisibilityScope,
-                            scrollState = sharedScrollState
+                            scrollState = currentScrollState
                         )
                     }
                     
@@ -609,7 +617,7 @@ fun ScheduleScreen(
                                 onEmptySlotClick = EmptyBiAction,
                                 onCourseLongPress = { _, _ -> },
                                 onEmptySlotLongPress = EmptyTriAction,
-                                scrollState = sharedScrollState
+                                scrollState = prevScrollState
                             )
                         }
                     }
@@ -640,7 +648,7 @@ fun ScheduleScreen(
                                 onEmptySlotClick = EmptyBiAction,
                                 onCourseLongPress = { _, _ -> },
                                 onEmptySlotLongPress = EmptyTriAction,
-                                scrollState = sharedScrollState
+                                scrollState = nextScrollState
                             )
                         }
                     }
@@ -1682,13 +1690,14 @@ private fun CourseOverlayCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            val courseNameMaxLines = ((cellHeight * span - 24.dp) / 16.dp).toInt().coerceIn(2, 6)
             Text(
                 text = course.name,
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontSize = courseNameFontSize.sp,
                     fontWeight = FontWeight.SemiBold
                 ),
-                maxLines = 2,
+                maxLines = courseNameMaxLines,
                 overflow = TextOverflow.Ellipsis,
                 color = courseTextColor,
                 textAlign = TextAlign.Center
