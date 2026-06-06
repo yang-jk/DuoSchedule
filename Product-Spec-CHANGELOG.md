@@ -6,6 +6,72 @@
 
 ---
 
+## [4.13.5] - 2026-06-07
+
+### 变更类型：修复
+
+### 状态：已实现
+
+### 变更内容
+
+**Miuix 主题设置页面字号修复（续）**
+
+1. **修复**：`SettingsNavigationRow` 的 value 尾随文本（如名称、主题模式、界面风格等显示值）在 Miuix 主题下改用 `top.yukonga.miuix.kmp.basic.Text` + `MiuixTheme.textStyles.body2`（14.sp），替代原有的 `MaterialTheme.typography.bodyMedium`，确保使用 Miuix 排版体系
+2. **修复**：`SettingsFooter` 在 Miuix 主题下改用 `top.yukonga.miuix.kmp.basic.Text` + `MiuixTheme.textStyles.footnote1`（13.sp），替代原有的 `MaterialTheme.typography.bodySmall`
+3. **修复**：`SettingsHeader` 在 Miuix 主题下改用 `top.yukonga.miuix.kmp.basic.Text` + `MiuixTheme.textStyles.subtitle`（14.sp 加粗），替代原有的 `MaterialTheme.typography.bodySmall`
+
+---
+
+## [4.13.4] - 2026-06-07
+
+### 变更类型：修复
+
+### 状态：已实现
+
+### 变更内容
+
+**Miuix 主题设置页面字号修复**
+
+1. **修复**：Miuix 主题"设置"标题添加 `fontSize = 24.sp`，解决默认使用正文大小（约 16sp）导致标题过小的问题，与 iOS 主题 `headlineLarge`（约 32sp）视觉层级匹配
+2. **修复**：SettingsRow 在 Miuix 主题下改用 `top.yukonga.miuix.kmp.basic.Text` 替代 `MaterialTheme.typography`（iOS 排版），确保设置页选项文字使用 Miuix 排版体系
+
+---
+
+## [4.13.3] - 2026-06-07
+
+### 变更类型：修复
+
+### 状态：已实现
+
+### 变更内容
+
+**双主题形状一致性修复 + 动效微优化**
+
+1. **修复**：FreeTimeDetailSheet Miuix 主题 Surface 从 `ContinuousRoundedRectangle(iOS26.large)` 改为 `RoundedCornerShape(BorderRadius.lg)`
+2. **修复**：FreeTimeSummaryChip Miuix 主题 Surface 从 `ContinuousRoundedRectangle(iOS26.small)` 改为 `RoundedCornerShape(BorderRadius.md)`
+3. **修复**：TodayCourseCardItem Miuix 主题 Surface 从 `ContinuousRoundedRectangle(iOS26.medium)` 改为 `RoundedCornerShape(BorderRadius.lg)`
+4. **优化**：microInteraction 缓动曲线从 `LinearEasing` 改为 `EaseOutCubic`，微交互更自然
+5. **优化**：iOS 版本 courseCard 的 `infiniteTransition` 从组件顶层移入 `if (isOngoing)` 内部，减少非 ongoing 课程时的动画开销
+
+---
+
+## [4.13.2] - 2026-06-07
+
+### 变更类型：修复
+
+### 状态：已实现
+
+### 变更内容
+
+**主题审查修复：Miuix/iOS 双主题精细调整**
+
+1. **修复**：SettingsScreen Miuix 主题标题添加顶部间距（padding(top = Spacing.sm)），与 iOS 主题视觉对齐
+2. **修复**：提高 tertiary 文字对比度（LabelsDark.Tertiary 从 0x4D 升到 0x80，LabelsLight.Tertiary 从 0x4D 升到 0x80），满足 WCAG AA 标准
+3. **修复**：CourseOverlayCard Miuix 主题下使用 RoundedCornerShape(BorderRadius.lg) 替代 iOS 的 ContinuousRoundedRectangle，保持圆角风格一致
+4. **修复**：WeekSelectorDropdown Miuix 主题下添加 Surface 容器包裹，确保背景色与 Miuix 设计语言一致
+
+---
+
 ## [4.13.1] - 2026-06-07
 
 ### 变更类型：修复

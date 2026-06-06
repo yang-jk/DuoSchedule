@@ -1,7 +1,6 @@
 package com.duoschedule.ui.navigation
 
 import android.net.Uri
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -14,7 +13,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
-import com.duoschedule.data.importexport.CourseImportData
 import com.duoschedule.data.importexport.ImportResult
 import com.duoschedule.data.importexport.ImportPreviewData
 import com.duoschedule.data.model.AppThemeMode
@@ -23,6 +21,7 @@ import com.duoschedule.ui.edit.CourseEditScreen
 import com.duoschedule.ui.main.MainScreen
 import com.duoschedule.ui.schedule.ScheduleScreen
 import com.duoschedule.ui.settings.*
+import com.duoschedule.ui.settings.SettingsViewModel
 import com.duoschedule.ui.sync.SyncSettingsScreen
 import com.duoschedule.ui.theme.BackgroundsLight
 import com.duoschedule.ui.theme.BackgroundsDark
@@ -60,10 +59,10 @@ private fun isBottomNavRoute(route: String?): Boolean {
 @Composable
 fun DuoScheduleNavGraph(
     navController: NavHostController,
+    modifier: Modifier = Modifier,
     startDestination: String = BottomNavItem.Home.route,
     pendingImportUri: Uri? = null,
     onImportHandled: () -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
     val darkTheme = LocalDarkTheme.current
     val backgroundColor = if (darkTheme) BackgroundsDark.Primary else BackgroundsLight.Primary
@@ -73,7 +72,6 @@ fun DuoScheduleNavGraph(
     var pendingImportData by remember { mutableStateOf<ImportPreviewData?>(null) }
     var externalImportUri by remember { mutableStateOf<Uri?>(null) }
     var showExternalImportDialog by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
     
     LaunchedEffect(pendingImportUri) {
         pendingImportUri?.let { uri ->
@@ -162,7 +160,6 @@ fun DuoScheduleNavGraph(
 
         composable(BottomNavItem.Settings.route) {
             SettingsScreen(
-                onNavigateBack = { navController.popBackStack() },
                 onNavigateToScheduleSettings = { navController.navigate("settings/schedule") },
                 onNavigateToDisplaySettings = { navController.navigate("settings/display") },
                 onNavigateToDataManagement = { navController.navigate("settings/data") },
@@ -192,7 +189,7 @@ fun DuoScheduleNavGraph(
             val personTypeStr = backStackEntry.arguments?.getString("personType") ?: "PERSON_A"
             val personType = try { 
                 PersonType.valueOf(personTypeStr) 
-            } catch (e: Exception) { 
+            } catch (_: Exception) { 
                 PersonType.PERSON_A 
             }
             
@@ -352,7 +349,7 @@ fun DuoScheduleNavGraph(
             val period = backStackEntry.arguments?.getString("period")?.toIntOrNull() ?: -1
             val personTypeStr = backStackEntry.arguments?.getString("personType")?.takeIf { it.isNotEmpty() }
             val initialPersonType = personTypeStr?.let { 
-                try { PersonType.valueOf(it) } catch (e: Exception) { null }
+                try { PersonType.valueOf(it) } catch (_: Exception) { null }
             }
             CourseEditScreen(
                 courseId = courseId,
@@ -389,7 +386,7 @@ private fun ExternalImportDialog(
     uri: Uri,
     onDismiss: () -> Unit,
     onImportSuccess: (ImportPreviewData) -> Unit,
-    viewModel: com.duoschedule.ui.settings.SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    viewModel: SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var internalResult by remember { mutableStateOf<ImportResult?>(null) }

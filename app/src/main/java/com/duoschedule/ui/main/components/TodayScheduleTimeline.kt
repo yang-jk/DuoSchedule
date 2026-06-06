@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -178,7 +179,7 @@ private fun FreeTimeSummaryChip(
     if (appThemeMode == AppThemeMode.MIUIX) {
         Surface(
             color = MiuixTheme.colorScheme.surfaceContainer,
-            shape = ContinuousRoundedRectangle(BorderRadius.iOS26.small),
+            shape = RoundedCornerShape(BorderRadius.md),
             modifier = modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
@@ -303,7 +304,7 @@ private fun TodayCourseCardItem(
 
         Surface(
             color = MiuixTheme.colorScheme.surfaceContainer,
-            shape = ContinuousRoundedRectangle(BorderRadius.iOS26.medium),
+            shape = RoundedCornerShape(BorderRadius.lg),
             modifier = modifier
                 .heightIn(min = CARD_MIN_HEIGHT)
                 .clickable(onClick = onClick)
@@ -431,17 +432,6 @@ private fun TodayCourseCardItem(
         targetValue = if (isPressed) 0.98f else 1f,
         animationSpec = tween(durationMillis = AnimationDuration.Micro, easing = FastOutSlowInEasing),
         label = "scale"
-    )
-
-    val infiniteTransition = rememberInfiniteTransition()
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue = 1.5f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
     )
 
     val shape = ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
@@ -591,6 +581,16 @@ private fun TodayCourseCardItem(
         }
 
         if (courseInfo.isOngoing) {
+            val infiniteTransition = rememberInfiniteTransition()
+            val pulseScale by infiniteTransition.animateFloat(
+                initialValue = 1.0f,
+                targetValue = 1.5f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "pulse"
+            )
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)

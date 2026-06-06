@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Schedule
@@ -74,7 +75,7 @@ fun FreeTimeDetailSheet(
 
                 Surface(
                     color = MiuixTheme.colorScheme.surfaceContainer,
-                    shape = ContinuousRoundedRectangle(BorderRadius.iOS26.large)
+                    shape = RoundedCornerShape(BorderRadius.lg)
                 ) {
                     Column(
                         modifier = Modifier

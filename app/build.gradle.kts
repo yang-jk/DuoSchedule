@@ -34,9 +34,9 @@ android {
     defaultConfig {
         applicationId = "com.duoschedule"
         minSdk = 26
-        targetSdk = 36
-        versionCode = 41301
-        versionName = "4.13.1"
+        targetSdk = 37
+        versionCode = 41305
+        versionName = "4.13.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -51,6 +51,7 @@ android {
         }
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -64,18 +65,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-            freeCompilerArgs.addAll(
-                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
-                "-opt-in=androidx.compose.animation.ExperimentalAnimationApi",
-                "-opt-in=androidx.compose.animation.ExperimentalSharedTransitionApi",
-                "-Xcontext-parameters",
-                "-Xannotation-default-target=param-property"
-            )
-        }
-    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -87,12 +76,25 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        freeCompilerArgs.addAll(
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=androidx.compose.animation.ExperimentalAnimationApi",
+            "-opt-in=androidx.compose.animation.ExperimentalSharedTransitionApi",
+            "-Xcontext-parameters",
+            "-Xannotation-default-target=param-property"
+        )
+    }
+}
+
 dependencies {
-    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.core:core-ktx:1.18.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
     implementation("androidx.lifecycle:lifecycle-process:2.9.4")
-    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation("androidx.activity:activity-compose:1.13.0")
     implementation(platform("androidx.compose:compose-bom:2026.05.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")

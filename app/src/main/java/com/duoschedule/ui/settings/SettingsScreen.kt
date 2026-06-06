@@ -11,8 +11,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -21,8 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.AppThemeMode
@@ -48,7 +46,6 @@ import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
 fun SettingsScreen(
-    onNavigateBack: () -> Unit,
     onNavigateToScheduleSettings: () -> Unit,
     onNavigateToDisplaySettings: () -> Unit,
     onNavigateToDataManagement: () -> Unit,
@@ -95,7 +92,6 @@ fun SettingsScreen(
     var showPersonBDialog by remember { mutableStateOf(false) }
 
     val labelsPrimary = getLabelsVibrantPrimary()
-    val labelsTertiary = getLabelsVibrantTertiary()
 
     val hazeState = rememberHazeState()
     val scrollState = rememberScrollState()
@@ -134,9 +130,11 @@ fun SettingsScreen(
                 top.yukonga.miuix.kmp.basic.Text(
                     text = "设置",
                     fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp,
                     color = MiuixTheme.colorScheme.onBackground,
                     modifier = Modifier
                         .padding(horizontal = Spacing.lg)
+                        .padding(top = Spacing.sm)
                 )
             } else {
                 Text(

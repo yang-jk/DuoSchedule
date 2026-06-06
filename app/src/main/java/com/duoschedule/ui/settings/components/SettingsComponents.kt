@@ -45,11 +45,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 
 object SettingsDefaults {
-    val CardShape = ContinuousRoundedRectangle(BorderRadius.iOS26.container)
     val ItemVerticalPadding = 12.dp
     val ItemHorizontalPadding = 16.dp
-    val SectionSpacing = 24.dp
-    val GroupSpacing = 35.dp
     val IconSize = 22.dp
     val IconBackgroundSize = 29.dp
 }
@@ -155,6 +152,7 @@ fun SettingsRow(
     val labelsSecondary = getLabelsVibrantSecondary()
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val appThemeMode = LocalAppThemeMode.current
     
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
@@ -197,19 +195,32 @@ fun SettingsRow(
         }
         
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                color = labelsPrimary
-            )
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = labelsSecondary
+            if (appThemeMode == AppThemeMode.MIUIX) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = title,
+                    color = labelsPrimary
                 )
+                if (subtitle != null) {
+                    top.yukonga.miuix.kmp.basic.Text(
+                        text = subtitle,
+                        color = labelsSecondary
+                    )
+                }
+            } else {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = labelsPrimary
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = labelsSecondary
+                    )
+                }
             }
         }
         
@@ -228,7 +239,8 @@ fun SettingsNavigationRow(
     onClick: () -> Unit
 ) {
     val labelsSecondary = getLabelsVibrantSecondary()
-    
+    val appThemeMode = LocalAppThemeMode.current
+
     SettingsRow(
         title = title,
         subtitle = subtitle,
@@ -239,13 +251,22 @@ fun SettingsNavigationRow(
         trailing = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (value != null) {
-                    Text(
-                        text = value,
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Medium
-                        ),
-                        color = BrandColors.Primary
-                    )
+                    if (appThemeMode == AppThemeMode.MIUIX) {
+                        top.yukonga.miuix.kmp.basic.Text(
+                            text = value,
+                            style = MiuixTheme.textStyles.body2,
+                            fontWeight = FontWeight.Medium,
+                            color = BrandColors.Primary
+                        )
+                    } else {
+                        Text(
+                            text = value,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
+                            color = BrandColors.Primary
+                        )
+                    }
                     Spacer(modifier = Modifier.width(Spacing.xs))
                 }
                 Icon(
@@ -340,7 +361,24 @@ fun SettingsHeader(
     modifier: Modifier = Modifier
 ) {
     val labelsSecondary = getLabelsVibrantSecondary()
-    
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        top.yukonga.miuix.kmp.basic.Text(
+            text = text,
+            style = MiuixTheme.textStyles.subtitle,
+            color = labelsSecondary,
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(
+                    start = Spacing.lg,
+                    top = Spacing.sm,
+                    bottom = Spacing.xs
+                )
+        )
+        return
+    }
+
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall.copy(
@@ -363,7 +401,23 @@ fun SettingsFooter(
     modifier: Modifier = Modifier
 ) {
     val labelsTertiary = getLabelsVibrantTertiary()
-    
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        top.yukonga.miuix.kmp.basic.Text(
+            text = text,
+            style = MiuixTheme.textStyles.footnote1,
+            color = labelsTertiary,
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = Spacing.lg,
+                    vertical = Spacing.xs
+                )
+        )
+        return
+    }
+
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall,

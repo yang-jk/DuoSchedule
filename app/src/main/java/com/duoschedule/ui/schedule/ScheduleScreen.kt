@@ -675,42 +675,48 @@ private fun WeekSelectorDropdown(
             title = "选择周次",
             onDismissRequest = onDismiss
         ) {
-            LazyColumn(
-                modifier = Modifier.height(300.dp),
-                verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+            Surface(
+                color = MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(BorderRadius.lg),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                items(
-                    items = (1..totalWeeks).toList(),
-                    key = { week -> week }
-                ) { week ->
-                    val isSelected = week == selectedWeek
-                    val isCurrent = week == currentWeek
+                LazyColumn(
+                    modifier = Modifier.height(300.dp).padding(vertical = Spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.xs)
+                ) {
+                    items(
+                        items = (1..totalWeeks).toList(),
+                        key = { week -> week }
+                    ) { week ->
+                        val isSelected = week == selectedWeek
+                        val isCurrent = week == currentWeek
 
-                    Surface(
-                        color = if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
-                        else Color.Transparent,
-                        shape = RoundedCornerShape(BorderRadius.lg),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onWeekSelected(week) }
-                                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            color = if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
+                            else Color.Transparent,
+                            shape = RoundedCornerShape(BorderRadius.lg),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            top.yukonga.miuix.kmp.basic.Text(
-                                text = "第 $week 周",
-                                color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground,
-                                modifier = Modifier.weight(1f)
-                            )
-
-                            if (isCurrent) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onWeekSelected(week) }
+                                    .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 top.yukonga.miuix.kmp.basic.Text(
-                                    text = "当前",
-                                    color = MiuixTheme.colorScheme.primary,
-                                    style = MaterialTheme.typography.labelSmall
+                                    text = "第 $week 周",
+                                    color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground,
+                                    modifier = Modifier.weight(1f)
                                 )
+
+                                if (isCurrent) {
+                                    top.yukonga.miuix.kmp.basic.Text(
+                                        text = "当前",
+                                        color = MiuixTheme.colorScheme.primary,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
                             }
                         }
                     }
@@ -1398,7 +1404,7 @@ private fun CourseOverlayCard(
     
     val fillShadow = getLiquidGlassFillShadow()
     val shadowColor = if (appThemeMode == AppThemeMode.MIUIX) MiuixTheme.colorScheme.outline else getLiquidGlassShadowColor()
-    val shape = ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
+    val shape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(BorderRadius.lg) else ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
     
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()

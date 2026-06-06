@@ -1,7 +1,6 @@
 package com.duoschedule.ui.theme
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
@@ -10,7 +9,6 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.duoschedule.data.model.AppThemeMode
-import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -20,47 +18,21 @@ object IOSColors {
     val Green = Color(0xFF34C759)
     val Indigo = Color(0xFF5856D6)
     val Orange = Color(0xFFFF9500)
-    val Pink = Color(0xFFFF2D55)
     val Purple = Color(0xFFAF52DE)
     val Red = Color(0xFFFF3B30)
     val Teal = Color(0xFF5AC8FA)
-    val Yellow = Color(0xFFFFCC00)
-    val Mint = Color(0xFF00C7BE)
-    val Cyan = Color(0xFF32ADE6)
-    val Brown = Color(0xFFA2845E)
     val Gray = Color(0xFF8E8E93)
 }
 
 object IOS26Colors {
     val TintBlue = Color(0xFF0A84FF)
     val TintGreen = Color(0xFF30D158)
-    val TintIndigo = Color(0xFF5E5CE6)
-    val TintOrange = Color(0xFFFF9F0A)
-    val TintPink = Color(0xFFFF375F)
-    val TintPurple = Color(0xFFBF5AF2)
-    val TintRed = Color(0xFFFF453A)
-    val TintTeal = Color(0xFF64D2FF)
-    val TintYellow = Color(0xFFFFD60A)
-    val TintMint = Color(0xFF63E6E2)
-    val TintCyan = Color(0xFF70D7FF)
-    
-    object TabBar {
-        val SelectedIconLight = Color(0xFF0088FF)
-        val SelectedIconDark = Color(0xFF0091FF)
-        val UnselectedIconLight = Color(0xFF1A1A1A)
-        val UnselectedIconDark = Color(0xFFF5F5F5)
-        val SelectionBackgroundLight = Color(0xFFEDEDED)
-        val SelectionBackgroundDark = Color(0xFF121212)
-    }
 }
 
 object GraysLight {
     val Black = Color(0xFF000000)
     val Gray = Color(0xFF8E8E93)
     val Gray2 = Color(0xFFAEAEB2)
-    val Gray3 = Color(0xFFC7C7CC)
-    val Gray4 = Color(0xFFD1D1D6)
-    val Gray5 = Color(0xFFE5E5EA)
     val Gray6 = Color(0xFFF2F2F7)
     val White = Color(0xFFFFFFFF)
 }
@@ -69,8 +41,6 @@ object GraysDark {
     val Black = Color(0xFF000000)
     val Gray = Color(0xFF8E8E93)
     val Gray2 = Color(0xFF636366)
-    val Gray3 = Color(0xFF48484A)
-    val Gray4 = Color(0xFF3A3A3C)
     val Gray5 = Color(0xFF2C2C2E)
     val Gray6 = Color(0xFF1C1C1E)
     val White = Color(0xFFFFFFFF)
@@ -80,9 +50,6 @@ object BackgroundsLight {
     val Primary = Color(0xFFF2F2F7)
     val Secondary = Color(0xFFFFFFFF)
     val Tertiary = Color(0xFFF2F2F7)
-    val PrimaryElevated = Color(0xFFFFFFFF)
-    val SecondaryElevated = Color(0xFFFFFFFF)
-    val TertiaryElevated = Color(0xFFFFFFFF)
 }
 
 object BackgroundsDark {
@@ -91,33 +58,28 @@ object BackgroundsDark {
     val Tertiary = Color(0xFF2C2C2E)
     val PrimaryElevated = Color(0xFF1C1C1E)
     val SecondaryElevated = Color(0xFF2C2C2E)
-    val TertiaryElevated = Color(0xFF3A3A3C)
 }
 
 object LabelsLight {
     val Primary = Color(0xFF000000)
     val Secondary = Color(0x993C3C43)
-    val Tertiary = Color(0x4D3C3C43)
-    val Quaternary = Color(0x2E3C3C43)
+    val Tertiary = Color(0x803C3C43)
 }
 
 object LabelsDark {
     val Primary = Color(0xFFFFFFFF)
     val Secondary = Color(0xB3EBEBF5)
-    val Tertiary = Color(0x4DEBEBF5)
-    val Quaternary = Color(0x28EBEBF5)
+    val Tertiary = Color(0x80EBEBF5)
 }
 
 object FillsLight {
     val Primary = Color(0x14787880)
-    val Secondary = Color(0x28787880)
     val Tertiary = Color(0x14787880)
     val Quaternary = Color(0x0A787880)
 }
 
 object FillsDark {
     val Primary = Color(0x28787880)
-    val Secondary = Color(0x38787880)
     val Tertiary = Color(0x28787880)
     val Quaternary = Color(0x1A787880)
 }
@@ -132,23 +94,7 @@ object SeparatorsDark {
     val NonOpaque = Color(0x28FFFFFF)
 }
 
-object Separators {
-    val OpaqueLight = SeparatorsLight.Opaque
-    val OpaqueDark = SeparatorsDark.Opaque
-    val NonOpaqueLight = SeparatorsLight.NonOpaque
-    val NonOpaqueDark = SeparatorsDark.NonOpaque
-}
 
-object FillsVibrant {
-    val PrimaryLight = Color(0x14787880)
-    val PrimaryDark = Color(0x28787880)
-    val SecondaryLight = Color(0x28787880)
-    val SecondaryDark = Color(0x38787880)
-    val TertiaryLight = Color(0x14787880)
-    val TertiaryDark = Color(0x28787880)
-    val QuaternaryLight = Color(0x0A787880)
-    val QuaternaryDark = Color(0x1A787880)
-}
 
 object SemanticColors {
     val SuccessLight = Color(0xFF34C759)
