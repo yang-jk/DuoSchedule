@@ -8,6 +8,7 @@ import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.ThemeMode
 import com.duoschedule.data.model.TodayCourseDisplayMode
 import com.duoschedule.notification.SilentModeType
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -34,6 +35,7 @@ class CourseRepository @Inject constructor(
 
     suspend fun getCourseById(id: Long): Course? = courseDao.getCourseById(id)
 
+    @DelicateCoroutinesApi
     suspend fun insertCourse(course: Course): Long {
         GlobalScope.launch { syncManager.pushChanges() }
         return courseDao.insertCourse(course)
@@ -44,21 +46,25 @@ class CourseRepository @Inject constructor(
         GlobalScope.launch { syncManager.pushChanges() }
     }
 
+    @DelicateCoroutinesApi
     suspend fun deleteCourse(course: Course) {
         courseDao.deleteCourse(course)
         GlobalScope.launch { syncManager.pushChanges() }
     }
 
+    @DelicateCoroutinesApi
     suspend fun deleteCourseById(id: Long) {
         courseDao.deleteCourseById(id)
         GlobalScope.launch { syncManager.pushChanges() }
     }
 
+    @DelicateCoroutinesApi
     suspend fun deleteCoursesByPerson(personType: PersonType) {
         courseDao.deleteCoursesByPerson(personType)
         GlobalScope.launch { syncManager.pushChanges() }
     }
 
+    @DelicateCoroutinesApi
     suspend fun deleteAllCourses() {
         courseDao.deleteAllCourses()
         GlobalScope.launch { syncManager.pushChanges() }

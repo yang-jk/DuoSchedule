@@ -5,6 +5,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.duoschedule.data.model.AppThemeMode
@@ -443,6 +445,32 @@ val LocalDarkTheme = compositionLocalOf { false }
 val LocalBackdrop = compositionLocalOf<LayerBackdrop?> { null }
 
 val LocalAppThemeMode = compositionLocalOf { AppThemeMode.IOS }
+
+object DeviceCornerDefaults {
+    val CornerRadius = 16.dp
+}
+
+@Composable
+fun getRoundedCorner(): Dp {
+    val view = LocalView.current
+    val density = LocalDensity.current
+    return remember {
+        val insets = view.rootWindowInsets
+        if (android.os.Build.VERSION.SDK_INT >= 31 && insets != null) {
+            @Suppress("DEPRECATION")
+            val roundedCorner = insets.getRoundedCorner(
+                android.view.RoundedCorner.POSITION_TOP_LEFT
+            )
+            if (roundedCorner != null) {
+                with(density) { roundedCorner.radius.toFloat().toDp() }
+            } else {
+                DeviceCornerDefaults.CornerRadius
+            }
+        } else {
+            DeviceCornerDefaults.CornerRadius
+        }
+    }
+}
 
 @Composable
 fun rememberLayerBackdropWithBackground(backgroundColor: Color): LayerBackdrop {

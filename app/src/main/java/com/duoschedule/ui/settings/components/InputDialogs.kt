@@ -1634,7 +1634,7 @@ fun GlassErrorDialog(
                 if (errors.isNotEmpty()) {
                     Surface(
                         color = MiuixTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(getRoundedCorner())
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp).padding(Spacing.sm)
@@ -1814,7 +1814,7 @@ fun IOSErrorDialog(
                 if (errors.isNotEmpty()) {
                     Surface(
                         color = MiuixTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(getRoundedCorner())
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp).padding(Spacing.sm)

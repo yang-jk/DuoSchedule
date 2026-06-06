@@ -2,6 +2,7 @@ package com.duoschedule.ui.schedule
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -11,6 +12,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -256,14 +259,58 @@ fun ScheduleScreen(
 
     val appThemeMode = LocalAppThemeMode.current
 
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+
     AnimatedContent(
         targetState = editTarget,
         transitionSpec = {
-            fadeIn(animationSpec = tween(250, delayMillis = 50, easing = FastOutSlowInEasing)) togetherWith
-            fadeOut(animationSpec = tween(200, easing = FastOutLinearInEasing))
+            if (targetState != null) {
+                // Entering edit mode: slide in from right + fade
+                if (appThemeMode == AppThemeMode.MIUIX) {
+                    slideInHorizontally(
+                        animationSpec = tween(350, easing = FastOutSlowInEasing),
+                        initialOffsetX = { it }
+                    ) + fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing)) togetherWith
+                    slideOutHorizontally(
+                        animationSpec = tween(350, easing = FastOutSlowInEasing),
+                        targetOffsetX = { -(it * 30 / 100) }
+                    ) + fadeOut(animationSpec = tween(350, easing = FastOutSlowInEasing), targetAlpha = 0.7f)
+                } else {
+                    slideInHorizontally(
+                        animationSpec = tween(400, easing = FastOutSlowInEasing),
+                        initialOffsetX = { it }
+                    ) + fadeIn(animationSpec = tween(400, easing = FastOutSlowInEasing)) togetherWith
+                    slideOutHorizontally(
+                        animationSpec = tween(400, easing = FastOutSlowInEasing),
+                        targetOffsetX = { -(it * 30 / 100) }
+                    ) + fadeOut(animationSpec = tween(400, easing = FastOutSlowInEasing), targetAlpha = 0.7f)
+                }
+            } else {
+                // Exiting edit mode: slide out to right + fade
+                if (appThemeMode == AppThemeMode.MIUIX) {
+                    slideInHorizontally(
+                        animationSpec = tween(300, easing = FastOutSlowInEasing),
+                        initialOffsetX = { -(it * 30 / 100) }
+                    ) + fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing), initialAlpha = 0.7f) togetherWith
+                    slideOutHorizontally(
+                        animationSpec = tween(300, easing = FastOutSlowInEasing),
+                        targetOffsetX = { it }
+                    ) + fadeOut(animationSpec = tween(300, easing = FastOutSlowInEasing))
+                } else {
+                    slideInHorizontally(
+                        animationSpec = tween(300, easing = FastOutSlowInEasing),
+                        initialOffsetX = { -(it * 30 / 100) }
+                    ) + fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing), initialAlpha = 0.7f) togetherWith
+                    slideOutHorizontally(
+                        animationSpec = tween(300, easing = FastOutSlowInEasing),
+                        targetOffsetX = { it }
+                    ) + fadeOut(animationSpec = tween(300, easing = FastOutSlowInEasing))
+                }
+            }
         },
         label = "schedule_edit_transition"
     ) { target ->
+        val animatedVisibilityScope = this
         if (target == null) {
     Column(
         modifier = Modifier
@@ -521,7 +568,9 @@ fun ScheduleScreen(
                                 
                                 contextMenuItems = items
                                 showContextMenu = true
-                            }
+                            },
+                            editingCourseId = editTarget?.courseId,
+                            animatedVisibilityScope = animatedVisibilityScope
                         )
                     }
                     
@@ -608,7 +657,9 @@ fun ScheduleScreen(
                 initialPeriod = target.periodIndex,
                 initialPersonType = personType,
                 onNavigateBack = { editTarget = null },
-                viewModel = hiltViewModel(key = "edit_${target.courseId ?: "new"}_${personType.name}")
+                viewModel = hiltViewModel(key = "edit_${target.courseId ?: "new"}_${personType.name}"),
+                sharedElementKey = if (target.courseId != null) "course_${target.courseId}" else null,
+                animatedVisibilityScope = animatedVisibilityScope
             )
         }
     }
@@ -804,7 +855,7 @@ private fun WeekSelectorDropdown(
                     Surface(
                         color = if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
                         else Color.Transparent,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(getRoundedCorner()),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -1088,7 +1139,9 @@ fun WeeklyScheduleGrid(
     onCourseClick: (Course) -> Unit,
     onEmptySlotClick: (Int, Int) -> Unit,
     onCourseLongPress: (Course, CellBounds) -> Unit,
-    onEmptySlotLongPress: (Int, Int, CellBounds) -> Unit
+    onEmptySlotLongPress: (Int, Int, CellBounds) -> Unit,
+    editingCourseId: Long? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     var selectedEmptySlot by remember { mutableStateOf<EmptySlotPosition?>(null) }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("M/d") }
@@ -1283,7 +1336,9 @@ fun WeeklyScheduleGrid(
                                 courseLocationFontSize = courseLocationFontSize,
                                 onCourseClick = onCourseClick,
                                 onCourseLongPress = onCourseLongPress,
-                                gridOffsetY = gridOffsetY
+                                gridOffsetY = gridOffsetY,
+                                sharedElementKey = if (layoutInfo.course.id == editingCourseId) "course_${layoutInfo.course.id}" else null,
+                                animatedVisibilityScope = animatedVisibilityScope
                             )
                         }
                     }
@@ -1411,7 +1466,7 @@ private fun RowScope.EmptySlot(
 ) {
     val darkTheme = LocalDarkTheme.current
     val appThemeMode = LocalAppThemeMode.current
-    val shape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(12.dp) else ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
+    val shape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(getRoundedCorner()) else ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
     val selectionBorderColor = Color(0xFF4789FE)
     
     var cellBounds by remember { mutableStateOf(CellBounds(0, 0, 0, 0)) }
@@ -1482,7 +1537,7 @@ private fun RowScope.EmptySlot(
     }
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.animation.ExperimentalSharedTransitionApi::class)
 @Composable
 private fun CourseOverlayCard(
     course: Course,
@@ -1500,7 +1555,9 @@ private fun CourseOverlayCard(
     courseLocationFontSize: Int,
     onCourseClick: (Course) -> Unit,
     onCourseLongPress: (Course, CellBounds) -> Unit,
-    gridOffsetY: Int
+    gridOffsetY: Int,
+    sharedElementKey: String? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val isCurrentWeekCourse = course.isInWeek(currentWeek)
     val darkTheme = LocalDarkTheme.current
@@ -1550,45 +1607,60 @@ private fun CourseOverlayCard(
         )
     }
 
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val boxModifier = Modifier
+        .offset { IntOffset(offsetX, offsetY) }
+        .width(with(density) { cardWidth.toDp() })
+        .height(with(density) { totalHeightPx.toDp() })
+        .then(
+            if (sharedElementKey != null && sharedTransitionScope != null && animatedVisibilityScope != null) {
+                with(sharedTransitionScope) {
+                    Modifier.sharedElement(
+                        rememberSharedContentState(sharedElementKey),
+                        animatedVisibilityScope = animatedVisibilityScope
+                    )
+                }
+            } else {
+                Modifier
+            }
+        )
+        .scale(scale)
+        .clip(shape)
+        .graphicsLayer {
+            shadowElevation = 16.dp.toPx()
+            this.shape = shape
+            clip = true
+            ambientShadowColor = Color.Transparent
+            spotShadowColor = shadowColor
+        }
+        .background(fillShadow)
+        .then(
+            run {
+                Modifier.background(gradientBrush)
+            }
+        )
+        .combinedClickable(
+            interactionSource = interactionSource,
+            indication = null,
+            onClick = { onCourseClick(course) },
+            onLongClick = {
+                onCourseLongPress(course, cardBounds)
+            }
+        )
+        .onGloballyPositioned { coordinates ->
+            val position = coordinates.positionInWindow()
+            val size = coordinates.size
+            cardBounds = CellBounds(
+                x = position.x.roundToInt(),
+                y = position.y.roundToInt(),
+                width = size.width,
+                height = size.height
+            )
+        }
+        .padding(horizontal = 2.dp, vertical = 2.dp)
+
     Box(
-        modifier = Modifier
-            .offset { IntOffset(offsetX, offsetY) }
-            .width(with(density) { cardWidth.toDp() })
-            .height(with(density) { totalHeightPx.toDp() })
-            .scale(scale)
-            .clip(shape)
-            .graphicsLayer {
-                shadowElevation = 16.dp.toPx()
-                this.shape = shape
-                clip = true
-                ambientShadowColor = Color.Transparent
-                spotShadowColor = shadowColor
-            }
-            .background(fillShadow)
-            .then(
-                run {
-                    Modifier.background(gradientBrush)
-                }
-            )
-            .combinedClickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = { onCourseClick(course) },
-                onLongClick = {
-                    onCourseLongPress(course, cardBounds)
-                }
-            )
-            .onGloballyPositioned { coordinates ->
-                val position = coordinates.positionInWindow()
-                val size = coordinates.size
-                cardBounds = CellBounds(
-                    x = position.x.roundToInt(),
-                    y = position.y.roundToInt(),
-                    width = size.width,
-                    height = size.height
-                )
-            }
-            .padding(horizontal = 2.dp, vertical = 2.dp),
+        modifier = boxModifier,
         contentAlignment = Alignment.Center
     ) {
         val textAlpha = if (showNonCurrentWeekCourses && !isCurrentWeekCourse) 0.6f else 1f

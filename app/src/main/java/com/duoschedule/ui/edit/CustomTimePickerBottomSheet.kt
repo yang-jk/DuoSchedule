@@ -70,6 +70,7 @@ fun CustomTimePickerBottomSheet(
         WindowBottomSheet(
             show = true,
             title = "选择自定义时间",
+            cornerRadius = getRoundedCorner(),
             onDismissRequest = onDismiss,
             allowDismiss = false
         ) {

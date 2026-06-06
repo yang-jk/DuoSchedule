@@ -1,7 +1,8 @@
-﻿package com.duoschedule.ui.update
+package com.duoschedule.ui.update
 
 import android.content.Context
 import android.content.pm.PackageInfo
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.duoschedule.data.local.SettingsDataStore
@@ -162,7 +163,12 @@ class UpdateViewModel @Inject constructor(
             val packageInfo: PackageInfo = context.packageManager
                 .getPackageArchiveInfo(apkFile.absolutePath, 0)
                 ?: return false
-            val apkVersionCode = packageInfo.versionCode
+            val apkVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                packageInfo.longVersionCode.toInt()
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.versionCode
+            }
             AppLog.i(TAG, "缓存APK版本号: $apkVersionCode, 期望版本号: $expectedVersionCode")
             apkVersionCode == expectedVersionCode
         } catch (e: Exception) {

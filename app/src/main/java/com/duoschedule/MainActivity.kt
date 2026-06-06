@@ -67,6 +67,7 @@ class MainActivity : ComponentActivity() {
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
+            @Suppress("DEPRECATION")
             window.isStatusBarContrastEnforced = false
         }
         val splashScreen = installSplashScreen()
@@ -296,6 +297,7 @@ class MainActivity : ComponentActivity() {
                 Intent.ACTION_VIEW -> it.data
                 Intent.ACTION_SEND -> {
                     if (it.hasExtra(Intent.EXTRA_STREAM)) {
+                        @Suppress("DEPRECATION")
                         it.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
                     } else {
                         null

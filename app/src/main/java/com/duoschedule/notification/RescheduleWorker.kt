@@ -59,7 +59,7 @@ class RescheduleWorker @AssistedInject constructor(
                     LiveUpdateService.start(
                         context = context,
                         courseName = course.name,
-                        courseLocation = course.location ?: "",
+                        courseLocation = course.location,
                         remainingMinutes = remainingMinutes,
                         endHour = course.endHour,
                         endMinute = course.endMinute,

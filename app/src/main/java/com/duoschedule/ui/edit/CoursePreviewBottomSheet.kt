@@ -56,11 +56,12 @@ fun CoursePreviewBottomSheet(
         WindowBottomSheet(
             show = true,
             title = course.name,
+            cornerRadius = getRoundedCorner(),
             onDismissRequest = onDismiss
         ) {
             Surface(
                 color = MiuixTheme.colorScheme.surfaceContainer,
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(getRoundedCorner())
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     CourseInfoRowMiuix(label = "教室地点", value = course.location.ifEmpty { "未设置" })

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Widget version="1" frameRate="30" screenWidth="1080" useVariableUpdater="DateTime.Minute">
+    <VariableBinders>
+        <ContentProviderBinder
+            uri="content://com.duoschedule.provider/maml/my_courses"
+            columns="week,person_name,course_1_name,course_1_location,course_1_period,course_1_ended,course_2_name,course_2_location,course_2_period,course_2_ended,course_3_name,course_3_location,course_3_period,course_3_ended,course_4_name,course_4_location,course_4_period,course_4_ended">
+            <Variable name="week" type="int" column="week" />
+            <Variable name="person_name" type="string" column="person_name" />
+            <Variable name="course_1_name" type="string" column="course_1_name" />
+            <Variable name="course_1_location" type="string" column="course_1_location" />
+            <Variable name="course_1_period" type="string" column="course_1_period" />
+            <Variable name="course_1_ended" type="int" column="course_1_ended" />
+            <Variable name="course_2_name" type="string" column="course_2_name" />
+            <Variable name="course_2_location" type="string" column="course_2_location" />
+            <Variable name="course_2_period" type="string" column="course_2_period" />
+            <Variable name="course_2_ended" type="int" column="course_2_ended" />
+            <Variable name="course_3_name" type="string" column="course_3_name" />
+            <Variable name="course_3_location" type="string" column="course_3_location" />
+            <Variable name="course_3_period" type="string" column="course_3_period" />
+            <Variable name="course_3_ended" type="int" column="course_3_ended" />
+            <Variable name="course_4_name" type="string" column="course_4_name" />
+            <Variable name="course_4_location" type="string" column="course_4_location" />
+            <Variable name="course_4_period" type="string" column="course_4_period" />
+            <Variable name="course_4_ended" type="int" column="course_4_ended" />
+        </ContentProviderBinder>
+    </VariableBinders>
+
+    <!-- Background -->
+    <Rectangle name="bg" x="0" y="0" w="1080" h="440" fillColor="#F5F5F5" cornerRadiusX="24">
+    </Rectangle>
+    <Rectangle name="bg_dark" x="0" y="0" w="1080" h="440" fillColor="#1C1C1E" cornerRadiusX="24">
+        <Position>
+            <X>ifelse(#__darkmode, 0, 2000)</X>
+        </Position>
+    </Rectangle>
+
+    <!-- Header -->
+    <Rectangle name="header_indicator" x="30" y="38" w="6" h="24" fillColor="#FF6B6B" />
+    <Text name="header_title" x="50" y="30" textExp="@person_name + '的今日课程'" color="#333333" size="26" bold="true" />
+    <Text name="header_title_dark" x="50" y="30" textExp="@person_name + '的今日课程'" color="#EEEEEE" size="26" bold="true">
+        <Position>
+            <X>ifelse(#__darkmode, 50, 2000)</X>
+        </Position>
+    </Text>
+    <Text name="header_week" x="0" y="34" textExp="'第' + @week + '周'" color="#666666" size="22" align="right" alignH="right">
+        <Position>
+            <X>1050</X>
+        </Position>
+    </Text>
+    <Text name="header_week_dark" x="0" y="34" textExp="'第' + @week + '周'" color="#AAAAAA" size="22" align="right" alignH="right">
+        <Position>
+            <X>ifelse(#__darkmode, 1050, 2000)</X>
+        </Position>
+    </Text>
+
+    <!-- Course 1 -->
+    <Group name="course_1_group" visibility="ifelse(strIsEmpty(@course_1_name), 0, 1)">
+        <Text name="course_1_period" x="30" y="90" textExp="@course_1_period" colorExp="ifelse(#course_1_ended, ifelse(#__darkmode, '#666666', '#CCCCCC'), '#FF6B6B')" size="20" />
+        <Text name="course_1_name" x="160" y="85" textExp="@course_1_name" colorExp="ifelse(#course_1_ended, ifelse(#__darkmode, '#666666', '#CCCCCC'), ifelse(#__darkmode, '#EEEEEE', '#333333'))" size="22" bold="true" />
+        <Text name="course_1_location" x="160" y="112" textExp="@course_1_location" colorExp="ifelse(#__darkmode, '#777777', '#999999')" size="16" />
+    </Group>
+
+    <!-- Course 2 -->
+    <Group name="course_2_group" visibility="ifelse(strIsEmpty(@course_2_name), 0, 1)">
+        <Text name="course_2_period" x="30" y="150" textExp="@course_2_period" colorExp="ifelse(#course_2_ended, ifelse(#__darkmode, '#666666', '#CCCCCC'), '#FF6B6B')" size="20" />
+        <Text name="course_2_name" x="160" y="145" textExp="@course_2_name" colorExp="ifelse(#course_2_ended, ifelse(#__darkmode, '#666666', '#CCCCCC'), ifelse(#__darkmode, '#EEEEEE', '#333333'))" size="22" bold="true" />
+        <Text name="course_2_location" x="160" y="172" textExp="@course_2_location" colorExp="ifelse(#__darkmode, '#777777', '#999999')" size="16" />
+    </Group>
+
+    <!-- Course 3 -->
+    <Group name="course_3_group" visibility="ifelse(strIsEmpty(@course_3_name), 0, 1)">
+        <Text name="course_3_period" x="30" y="210" textExp="@course_3_period" colorExp="ifelse(#course_3_ended, ifelse(#__darkmode, '#666666', '#CCCCCC'), '#FF6B6B')" size="20" />
+        <Text name="course_3_name" x="160" y="205" textExp="@course_3_name" colorExp="ifelse(#course_3_ended, ifelse(#__darkmode, '#666666', '#CCCCCC'), ifelse(#__darkmode, '#EEEEEE', '#333333'))" size="22" bold="true" />
+        <Text name="course_3_location" x="160" y="232" textExp="@course_3_location" colorExp="ifelse(#__darkmode, '#777777', '#999999')" size="16" />
+    </Group>
+
+    <!-- Course 4 -->
+    <Group name="course_4_group" visibility="ifelse(strIsEmpty(@course_4_name), 0, 1)">
+        <Text name="course_4_period" x="30" y="270" textExp="@course_4_period" colorExp="ifelse(#course_4_ended, ifelse(#__darkmode, '#666666', '#CCCCCC'), '#FF6B6B')" size="20" />
+        <Text name="course_4_name" x="160" y="265" textExp="@course_4_name" colorExp="ifelse(#course_4_ended, ifelse(#__darkmode, '#666666', '#CCCCCC'), ifelse(#__darkmode, '#EEEEEE', '#333333'))" size="22" bold="true" />
+        <Text name="course_4_location" x="160" y="292" textExp="@course_4_location" colorExp="ifelse(#__darkmode, '#777777', '#999999')" size="16" />
+    </Group>
+
+    <!-- Click to open app -->
+    <Button name="open_app" x="0" y="0" w="1080" h="440">
+        <Trigger action="up">
+            <Intent command="open_app" package="com.duoschedule" />
+        </Trigger>
+    </Button>
+</Widget>

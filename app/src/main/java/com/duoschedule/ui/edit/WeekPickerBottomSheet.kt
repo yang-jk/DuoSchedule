@@ -61,6 +61,7 @@ fun WeekPickerBottomSheet(
         WindowBottomSheet(
             show = true,
             title = "选择周数",
+            cornerRadius = getRoundedCorner(),
             onDismissRequest = onDismiss
         ) {
             Row(
@@ -451,7 +452,7 @@ private fun WeekGridItemMiuix(
 ) {
     Surface(
         color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(getRoundedCorner()),
         modifier = Modifier.size(40.dp).clickable(onClick = onClick)
     ) {
         Box(

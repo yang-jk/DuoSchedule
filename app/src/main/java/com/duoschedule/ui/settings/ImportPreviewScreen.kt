@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.duoschedule.ui.theme.getRoundedCorner
 import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.importexport.CourseImportData
 import com.duoschedule.data.importexport.CsvFileType
@@ -276,8 +277,8 @@ fun ImportPreviewScreen(
                             .filter { it.isSelected }
                             .map { item ->
                                 val targetPerson = when (item.data.personType) {
-                                    PersonType.PERSON_A -> personATarget ?: PersonType.PERSON_A
-                                    PersonType.PERSON_B -> personBTarget ?: PersonType.PERSON_B
+                                    PersonType.PERSON_A -> personATarget
+                                    PersonType.PERSON_B -> personBTarget
                                 }
                                 item.data.copy(personType = targetPerson)
                             }
@@ -410,7 +411,7 @@ private fun AppExportPreviewContent(
         item {
             if (appThemeMode == AppThemeMode.MIUIX) {
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(getRoundedCorner()),
                     color = MiuixTheme.colorScheme.surfaceContainer
                 ) {
                     Column(
@@ -608,7 +609,7 @@ private fun SettingsPreviewCard(
 
     if (appThemeMode == AppThemeMode.MIUIX) {
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(getRoundedCorner()),
             color = MiuixTheme.colorScheme.surfaceContainer
         ) {
             Column(
@@ -759,7 +760,7 @@ private fun TemplatePreviewContent(
     ) {
         if (appThemeMode == AppThemeMode.MIUIX) {
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(getRoundedCorner()),
                 color = MiuixTheme.colorScheme.surfaceContainer,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1435,7 +1436,7 @@ private fun ImportPreviewItemCard(
 
     if (appThemeMode == AppThemeMode.MIUIX) {
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(getRoundedCorner()),
             color = if (item.hasConflict) MiuixTheme.colorScheme.errorContainer else MiuixTheme.colorScheme.surfaceContainer
         ) {
             Row(

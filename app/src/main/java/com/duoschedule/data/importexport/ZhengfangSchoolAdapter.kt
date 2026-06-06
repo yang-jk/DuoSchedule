@@ -64,7 +64,7 @@ class ZhengfangSchoolAdapter(
 
             val loginBody = FormBody.Builder()
                 .add("__VIEWSTATE", viewState)
-                .add("__EVENTVALIDATION", eventValidation ?: "")
+                .add("__EVENTVALIDATION", eventValidation)
                 .add("txtUserName", username)
                 .add("TextBox2", password)
                 .add("txtSecretCode", captcha)

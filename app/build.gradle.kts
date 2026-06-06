@@ -35,8 +35,8 @@ android {
         applicationId = "com.duoschedule"
         minSdk = 26
         targetSdk = 36
-        versionCode = 40800
-        versionName = "4.8.0"
+        versionCode = 41000
+        versionName = "4.10.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -71,7 +71,8 @@ android {
                 "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
                 "-opt-in=androidx.compose.animation.ExperimentalAnimationApi",
                 "-opt-in=androidx.compose.animation.ExperimentalSharedTransitionApi",
-                "-Xcontext-receivers"
+                "-Xcontext-parameters",
+                "-Xannotation-default-target=param-property"
             )
         }
     }

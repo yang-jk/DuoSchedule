@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.theme
+package com.duoschedule.ui.theme
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -17,6 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.duoschedule.data.model.AppThemeMode
+import com.duoschedule.ui.theme.LocalAppThemeMode
+import com.duoschedule.ui.theme.getRoundedCorner
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
@@ -60,9 +63,11 @@ fun GlassBottomSheet(
         )
     }
 
+    val appThemeMode = LocalAppThemeMode.current
+    val cornerRadiusTop = if (appThemeMode == AppThemeMode.MIUIX) getRoundedCorner() else GlassBottomSheetDefaults.CornerRadiusTop
     val shape = ContinuousRoundedRectangle(
-        topStart = GlassBottomSheetDefaults.CornerRadiusTop,
-        topEnd = GlassBottomSheetDefaults.CornerRadiusTop,
+        topStart = cornerRadiusTop,
+        topEnd = cornerRadiusTop,
         bottomStart = GlassBottomSheetDefaults.CornerRadiusBottom,
         bottomEnd = GlassBottomSheetDefaults.CornerRadiusBottom
     )

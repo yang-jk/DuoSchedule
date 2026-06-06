@@ -6,6 +6,38 @@
 
 ---
 
+## [4.10.0] - 2026-06-06
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 变更内容
+
+**优化页面切换效果：Miuix/iOS主题分别适配不同转场动画，新增课表→编辑页共享元素转场**
+
+1. **优化**：Miuix 主题和 iOS 主题分别适配不同的页面转场动画风格
+2. **新增**：课表→编辑页共享元素转场，课程卡片点击进入编辑页时一镜到底动画
+
+---
+
+## [4.9.0] - 2026-06-06
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 变更内容
+
+**Miuix 主题设备圆角适配，组件圆角跟随设备屏幕圆角**
+
+1. **新增**：`getRoundedCorner()` Composable 函数，通过 WindowInsets 获取设备屏幕圆角，不存在时使用预设值 28.dp
+2. **优化**：Miuix 主题下所有硬编码圆角的 Surface/Card/clip/shape 组件改为使用设备圆角 `getRoundedCorner()`
+3. **涉及**：GlassBottomSheet 顶部圆角、SettingsSection Surface、SettingsOptionDialog clip、CourseEditScreen 各组件、WeekPickerBottomSheet、CoursePreviewBottomSheet、ImportPreviewScreen、DataManagementScreen、MainScreen、CurrentCourseCard、SyncSettingsScreen、ConflictResolutionDialog、InputDialogs、ScheduleScreen
+4. **保持**：iOS 主题下所有组件圆角不变
+
+---
+
 ## [4.8.0] - 2026-06-06
 
 ### 变更类型：新增功能

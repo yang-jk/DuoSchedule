@@ -23,6 +23,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.sync.*
 import com.duoschedule.ui.settings.components.*
+import com.duoschedule.ui.theme.getRoundedCorner
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.backdrops.emptyBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop

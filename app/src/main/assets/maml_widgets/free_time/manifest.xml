@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Widget version="1" frameRate="30" screenWidth="1080" useVariableUpdater="DateTime.Minute">
+    <VariableBinders>
+        <ContentProviderBinder
+            uri="content://com.duoschedule.provider/maml/free_time"
+            columns="free_time_text,free_time_label">
+            <Variable name="free_time_text" type="string" column="free_time_text" />
+            <Variable name="free_time_label" type="string" column="free_time_label" />
+        </ContentProviderBinder>
+    </VariableBinders>
+
+    <Rectangle name="bg" x="0" y="0" w="500" h="200"
+        fillColor="ifelse(#__darkmode, #1C1C1E, #F5F5F5)"
+        cornerRadiusX="20" />
+
+    <Text name="title" x="250" y="20" text="共同空闲"
+        color="ifelse(#__darkmode, #777777, #999999)"
+        size="18" align="center" alignV="top" />
+
+    <Text name="free_time" x="250" y="80"
+        textExp="free_time_text"
+        color="#4ECDC4"
+        size="36" bold="true" align="center" alignV="top" />
+
+    <Text name="label" x="250" y="140"
+        textExp="free_time_label"
+        color="ifelse(#__darkmode, #FFFFFF, #333333)"
+        size="18" align="center" alignV="top" />
+
+    <Button name="click_area" x="0" y="0" w="500" h="200">
+        <Trigger action="up">
+            <Intent command="open_app" package="com.duoschedule" />
+        </Trigger>
+    </Button>
+</Widget>

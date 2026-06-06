@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Widget version="1" frameRate="30" screenWidth="1080" useVariableUpdater="DateTime.Minute">
+    <VariableBinders>
+        <ContentProviderBinder
+            uri="content://com.duoschedule.provider/maml/schedule"
+            columns="week,person_a_name,person_a_course,person_a_time,person_a_remaining,person_b_name,person_b_course,person_b_time,person_b_remaining">
+            <Variable name="week" type="int" column="week" />
+            <Variable name="person_a_name" type="string" column="person_a_name" />
+            <Variable name="person_a_course" type="string" column="person_a_course" />
+            <Variable name="person_a_time" type="string" column="person_a_time" />
+            <Variable name="person_a_remaining" type="int" column="person_a_remaining" />
+            <Variable name="person_b_name" type="string" column="person_b_name" />
+            <Variable name="person_b_course" type="string" column="person_b_course" />
+            <Variable name="person_b_time" type="string" column="person_b_time" />
+            <Variable name="person_b_remaining" type="int" column="person_b_remaining" />
+        </ContentProviderBinder>
+    </VariableBinders>
+
+    <!-- Background -->
+    <Rectangle name="bg" x="0" y="0" w="1080" h="300"
+        fillColor="ifelse(#__darkmode, #FF1C1C1E, #FFF5F5F5)"
+        cornerRadiusX="24" cornerRadiusY="24" />
+
+    <!-- Header: App title -->
+    <Text name="title" x="30" y="30" text="双人课程表"
+        color="ifelse(#__darkmode, #FFFFFFFF, #FF333333)"
+        size="28" bold="true" align="left" alignV="top" />
+
+    <!-- Header: Week number -->
+    <Text name="week_num" x="1050" y="30"
+        textExp="'第' + #week + '周'"
+        color="ifelse(#__darkmode, #FFAAAAAA, #FF666666)"
+        size="24" align="right" alignV="top" />
+
+    <!-- Divider line between left and right halves -->
+    <Rectangle name="divider" x="530" y="80" w="2" h="200"
+        fillColor="ifelse(#__darkmode, #FF3A3A3C, #FFE0E0E0)" />
+
+    <!-- Left half: Person A -->
+    <Text name="person_a_label" x="30" y="90"
+        textExp="@person_a_name"
+        color="#FFFF6B6B"
+        size="20" align="left" alignV="top" />
+
+    <Text name="person_a_course" x="30" y="120"
+        textExp="@person_a_course"
+        color="ifelse(#__darkmode, #FFFFFFFF, #FF333333)"
+        size="26" bold="true" align="left" alignV="top" />
+
+    <Text name="person_a_time" x="30" y="160"
+        textExp="@person_a_time"
+        color="ifelse(#__darkmode, #FF777777, #FF999999)"
+        size="18" align="left" alignV="top" />
+
+    <!-- Right half: Person B -->
+    <Text name="person_b_label" x="560" y="90"
+        textExp="@person_b_name"
+        color="#FF4ECDC4"
+        size="20" align="left" alignV="top" />
+
+    <Text name="person_b_course" x="560" y="120"
+        textExp="@person_b_course"
+        color="ifelse(#__darkmode, #FFFFFFFF, #FF333333)"
+        size="26" bold="true" align="left" alignV="top" />
+
+    <Text name="person_b_time" x="560" y="160"
+        textExp="@person_b_time"
+        color="ifelse(#__darkmode, #FF777777, #FF999999)"
+        size="18" align="left" alignV="top" />
+
+    <!-- Click to open app -->
+    <Button name="open_app" x="0" y="0" w="1080" h="300">
+        <Trigger action="up">
+            <Intent command="open_app" package="com.duoschedule" />
+        </Trigger>
+    </Button>
+</Widget>

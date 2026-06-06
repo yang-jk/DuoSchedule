@@ -112,7 +112,7 @@ fun ScheduleSettingsScreen(
             SettingsSection(title = if (singleModeEnabled) "课表设置" else "我的课表设置") {
                 SettingsValueRow(
                     title = "开学时间",
-                    value = personASemesterStart?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) ?: "未设置",
+                    value = personASemesterStart.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
                     onClick = { showPersonASemesterStartDialog = true }
                 )
                 
@@ -155,7 +155,7 @@ fun ScheduleSettingsScreen(
                 SettingsSection(title = "Ta的课表设置") {
                     SettingsValueRow(
                         title = "开学时间",
-                        value = personBSemesterStart?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) ?: "未设置",
+                        value = personBSemesterStart.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
                         onClick = { showPersonBSemesterStartDialog = true }
                     )
                     
@@ -208,7 +208,7 @@ fun ScheduleSettingsScreen(
     if (showPersonBSemesterStartDialog) {
         DatePickerDialog(
             title = "选择开学时间",
-            initialDate = personBSemesterStart ?: LocalDate.now(),
+            initialDate = personBSemesterStart,
             onDismiss = { showPersonBSemesterStartDialog = false },
             onConfirm = { date ->
                 viewModel.setPersonSemesterStart(PersonType.PERSON_B, date)
@@ -220,7 +220,7 @@ fun ScheduleSettingsScreen(
     if (showPersonASemesterStartDialog) {
         DatePickerDialog(
             title = "选择开学时间",
-            initialDate = personASemesterStart ?: LocalDate.now(),
+            initialDate = personASemesterStart,
             onDismiss = { showPersonASemesterStartDialog = false },
             onConfirm = { date ->
                 viewModel.setPersonSemesterStart(PersonType.PERSON_A, date)

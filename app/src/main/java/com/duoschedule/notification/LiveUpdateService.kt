@@ -53,7 +53,9 @@ class LiveUpdateService : Service() {
         
         fun isServiceRunning(context: Context): Boolean {
             if (isRunning) {
+                @Suppress("DEPRECATION")
                 val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                @Suppress("DEPRECATION")
                 val running = am.getRunningServices(Int.MAX_VALUE)
                     .any { it.service.className == LiveUpdateService::class.java.name }
                 if (!running) {
@@ -303,7 +305,7 @@ class LiveUpdateService : Service() {
                     val remainingMinutes = java.time.Duration.between(currentTime, courseEndTime).toMinutes().toInt()
                     
                     currentCourseName = course.name
-                    currentCourseLocation = course.location ?: ""
+                    currentCourseLocation = course.location
                     currentRemainingMinutes = remainingMinutes
                     currentCourseEndTime = courseEndTime
                     currentTotalMinutes = course.duration

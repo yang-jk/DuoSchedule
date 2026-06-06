@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.theme
+package com.duoschedule.ui.theme
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -6,6 +6,8 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -46,7 +48,7 @@ fun <T> appleSpringFor(preset: AppleSpring = AppleSpring.Default, visibilityThre
 private fun gentleIntOffsetSpring(): SpringSpec<IntOffset> =
     spring(dampingRatio = AppleSpring.Gentle.dampingRatio, stiffness = AppleSpring.Gentle.stiffness)
 
-private const val IOS_ENTER_DURATION = 350
+private const val IOS_ENTER_DURATION = 400
 private const val IOS_POP_DURATION = 300
 
 fun iosSlideEnter(): EnterTransition =
@@ -96,6 +98,68 @@ fun tabSwitchExit(direction: TabDirection = TabDirection.RIGHT): ExitTransition 
             targetOffsetX = { fullWidth -> fullWidth }
         ) + fadeOut(animationSpec = appleSpring(AppleSpring.Gentle))
     }
+
+// ========== Miuix 风格转场动画 ==========
+
+private const val MIUIX_PUSH_DURATION = 350
+private const val MIUIX_POP_DURATION = 300
+
+private val miuixTabSpringOffset: SpringSpec<IntOffset> = spring(dampingRatio = 0.8f, stiffness = 600f)
+private val miuixTabSpringFloat: SpringSpec<Float> = spring(dampingRatio = 0.8f, stiffness = 600f)
+
+fun miuixTabSwitchEnter(direction: TabDirection = TabDirection.RIGHT): EnterTransition =
+    when (direction) {
+        TabDirection.RIGHT -> slideInHorizontally(
+            animationSpec = miuixTabSpringOffset,
+            initialOffsetX = { fullWidth -> fullWidth * 30 / 100 }
+        ) + fadeIn(animationSpec = miuixTabSpringFloat) +
+                scaleIn(animationSpec = miuixTabSpringFloat, initialScale = 0.95f)
+
+        TabDirection.LEFT -> slideInHorizontally(
+            animationSpec = miuixTabSpringOffset,
+            initialOffsetX = { fullWidth -> -(fullWidth * 30 / 100) }
+        ) + fadeIn(animationSpec = miuixTabSpringFloat) +
+                scaleIn(animationSpec = miuixTabSpringFloat, initialScale = 0.95f)
+    }
+
+fun miuixTabSwitchExit(direction: TabDirection = TabDirection.RIGHT): ExitTransition =
+    when (direction) {
+        TabDirection.RIGHT -> slideOutHorizontally(
+            animationSpec = miuixTabSpringOffset,
+            targetOffsetX = { fullWidth -> -(fullWidth * 30 / 100) }
+        ) + fadeOut(animationSpec = miuixTabSpringFloat) +
+                scaleOut(animationSpec = miuixTabSpringFloat, targetScale = 0.95f)
+
+        TabDirection.LEFT -> slideOutHorizontally(
+            animationSpec = miuixTabSpringOffset,
+            targetOffsetX = { fullWidth -> fullWidth * 30 / 100 }
+        ) + fadeOut(animationSpec = miuixTabSpringFloat) +
+                scaleOut(animationSpec = miuixTabSpringFloat, targetScale = 0.95f)
+    }
+
+fun miuixPushEnter(): EnterTransition =
+    slideInHorizontally(
+        animationSpec = tween(MIUIX_PUSH_DURATION, easing = FastOutSlowInEasing),
+        initialOffsetX = { fullWidth -> fullWidth }
+    ) + fadeIn(animationSpec = tween(MIUIX_PUSH_DURATION, easing = FastOutSlowInEasing))
+
+fun miuixPushExit(): ExitTransition =
+    slideOutHorizontally(
+        animationSpec = tween(MIUIX_PUSH_DURATION, easing = FastOutSlowInEasing),
+        targetOffsetX = { fullWidth -> -(fullWidth * 30 / 100) }
+    ) + fadeOut(animationSpec = tween(MIUIX_PUSH_DURATION, easing = FastOutSlowInEasing), targetAlpha = 0.7f)
+
+fun miuixPopEnter(): EnterTransition =
+    slideInHorizontally(
+        animationSpec = tween(MIUIX_POP_DURATION, easing = FastOutSlowInEasing),
+        initialOffsetX = { fullWidth -> -(fullWidth * 30 / 100) }
+    ) + fadeIn(animationSpec = tween(MIUIX_POP_DURATION, easing = FastOutSlowInEasing), initialAlpha = 0.7f)
+
+fun miuixPopExit(): ExitTransition =
+    slideOutHorizontally(
+        animationSpec = tween(MIUIX_POP_DURATION, easing = FastOutSlowInEasing),
+        targetOffsetX = { fullWidth -> fullWidth }
+    ) + fadeOut(animationSpec = tween(MIUIX_POP_DURATION, easing = FastOutSlowInEasing))
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 val LocalSharedTransitionScope = compositionLocalOf<SharedTransitionScope?> { null }

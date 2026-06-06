@@ -134,7 +134,12 @@ class AppUpdateChecker @Inject constructor(
         return try {
             val packageInfo: PackageInfo = context.packageManager
                 .getPackageInfo(context.packageName, 0)
-            packageInfo.versionCode
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                packageInfo.longVersionCode.toInt()
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.versionCode
+            }
         } catch (e: PackageManager.NameNotFoundException) {
             AppLog.e(TAG, "无法获取版本号: ${e.message}")
             -1

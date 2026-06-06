@@ -17,6 +17,7 @@ import androidx.navigation.NavType
 import com.duoschedule.data.importexport.CourseImportData
 import com.duoschedule.data.importexport.ImportResult
 import com.duoschedule.data.importexport.ImportPreviewData
+import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.edit.CourseEditScreen
 import com.duoschedule.ui.main.MainScreen
@@ -31,8 +32,15 @@ import com.duoschedule.ui.theme.iosSlideEnter
 import com.duoschedule.ui.theme.iosSlideExit
 import com.duoschedule.ui.theme.iosSlidePopEnter
 import com.duoschedule.ui.theme.iosSlidePopExit
+import com.duoschedule.ui.theme.LocalAppThemeMode
 import com.duoschedule.ui.theme.tabSwitchEnter
 import com.duoschedule.ui.theme.tabSwitchExit
+import com.duoschedule.ui.theme.miuixTabSwitchEnter
+import com.duoschedule.ui.theme.miuixTabSwitchExit
+import com.duoschedule.ui.theme.miuixPushEnter
+import com.duoschedule.ui.theme.miuixPushExit
+import com.duoschedule.ui.theme.miuixPopEnter
+import com.duoschedule.ui.theme.miuixPopExit
 import kotlinx.coroutines.launch
 
 private val bottomNavRoutes = listOf(
@@ -59,6 +67,8 @@ fun DuoScheduleNavGraph(
 ) {
     val darkTheme = LocalDarkTheme.current
     val backgroundColor = if (darkTheme) BackgroundsDark.Primary else BackgroundsLight.Primary
+    val appThemeMode = LocalAppThemeMode.current
+    val isMiuix = appThemeMode == AppThemeMode.MIUIX
     
     var pendingImportData by remember { mutableStateOf<ImportPreviewData?>(null) }
     var externalImportUri by remember { mutableStateOf<Uri?>(null) }
@@ -77,47 +87,55 @@ fun DuoScheduleNavGraph(
         startDestination = startDestination,
         modifier = modifier.background(backgroundColor),
         enterTransition = {
-            val fromRoute = this.initialState?.destination?.route
+            val fromRoute = this.initialState.destination.route
             val toRoute = this.targetState.destination.route
             val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
 
             if (isBottomNavTransition) {
-                tabSwitchEnter(determineTabDirection(fromRoute, toRoute))
+                if (isMiuix) miuixTabSwitchEnter(determineTabDirection(fromRoute, toRoute))
+                else tabSwitchEnter(determineTabDirection(fromRoute, toRoute))
             } else {
-                iosSlideEnter()
+                if (isMiuix) miuixPushEnter()
+                else iosSlideEnter()
             }
         },
         exitTransition = {
-            val fromRoute = this.initialState?.destination?.route
+            val fromRoute = this.initialState.destination.route
             val toRoute = this.targetState.destination.route
             val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
 
             if (isBottomNavTransition) {
-                tabSwitchExit(determineTabDirection(fromRoute, toRoute))
+                if (isMiuix) miuixTabSwitchExit(determineTabDirection(fromRoute, toRoute))
+                else tabSwitchExit(determineTabDirection(fromRoute, toRoute))
             } else {
-                iosSlideExit()
+                if (isMiuix) miuixPushExit()
+                else iosSlideExit()
             }
         },
         popEnterTransition = {
-            val fromRoute = this.initialState?.destination?.route
+            val fromRoute = this.initialState.destination.route
             val toRoute = this.targetState.destination.route
             val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
 
             if (isBottomNavTransition) {
-                tabSwitchEnter(determineTabDirection(fromRoute, toRoute))
+                if (isMiuix) miuixTabSwitchEnter(determineTabDirection(fromRoute, toRoute))
+                else tabSwitchEnter(determineTabDirection(fromRoute, toRoute))
             } else {
-                iosSlidePopEnter()
+                if (isMiuix) miuixPopEnter()
+                else iosSlidePopEnter()
             }
         },
         popExitTransition = {
-            val fromRoute = this.initialState?.destination?.route
+            val fromRoute = this.initialState.destination.route
             val toRoute = this.targetState.destination.route
             val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
 
             if (isBottomNavTransition) {
-                tabSwitchExit(determineTabDirection(fromRoute, toRoute))
+                if (isMiuix) miuixTabSwitchExit(determineTabDirection(fromRoute, toRoute))
+                else tabSwitchExit(determineTabDirection(fromRoute, toRoute))
             } else {
-                iosSlidePopExit()
+                if (isMiuix) miuixPopExit()
+                else iosSlidePopExit()
             }
         }
     ) {

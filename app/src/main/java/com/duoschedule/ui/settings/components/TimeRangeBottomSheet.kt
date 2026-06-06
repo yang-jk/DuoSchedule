@@ -73,6 +73,7 @@ fun TimeRangeBottomSheet(
         WindowBottomSheet(
             show = true,
             title = "请调节第${periodIndex + 1}节课的时间",
+            cornerRadius = getRoundedCorner(),
             onDismissRequest = onDismiss,
             allowDismiss = false
         ) {

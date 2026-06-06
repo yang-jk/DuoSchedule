@@ -59,6 +59,7 @@ fun PeriodPickerBottomSheet(
         WindowBottomSheet(
             show = true,
             title = "选择上课时间",
+            cornerRadius = getRoundedCorner(),
             onDismissRequest = onDismiss
         ) {
             val days = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")

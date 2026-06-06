@@ -1,6 +1,8 @@
 package com.duoschedule.ui.edit
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
@@ -46,6 +48,7 @@ import com.duoschedule.data.model.WeekType
 import com.duoschedule.ui.settings.components.SettingsDefaults
 import com.duoschedule.ui.settings.components.SettingsSection
 import com.duoschedule.ui.theme.Separator
+import com.duoschedule.ui.theme.getRoundedCorner
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.edit.CustomTimePickerBottomSheet
 import com.kyant.backdrop.backdrops.emptyBackdrop
@@ -56,7 +59,7 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
-import top.yukonga.miuix.kmp.basic.TabRow
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import com.kyant.backdrop.drawBackdrop
@@ -211,7 +214,7 @@ fun CourseEditScreen(
             }
 
             item {
-                CourseNameSection(
+                CourseNameAndPersonSection(
                     name = state.name,
                     onNameChange = { 
                         viewModel.setName(it)
@@ -223,17 +226,11 @@ fun CourseEditScreen(
                         viewModel.selectFromHistory(history)
                         showCourseNameSuggestions = false
                     },
-                    onDismissSuggestions = { showCourseNameSuggestions = false }
+                    onDismissSuggestions = { showCourseNameSuggestions = false },
+                    personType = state.personType,
+                    onPersonTypeChange = viewModel::setPersonType,
+                    showPersonType = !singleModeEnabled
                 )
-            }
-
-            if (!singleModeEnabled) {
-                item {
-                    PersonTypeSection(
-                        personType = state.personType,
-                        onPersonTypeChange = viewModel::setPersonType
-                    )
-                }
             }
 
             item {
@@ -384,7 +381,7 @@ private fun ErrorMessageCard(
     if (appThemeMode == AppThemeMode.MIUIX) {
         top.yukonga.miuix.kmp.basic.Surface(
             modifier = modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(getRoundedCorner()),
             color = MiuixTheme.colorScheme.errorContainer
         ) {
             top.yukonga.miuix.kmp.basic.Text(
@@ -430,22 +427,47 @@ private fun ErrorMessageCard(
 }
 
 @Composable
-private fun CourseNameSection(
+private fun CourseNameAndPersonSection(
     name: String,
     onNameChange: (String) -> Unit,
     courseHistory: List<CourseHistoryItem>,
     showSuggestions: Boolean,
     onSuggestionClick: (CourseHistoryItem) -> Unit,
     onDismissSuggestions: () -> Unit,
+    personType: PersonType,
+    onPersonTypeChange: (PersonType) -> Unit,
+    showPersonType: Boolean,
     modifier: Modifier = Modifier
 ) {
     val labelsSecondary = getLabelsVibrantSecondary()
+    val appThemeMode = LocalAppThemeMode.current
     
     SettingsSection(
         title = "课程名称",
         modifier = modifier
     ) {
-        val appThemeMode = LocalAppThemeMode.current
+        if (showPersonType) {
+            if (appThemeMode == AppThemeMode.MIUIX) {
+                TabRowWithContour(
+                    tabs = listOf("我的课表", "Ta的课表"),
+                    selectedTabIndex = if (personType == PersonType.PERSON_A) 0 else 1,
+                    onTabSelected = { onPersonTypeChange(if (it == 0) PersonType.PERSON_A else PersonType.PERSON_B) }
+                )
+            } else {
+                val personTypeOptions = listOf(
+                    SegmentOption(PersonType.PERSON_A, "我的课表"),
+                    SegmentOption(PersonType.PERSON_B, "Ta的课表")
+                )
+                SegmentedControl(
+                    options = personTypeOptions,
+                    selectedOption = personType,
+                    onOptionSelected = onPersonTypeChange
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+        }
+
         if (appThemeMode == AppThemeMode.MIUIX) {
             TextField(
                 value = name,
@@ -498,39 +520,6 @@ private fun CourseNameSection(
     }
 }
 
-@Composable
-private fun PersonTypeSection(
-    personType: PersonType,
-    onPersonTypeChange: (PersonType) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val labelsSecondary = getLabelsVibrantSecondary()
-    
-    SettingsSection(
-        title = "所属课表",
-        modifier = modifier
-    ) {
-        val appThemeMode = LocalAppThemeMode.current
-        if (appThemeMode == AppThemeMode.MIUIX) {
-            TabRow(
-                tabs = listOf("我的课表", "Ta的课表"),
-                selectedTabIndex = if (personType == PersonType.PERSON_A) 0 else 1,
-                onTabSelected = { onPersonTypeChange(if (it == 0) PersonType.PERSON_A else PersonType.PERSON_B) }
-            )
-        } else {
-            val personTypeOptions = listOf(
-                SegmentOption(PersonType.PERSON_A, "我的课表"),
-                SegmentOption(PersonType.PERSON_B, "Ta的课表")
-            )
-
-            SegmentedControl(
-                options = personTypeOptions,
-                selectedOption = personType,
-                onOptionSelected = onPersonTypeChange
-            )
-        }
-    }
-}
 
 @Composable
 private fun CourseDetailsSection(
@@ -562,7 +551,7 @@ private fun CourseDetailsSection(
     ) {
         val appThemeMode = LocalAppThemeMode.current
         if (appThemeMode == AppThemeMode.MIUIX) {
-            TabRow(
+            TabRowWithContour(
                 tabs = listOf("按课节", "自定义时间"),
                 selectedTabIndex = if (isCustomTime) 1 else 0,
                 onTabSelected = { onTimeModeChange(it == 1) }
@@ -633,7 +622,7 @@ private fun CourseEditNavigationRow(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val appThemeMode = LocalAppThemeMode.current
-    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(10.dp) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
+    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(getRoundedCorner()) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     
@@ -709,8 +698,8 @@ private fun LocationInputRow(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val appThemeMode = LocalAppThemeMode.current
-    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(10.dp) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
-    
+    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(getRoundedCorner()) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -781,8 +770,8 @@ private fun TeacherInputRow(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val appThemeMode = LocalAppThemeMode.current
-    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(10.dp) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
-    
+    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(getRoundedCorner()) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -899,7 +888,7 @@ private fun SuggestionItem(
             modifier = modifier
                 .fillMaxWidth()
                 .scale(scale),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(getRoundedCorner()),
             color = MiuixTheme.colorScheme.surfaceVariant,
             onClick = onClick
         ) {
@@ -951,7 +940,7 @@ private fun SuggestionChip(
     if (appThemeMode == AppThemeMode.MIUIX) {
         top.yukonga.miuix.kmp.basic.Surface(
             modifier = modifier.scale(scale),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(getRoundedCorner()),
             color = MiuixTheme.colorScheme.surfaceVariant,
             onClick = onClick
         ) {
@@ -1047,6 +1036,7 @@ private fun formatWeekRanges(weeks: Set<Int>): String {
     return if (weeks.size == 1) "第${result}周" else "${result}周"
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CourseEditContent(
     courseId: Long?,
@@ -1054,7 +1044,9 @@ fun CourseEditContent(
     initialPeriod: Int? = null,
     initialPersonType: PersonType? = null,
     onNavigateBack: () -> Unit,
-    viewModel: CourseEditViewModel = hiltViewModel()
+    viewModel: CourseEditViewModel = hiltViewModel(),
+    sharedElementKey: String? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null
 ) {
     val state by viewModel.state.collectAsState()
     val totalWeeks by viewModel.totalWeeks.collectAsState()
@@ -1112,9 +1104,23 @@ fun CourseEditContent(
 
     val editBlurEnabled = lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0
 
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .then(
+                if (sharedElementKey != null && sharedTransitionScope != null && animatedVisibilityScope != null) {
+                    with(sharedTransitionScope) {
+                        Modifier.sharedElement(
+                            rememberSharedContentState(sharedElementKey),
+                            animatedVisibilityScope = animatedVisibilityScope
+                        )
+                    }
+                } else {
+                    Modifier
+                }
+            )
     ) {
         Scaffold(
             topBar = {
@@ -1187,7 +1193,7 @@ fun CourseEditContent(
                 }
 
                 item {
-                    CourseNameSection(
+                    CourseNameAndPersonSection(
                         name = state.name,
                         onNameChange = { 
                             viewModel.setName(it)
@@ -1199,17 +1205,11 @@ fun CourseEditContent(
                             viewModel.selectFromHistory(history)
                             showCourseNameSuggestions = false
                         },
-                        onDismissSuggestions = { showCourseNameSuggestions = false }
+                        onDismissSuggestions = { showCourseNameSuggestions = false },
+                        personType = state.personType,
+                        onPersonTypeChange = viewModel::setPersonType,
+                        showPersonType = !singleModeEnabled
                     )
-                }
-
-                if (!singleModeEnabled) {
-                    item {
-                        PersonTypeSection(
-                            personType = state.personType,
-                            onPersonTypeChange = viewModel::setPersonType
-                        )
-                    }
                 }
 
                 item {

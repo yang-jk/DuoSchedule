@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.automirrored.outlined.VolumeOff
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -271,7 +272,7 @@ fun NotificationSettingsScreen(
                     SettingsToggleRow(
                         title = "自动静音",
                         subtitle = "上课时自动切换为静音/振动模式",
-                        icon = Icons.Outlined.VolumeOff,
+                        icon = Icons.AutoMirrored.Outlined.VolumeOff,
                         iconBackgroundColor = IOSColors.Blue,
                         checked = autoSilentEnabled,
                         onCheckedChange = { viewModel.setAutoSilentEnabled(it) }
@@ -555,7 +556,7 @@ fun NotificationSettingsScreen(
                     SettingsNavigationRow(
                         title = "测试自动静音",
                         subtitle = "立即触发一次静音（1分钟后恢复）",
-                        icon = Icons.Outlined.VolumeOff,
+                        icon = Icons.AutoMirrored.Outlined.VolumeOff,
                         iconBackgroundColor = IOSColors.Teal,
                         onClick = { viewModel.testAutoSilent(context) }
                     )

@@ -53,6 +53,7 @@ fun FreeTimeDetailSheet(
         WindowBottomSheet(
             show = true,
             title = slot.getTimeString(),
+            cornerRadius = getRoundedCorner(),
             onDismissRequest = onDismiss
         ) {
             Column(
@@ -216,6 +217,7 @@ fun AllFreeTimeSlotsSheet(
         WindowBottomSheet(
             show = true,
             title = "今天 ${slots.size} 个空闲时段",
+            cornerRadius = getRoundedCorner(),
             onDismissRequest = onDismiss
         ) {
             Column(

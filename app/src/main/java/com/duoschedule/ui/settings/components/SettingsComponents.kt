@@ -26,6 +26,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.ui.theme.*
+import com.duoschedule.ui.theme.getRoundedCorner
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -73,7 +74,7 @@ fun SettingsSection(
             }
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(getRoundedCorner()),
                 color = MiuixTheme.colorScheme.surfaceContainer
             ) {
                 Column(
@@ -438,7 +439,7 @@ fun <T> SettingsOptionDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(getRoundedCorner()))
                     .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                     .padding(vertical = Spacing.sm)
             ) {
