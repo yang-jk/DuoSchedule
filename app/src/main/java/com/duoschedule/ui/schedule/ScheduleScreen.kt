@@ -4,11 +4,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -19,7 +17,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -27,18 +26,13 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.ScrollState
 import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.Snapshot
-import kotlin.math.abs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,7 +40,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,7 +47,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -76,11 +68,11 @@ import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator as MiuixCircularProgressIndicator
 import top.yukonga.miuix.kmp.window.WindowDialog
-import top.yukonga.miuix.kmp.window.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 import com.duoschedule.ui.theme.getPersonAColor
@@ -117,10 +109,6 @@ private val EaseInOutCubic = CubicBezierEasing(0.645f, 0.045f, 0.355f, 1.0f)
 
 private val MicroTween: TweenSpec<Float> = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing)
 
-private val EmptyCourseAction: (Course) -> Unit = { }
-private val EmptyBiAction: (Int, Int) -> Unit = { _, _ -> }
-private val EmptyTriAction: (Int, Int, CellBounds) -> Unit = { _, _, _ -> }
-
 @Immutable
 data class EditTarget(
     val courseId: Long?,
@@ -153,35 +141,17 @@ fun ScheduleScreen(
 
     val personName by viewModel.getPersonName(personType).collectAsState()
 
-    var selectedWeek by remember(currentWeek) { mutableIntStateOf(currentWeek) }
+    val pagerState = rememberPagerState(initialPage = (currentWeek - 1).coerceIn(0, kotlin.math.max(totalWeeks - 1, 0)), pageCount = { totalWeeks })
+    val selectedWeek by remember { derivedStateOf { pagerState.currentPage + 1 } }
+    var sharedScrollPosition by remember { mutableIntStateOf(0) }
+    val coroutineScope = rememberCoroutineScope()
     var showWeekSelector by remember { mutableStateOf(false) }
     var isDataLoaded by remember { mutableStateOf(false) }
-    val currentScrollState = rememberScrollState()
-    val prevScrollState = rememberScrollState()
-    val nextScrollState = rememberScrollState()
-
-    LaunchedEffect(selectedWeek) {
-        val currentPosition = currentScrollState.value
-        prevScrollState.scrollTo(currentPosition)
-        nextScrollState.scrollTo(currentPosition)
-    }
 
     LaunchedEffect(totalPeriods, currentWeek, totalWeeks) {
         if (totalPeriods > 0 && currentWeek > 0 && totalWeeks > 0) {
             isDataLoaded = true
         }
-    }
-
-    val currentWeekDates = remember(semesterStartDate, selectedWeek) {
-        viewModel.getWeekDates(semesterStartDate, selectedWeek)
-    }
-    
-    val prevWeekDates = remember(semesterStartDate, selectedWeek) {
-        if (selectedWeek > 1) viewModel.getWeekDates(semesterStartDate, selectedWeek - 1) else emptyList()
-    }
-    
-    val nextWeekDates = remember(semesterStartDate, selectedWeek) {
-        if (selectedWeek < totalWeeks) viewModel.getWeekDates(semesterStartDate, selectedWeek + 1) else emptyList()
     }
 
     val displayPeriodTimes = remember(periodTimes, totalPeriods) {
@@ -206,44 +176,6 @@ fun ScheduleScreen(
         days
     }
     
-    val currentWeekCourses by remember {
-        derivedStateOf {
-            if (showNonCurrentWeekCourses) {
-                courses
-            } else {
-                courses.filter { it.isInWeek(selectedWeek) }
-            }
-        }
-    }
-
-    val prevWeekCourses by remember {
-        derivedStateOf {
-            if (selectedWeek > 1) {
-                if (showNonCurrentWeekCourses) courses else courses.filter { it.isInWeek(selectedWeek - 1) }
-            } else emptyList()
-        }
-    }
-
-    val nextWeekCourses by remember {
-        derivedStateOf {
-            if (selectedWeek < totalWeeks) {
-                if (showNonCurrentWeekCourses) courses else courses.filter { it.isInWeek(selectedWeek + 1) }
-            } else emptyList()
-        }
-    }
-    
-    val currentCourseSlotMap = remember(currentWeekCourses, parsedPeriodTimes) {
-        buildCourseSlotMap(currentWeekCourses, parsedPeriodTimes)
-    }
-    
-    val prevCourseSlotMap = remember(prevWeekCourses, parsedPeriodTimes) {
-        if (selectedWeek > 1) buildCourseSlotMap(prevWeekCourses, parsedPeriodTimes) else emptyMap()
-    }
-    
-    val nextCourseSlotMap = remember(nextWeekCourses, parsedPeriodTimes) {
-        if (selectedWeek < totalWeeks) buildCourseSlotMap(nextWeekCourses, parsedPeriodTimes) else emptyMap()
-    }
-
     var selectedCourse by remember { mutableStateOf<Course?>(null) }
     val previewSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showPreview by remember { mutableStateOf(false) }
@@ -398,272 +330,146 @@ fun ScheduleScreen(
                     currentWeek = currentWeek,
                     selectedWeek = selectedWeek,
                     onWeekSelected = { week ->
-                        selectedWeek = week
                         showWeekSelector = false
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(week - 1)
+                        }
                     },
                     onDismiss = { showWeekSelector = false },
                     backdrop = LocalBackdrop.current ?: emptyBackdrop()
                 )
             }
 
-            val swipeOffset = remember { androidx.compose.animation.core.Animatable(0f) }
-            var isDragging by remember { mutableStateOf(false) }
-            val density = androidx.compose.ui.platform.LocalDensity.current
-            val screenWidth = with(density) { 
-                androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp.toPx() 
-            }
-            val threshold = screenWidth * 0.3f
-            val scope = rememberCoroutineScope()
-            
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(totalWeeks, selectedWeek) {
-                        detectHorizontalDragGestures(
-                            onDragStart = {
-                                isDragging = true
-                                scope.launch {
-                                    swipeOffset.snapTo(swipeOffset.value)
-                                }
-                            },
-                            onDragEnd = {
-                                isDragging = false
-                                scope.launch {
-                                    when {
-                                        swipeOffset.value > threshold && selectedWeek > 1 -> {
-                                            swipeOffset.animateTo(
-                                                targetValue = screenWidth,
-                                                animationSpec = spring(dampingRatio = 1.0f, stiffness = 500f)
-                                            )
-                                            Snapshot.withMutableSnapshot {
-                                                selectedWeek--
-                                                swipeOffset.snapTo(0f)
-                                            }
-                                        }
-                                        swipeOffset.value < -threshold && selectedWeek < totalWeeks -> {
-                                            swipeOffset.animateTo(
-                                                targetValue = -screenWidth,
-                                                animationSpec = spring(dampingRatio = 1.0f, stiffness = 500f)
-                                            )
-                                            Snapshot.withMutableSnapshot {
-                                                selectedWeek++
-                                                swipeOffset.snapTo(0f)
-                                            }
-                                        }
-                                        else -> {
-                                            swipeOffset.animateTo(
-                                                targetValue = 0f,
-                                                animationSpec = spring(dampingRatio = 1.0f, stiffness = 500f)
-                                            )
-                                        }
-                                    }
-                                }
-                            },
-                            onDragCancel = {
-                                isDragging = false
-                                scope.launch {
-                                    swipeOffset.animateTo(
-                                        targetValue = 0f,
-                                        animationSpec = spring(dampingRatio = 1.0f, stiffness = 500f)
-                                    )
-                                }
-                            },
-                            onHorizontalDrag = { change, dragAmount ->
-                                val newOffset = swipeOffset.value + dragAmount
-                                val targetOffset = when {
-                                    selectedWeek == 1 && newOffset > 0 -> newOffset * 0.3f
-                                    selectedWeek == totalWeeks && newOffset < 0 -> newOffset * 0.3f
-                                    else -> newOffset
-                                }
-                                scope.launch {
-                                    swipeOffset.snapTo(targetOffset)
-                                }
+            if (isDataLoaded) {
+                HorizontalPager(
+                    state = pagerState,
+                    beyondViewportPageCount = 1,
+                    userScrollEnabled = true
+                ) { page ->
+                    val week = page + 1
+                    
+                    // Compute week-specific data inside each page
+                    val weekDates = remember(semesterStartDate, week) {
+                        viewModel.getWeekDates(semesterStartDate, week)
+                    }
+                    
+                    val weekCourses = remember(courses, week, showNonCurrentWeekCourses) {
+                        if (showNonCurrentWeekCourses) courses else courses.filter { it.isInWeek(week) }
+                    }
+                    
+                    val courseSlotMap = remember(weekCourses, parsedPeriodTimes) {
+                        buildCourseSlotMap(weekCourses, parsedPeriodTimes)
+                    }
+                    
+                    val scrollState = remember { ScrollState(sharedScrollPosition) }
+                    
+                    LaunchedEffect(scrollState) {
+                        snapshotFlow { scrollState.value }
+                            .collectLatest { sharedScrollPosition = it }
+                    }
+                    
+                    WeeklyScheduleGrid(
+                        courseSlotMap = courseSlotMap,
+                        currentWeek = week,
+                        personColor = personColor,
+                        weekDates = weekDates,
+                        totalPeriods = totalPeriods,
+                        periodTimes = displayPeriodTimes,
+                        parsedPeriodTimes = parsedPeriodTimes,
+                        showNonCurrentWeekCourses = showNonCurrentWeekCourses,
+                        showSaturday = showSaturday,
+                        showSunday = showSunday,
+                        daysToShow = daysToShow,
+                        showDashedBorder = showDashedBorder,
+                        courseNameFontSize = courseNameFontSize,
+                        courseLocationFontSize = courseLocationFontSize,
+                        selectedContextMenuSlot = selectedContextMenuSlot,
+                        onCourseClick = handleCourseClick,
+                        onEmptySlotClick = { dayOfWeek, periodIndex ->
+                            editTarget = EditTarget(null, dayOfWeek, periodIndex)
+                        },
+                        onCourseLongPress = { course, cellBounds ->
+                            contextMenuCellBounds = cellBounds
+                            val contextPeriod = if (course.isCustomTime) {
+                                getPeriodFromTimeFast(course.startHour, course.startMinute, parsedPeriodTimes)
+                            } else {
+                                course.startPeriod
                             }
-                        )
-                    }
-            ) {
-                if (isDataLoaded) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .offset { IntOffset(swipeOffset.value.roundToInt(), 0) }
-                    ) {
-                        WeeklyScheduleGrid(
-                            courseSlotMap = currentCourseSlotMap,
-                            currentWeek = selectedWeek,
-                            personColor = personColor,
-                            weekDates = currentWeekDates,
-                            totalPeriods = totalPeriods,
-                            periodTimes = displayPeriodTimes,
-                            parsedPeriodTimes = parsedPeriodTimes,
-                            showNonCurrentWeekCourses = showNonCurrentWeekCourses,
-                            showSaturday = showSaturday,
-                            showSunday = showSunday,
-                            daysToShow = daysToShow,
-                            showDashedBorder = showDashedBorder,
-                            courseNameFontSize = courseNameFontSize,
-                            courseLocationFontSize = courseLocationFontSize,
-                            selectedContextMenuSlot = selectedContextMenuSlot,
-                            onCourseClick = handleCourseClick,
-                            onEmptySlotClick = { dayOfWeek, periodIndex ->
-                                editTarget = EditTarget(null, dayOfWeek, periodIndex)
-                            },
-                            onCourseLongPress = { course, cellBounds ->
-                                contextMenuCellBounds = cellBounds
-                                val contextPeriod = if (course.isCustomTime) {
-                                    getPeriodFromTimeFast(course.startHour, course.startMinute, parsedPeriodTimes)
-                                } else {
-                                    course.startPeriod
-                                }
-                                selectedContextMenuSlot = EmptySlotPosition(course.dayOfWeek, contextPeriod)
-                                contextMenuItems = listOf(
-                                    ContextMenuItem(
-                                        label = "复制"
-                                    ) {
-                                        CourseClipboard.copy(course)
-                                    },
-                                    ContextMenuItem(
-                                        label = "编辑"
-                                    ) {
-                                        showContextMenu = false
-                                        editTransitionScope.launch {
-                                            delay(150)
-                                            editTarget = EditTarget(course.id, null, null)
-                                        }
-                                    },
-                                    ContextMenuItem(
-                                        label = "删除",
-                                        isDestructive = true
-                                    ) {
-                                        selectedCourse = course
-                                        showDeleteConfirm = true
+                            selectedContextMenuSlot = EmptySlotPosition(course.dayOfWeek, contextPeriod)
+                            contextMenuItems = listOf(
+                                ContextMenuItem(label = "复制") {
+                                    CourseClipboard.copy(course)
+                                },
+                                ContextMenuItem(label = "编辑") {
+                                    showContextMenu = false
+                                    editTransitionScope.launch {
+                                        delay(150)
+                                        editTarget = EditTarget(course.id, null, null)
                                     }
-                                )
-                                showContextMenu = true
-                            },
-                            onEmptySlotLongPress = { dayOfWeek, period, cellBounds ->
-                                contextMenuCellBounds = cellBounds
-                                selectedContextMenuSlot = EmptySlotPosition(dayOfWeek, period)
-                                val items = mutableListOf<ContextMenuItem>()
-                                
-                                if (hasClipboardContent != null) {
-                                    items.add(
-                                        ContextMenuItem(
-                                            label = "粘贴"
-                                        ) {
-                                            pendingPasteSlot = EmptySlotPosition(dayOfWeek, period)
-                                            viewModel.viewModelScope.launch {
-                                                val result = viewModel.pasteCourse(
-                                                    dayOfWeek = dayOfWeek,
-                                                    period = period,
-                                                    periodTimes = displayPeriodTimes,
-                                                    personType = personType
-                                                )
-                                                when (result) {
-                                                    is PasteResult.Success -> {}
-                                                    is PasteResult.Conflict -> {
-                                                        pendingPasteNewCourse = result.newCourse
-                                                        pendingPasteConflictCourse = result.existingCourse
-                                                        showPasteConflictDialog = true
-                                                    }
-                                                    is PasteResult.NoContent -> {}
-                                                    is PasteResult.InvalidPeriod -> {}
+                                },
+                                ContextMenuItem(label = "删除", isDestructive = true) {
+                                    selectedCourse = course
+                                    showDeleteConfirm = true
+                                }
+                            )
+                            showContextMenu = true
+                        },
+                        onEmptySlotLongPress = { dayOfWeek, period, cellBounds ->
+                            contextMenuCellBounds = cellBounds
+                            selectedContextMenuSlot = EmptySlotPosition(dayOfWeek, period)
+                            val items = mutableListOf<ContextMenuItem>()
+                            
+                            if (hasClipboardContent != null) {
+                                items.add(
+                                    ContextMenuItem(label = "粘贴") {
+                                        pendingPasteSlot = EmptySlotPosition(dayOfWeek, period)
+                                        viewModel.viewModelScope.launch {
+                                            val result = viewModel.pasteCourse(
+                                                dayOfWeek = dayOfWeek,
+                                                period = period,
+                                                periodTimes = displayPeriodTimes,
+                                                personType = personType
+                                            )
+                                            when (result) {
+                                                is PasteResult.Success -> {}
+                                                is PasteResult.Conflict -> {
+                                                    pendingPasteNewCourse = result.newCourse
+                                                    pendingPasteConflictCourse = result.existingCourse
+                                                    showPasteConflictDialog = true
                                                 }
+                                                is PasteResult.NoContent -> {}
+                                                is PasteResult.InvalidPeriod -> {}
                                             }
                                         }
-                                    )
-                                }
-                                
-                                items.add(
-                                    ContextMenuItem(
-                                        label = "添加课程"
-                                    ) {
-                                        editTarget = EditTarget(null, dayOfWeek, period)
                                     }
                                 )
-                                
-                                contextMenuItems = items
-                                showContextMenu = true
-                            },
-                            editingCourseId = editTarget?.courseId,
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            scrollState = currentScrollState
-                        )
-                    }
-                    
-                    if (selectedWeek > 1) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .offset { IntOffset((swipeOffset.value - screenWidth).roundToInt(), 0) }
-                        ) {
-                            WeeklyScheduleGrid(
-                                courseSlotMap = prevCourseSlotMap,
-                                currentWeek = selectedWeek - 1,
-                                personColor = personColor,
-                                weekDates = prevWeekDates,
-                                totalPeriods = totalPeriods,
-                                periodTimes = displayPeriodTimes,
-                                parsedPeriodTimes = parsedPeriodTimes,
-                                showNonCurrentWeekCourses = showNonCurrentWeekCourses,
-                                showSaturday = showSaturday,
-                                showSunday = showSunday,
-                                daysToShow = daysToShow,
-                                showDashedBorder = showDashedBorder,
-                                courseNameFontSize = courseNameFontSize,
-                                courseLocationFontSize = courseLocationFontSize,
-                                selectedContextMenuSlot = null,
-                                onCourseClick = EmptyCourseAction,
-                                onEmptySlotClick = EmptyBiAction,
-                                onCourseLongPress = { _, _ -> },
-                                onEmptySlotLongPress = EmptyTriAction,
-                                scrollState = prevScrollState
+                            }
+                            
+                            items.add(
+                                ContextMenuItem(label = "添加课程") {
+                                    editTarget = EditTarget(null, dayOfWeek, period)
+                                }
                             )
-                        }
-                    }
-                    
-                    if (selectedWeek < totalWeeks) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .offset { IntOffset((swipeOffset.value + screenWidth).roundToInt(), 0) }
-                        ) {
-                            WeeklyScheduleGrid(
-                                courseSlotMap = nextCourseSlotMap,
-                                currentWeek = selectedWeek + 1,
-                                personColor = personColor,
-                                weekDates = nextWeekDates,
-                                totalPeriods = totalPeriods,
-                                periodTimes = displayPeriodTimes,
-                                parsedPeriodTimes = parsedPeriodTimes,
-                                showNonCurrentWeekCourses = showNonCurrentWeekCourses,
-                                showSaturday = showSaturday,
-                                showSunday = showSunday,
-                                daysToShow = daysToShow,
-                                showDashedBorder = showDashedBorder,
-                                courseNameFontSize = courseNameFontSize,
-                                courseLocationFontSize = courseLocationFontSize,
-                                selectedContextMenuSlot = null,
-                                onCourseClick = EmptyCourseAction,
-                                onEmptySlotClick = EmptyBiAction,
-                                onCourseLongPress = { _, _ -> },
-                                onEmptySlotLongPress = EmptyTriAction,
-                                scrollState = nextScrollState
-                            )
-                        }
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                            
+                            contextMenuItems = items
+                            showContextMenu = true
+                        },
+                        editingCourseId = editTarget?.courseId,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        scrollState = scrollState
+                    )
+                }
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     if (appThemeMode == AppThemeMode.MIUIX) {
                         MiuixCircularProgressIndicator()
                     } else {
                         CircularProgressIndicator(
                             color = getLabelsVibrantPrimary()
                         )
-                    }
                     }
                 }
             }
