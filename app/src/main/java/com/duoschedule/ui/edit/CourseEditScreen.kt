@@ -48,7 +48,6 @@ import com.duoschedule.data.model.WeekType
 import com.duoschedule.ui.settings.components.SettingsDefaults
 import com.duoschedule.ui.settings.components.SettingsSection
 import com.duoschedule.ui.theme.Separator
-import com.duoschedule.ui.theme.getRoundedCorner
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.edit.CustomTimePickerBottomSheet
 import com.kyant.backdrop.backdrops.emptyBackdrop
@@ -381,7 +380,7 @@ private fun ErrorMessageCard(
     if (appThemeMode == AppThemeMode.MIUIX) {
         top.yukonga.miuix.kmp.basic.Surface(
             modifier = modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(getRoundedCorner()),
+            shape = RoundedCornerShape(BorderRadius.lg),
             color = MiuixTheme.colorScheme.errorContainer
         ) {
             top.yukonga.miuix.kmp.basic.Text(
@@ -622,7 +621,7 @@ private fun CourseEditNavigationRow(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val appThemeMode = LocalAppThemeMode.current
-    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(getRoundedCorner()) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
+    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(BorderRadius.md) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     
@@ -698,7 +697,7 @@ private fun LocationInputRow(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val appThemeMode = LocalAppThemeMode.current
-    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(getRoundedCorner()) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
+    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(BorderRadius.md) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
 
     Row(
         modifier = modifier
@@ -770,7 +769,7 @@ private fun TeacherInputRow(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val appThemeMode = LocalAppThemeMode.current
-    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(getRoundedCorner()) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
+    val iconShape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(BorderRadius.md) else ContinuousRoundedRectangle(BorderRadius.iOS26.icon)
 
     Column(
         modifier = modifier
@@ -888,7 +887,7 @@ private fun SuggestionItem(
             modifier = modifier
                 .fillMaxWidth()
                 .scale(scale),
-            shape = RoundedCornerShape(getRoundedCorner()),
+            shape = RoundedCornerShape(BorderRadius.lg),
             color = MiuixTheme.colorScheme.surfaceVariant,
             onClick = onClick
         ) {
@@ -940,7 +939,7 @@ private fun SuggestionChip(
     if (appThemeMode == AppThemeMode.MIUIX) {
         top.yukonga.miuix.kmp.basic.Surface(
             modifier = modifier.scale(scale),
-            shape = RoundedCornerShape(getRoundedCorner()),
+            shape = RoundedCornerShape(BorderRadius.lg),
             color = MiuixTheme.colorScheme.surfaceVariant,
             onClick = onClick
         ) {

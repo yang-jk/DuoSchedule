@@ -182,7 +182,7 @@ fun DataManagementScreen(
                 val accentColor = if (deviceInfo.isHyperOS) IOSColors.Green else IOSColors.Orange
                 if (appThemeMode == AppThemeMode.MIUIX) {
                     Surface(
-                        shape = RoundedCornerShape(getRoundedCorner()),
+                        shape = RoundedCornerShape(BorderRadius.lg),
                         color = MiuixTheme.colorScheme.surfaceContainer,
                         modifier = Modifier
                             .fillMaxWidth()

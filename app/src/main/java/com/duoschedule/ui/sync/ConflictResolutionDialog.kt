@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.sync.*
 import com.duoschedule.ui.settings.components.GlassConfirmDialog
-import com.duoschedule.ui.theme.getRoundedCorner
 import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
@@ -375,7 +374,7 @@ private fun MiuixSelectableChip(
 ) {
     Surface(
         color = if (selected) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f) else MiuixTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(getRoundedCorner())
+        shape = RoundedCornerShape(BorderRadius.lg)
     ) {
         top.yukonga.miuix.kmp.basic.Text(
             text = label,

@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
 import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.input.pointer.pointerInput
@@ -155,7 +156,8 @@ fun ScheduleScreen(
     var selectedWeek by remember(currentWeek) { mutableIntStateOf(currentWeek) }
     var showWeekSelector by remember { mutableStateOf(false) }
     var isDataLoaded by remember { mutableStateOf(false) }
-    
+    val sharedScrollState = rememberScrollState()
+
     LaunchedEffect(totalPeriods, currentWeek, totalWeeks) {
         if (totalPeriods > 0 && currentWeek > 0 && totalWeeks > 0) {
             isDataLoaded = true
@@ -196,24 +198,30 @@ fun ScheduleScreen(
         days
     }
     
-    val currentWeekCourses = remember(selectedWeek, showNonCurrentWeekCourses, courses) {
-        if (showNonCurrentWeekCourses) {
-            courses
-        } else {
-            courses.filter { it.isInWeek(selectedWeek) }
+    val currentWeekCourses by remember {
+        derivedStateOf {
+            if (showNonCurrentWeekCourses) {
+                courses
+            } else {
+                courses.filter { it.isInWeek(selectedWeek) }
+            }
         }
     }
-    
-    val prevWeekCourses = remember(selectedWeek, showNonCurrentWeekCourses, courses) {
-        if (selectedWeek > 1) {
-            if (showNonCurrentWeekCourses) courses else courses.filter { it.isInWeek(selectedWeek - 1) }
-        } else emptyList()
+
+    val prevWeekCourses by remember {
+        derivedStateOf {
+            if (selectedWeek > 1) {
+                if (showNonCurrentWeekCourses) courses else courses.filter { it.isInWeek(selectedWeek - 1) }
+            } else emptyList()
+        }
     }
-    
-    val nextWeekCourses = remember(selectedWeek, showNonCurrentWeekCourses, courses) {
-        if (selectedWeek < totalWeeks) {
-            if (showNonCurrentWeekCourses) courses else courses.filter { it.isInWeek(selectedWeek + 1) }
-        } else emptyList()
+
+    val nextWeekCourses by remember {
+        derivedStateOf {
+            if (selectedWeek < totalWeeks) {
+                if (showNonCurrentWeekCourses) courses else courses.filter { it.isInWeek(selectedWeek + 1) }
+            } else emptyList()
+        }
     }
     
     val currentCourseSlotMap = remember(currentWeekCourses, parsedPeriodTimes) {
@@ -570,7 +578,8 @@ fun ScheduleScreen(
                                 showContextMenu = true
                             },
                             editingCourseId = editTarget?.courseId,
-                            animatedVisibilityScope = animatedVisibilityScope
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            scrollState = sharedScrollState
                         )
                     }
                     
@@ -599,7 +608,8 @@ fun ScheduleScreen(
                                 onCourseClick = EmptyCourseAction,
                                 onEmptySlotClick = EmptyBiAction,
                                 onCourseLongPress = { _, _ -> },
-                                onEmptySlotLongPress = EmptyTriAction
+                                onEmptySlotLongPress = EmptyTriAction,
+                                scrollState = sharedScrollState
                             )
                         }
                     }
@@ -629,7 +639,8 @@ fun ScheduleScreen(
                                 onCourseClick = EmptyCourseAction,
                                 onEmptySlotClick = EmptyBiAction,
                                 onCourseLongPress = { _, _ -> },
-                                onEmptySlotLongPress = EmptyTriAction
+                                onEmptySlotLongPress = EmptyTriAction,
+                                scrollState = sharedScrollState
                             )
                         }
                     }
@@ -855,7 +866,7 @@ private fun WeekSelectorDropdown(
                     Surface(
                         color = if (isSelected) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
                         else Color.Transparent,
-                        shape = RoundedCornerShape(getRoundedCorner()),
+                        shape = RoundedCornerShape(BorderRadius.lg),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -1141,7 +1152,8 @@ fun WeeklyScheduleGrid(
     onCourseLongPress: (Course, CellBounds) -> Unit,
     onEmptySlotLongPress: (Int, Int, CellBounds) -> Unit,
     editingCourseId: Long? = null,
-    animatedVisibilityScope: AnimatedVisibilityScope? = null
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
+    scrollState: ScrollState
 ) {
     var selectedEmptySlot by remember { mutableStateOf<EmptySlotPosition?>(null) }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("M/d") }
@@ -1162,7 +1174,6 @@ fun WeeklyScheduleGrid(
     val labelsSecondary = getLabelsVibrantSecondary()
     val labelsTertiary = getLabelsVibrantTertiary()
     
-    val fixedCellHeight = 100
     val cellSpacingPx = with(androidx.compose.ui.platform.LocalDensity.current) { Spacing.xxs.toPx().toInt() }
     
     val uniqueCourses = remember(courseSlotMap, parsedPeriodTimes, totalPeriods) {
@@ -1201,9 +1212,12 @@ fun WeeklyScheduleGrid(
     var columnWidth by remember { mutableStateOf(0) }
     var gridOffsetY by remember { mutableStateOf(0) }
 
-    val scrollState = rememberScrollState()
-
-    Box(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val bottomBarHeight = LiquidBottomTabsSpec.Height + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        val headerAreaHeight = Spacing.sm + ScheduleDimensions.HeaderHeight + Spacing.sm + 1.dp + Spacing.sm + Spacing.sm
+        val totalSpacing = Spacing.xxs * (totalPeriods - 1)
+        val cellHeight = ((maxHeight - headerAreaHeight - totalSpacing - bottomBarHeight) / totalPeriods).coerceAtLeast(60.dp)
+        val totalGridHeight = cellHeight * totalPeriods + totalSpacing
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1277,14 +1291,10 @@ fun WeeklyScheduleGrid(
 
         Spacer(modifier = Modifier.height(Spacing.sm))
 
-        val totalGridHeight = remember(totalPeriods, fixedCellHeight) {
-            totalPeriods * fixedCellHeight + totalPeriods * 4
-        }
-        
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(totalGridHeight.dp)
+                .height(totalGridHeight)
                 .onGloballyPositioned { coordinates ->
                     val position = coordinates.positionInWindow()
                     gridOffsetY = position.y.roundToInt()
@@ -1303,7 +1313,7 @@ fun WeeklyScheduleGrid(
                         showDashedBorder = showDashedBorder,
                         selectedEmptySlot = selectedEmptySlot,
                         selectedContextMenuSlot = selectedContextMenuSlot,
-                        cellHeight = fixedCellHeight,
+                        cellHeight = cellHeight,
                         onEmptySlotFirstClick = { dayOfWeek: Int, periodIndex: Int ->
                             selectedEmptySlot = EmptySlotPosition(dayOfWeek, periodIndex)
                         },
@@ -1326,7 +1336,7 @@ fun WeeklyScheduleGrid(
                                 isCustomTime = layoutInfo.isCustomTime,
                                 currentWeek = currentWeek,
                                 columnWidth = columnWidth,
-                                cellHeight = fixedCellHeight,
+                                cellHeight = cellHeight,
                                 cellSpacing = cellSpacingPx,
                                 timeColumnWidth = with(androidx.compose.ui.platform.LocalDensity.current) { 
                                     ScheduleDimensions.TimeColumnWidth.toPx().toInt() 
@@ -1360,7 +1370,7 @@ private fun PeriodRow(
     showDashedBorder: Boolean,
     selectedEmptySlot: EmptySlotPosition?,
     selectedContextMenuSlot: EmptySlotPosition?,
-    cellHeight: Int,
+    cellHeight: Dp,
     onEmptySlotFirstClick: (Int, Int) -> Unit,
     onEmptySlotSecondClick: (Int, Int) -> Unit,
     onEmptySlotLongPress: (Int, Int, CellBounds) -> Unit
@@ -1388,7 +1398,7 @@ private fun PeriodRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(cellHeight.dp)
+                .height(cellHeight)
         ) {
             Column(
                 modifier = Modifier
@@ -1456,7 +1466,7 @@ private fun PeriodRow(
 private fun RowScope.EmptySlot(
     dayOfWeek: Int,
     period: Int,
-    cellHeight: Int,
+    cellHeight: Dp,
     isSelected: Boolean,
     isContextMenuSelected: Boolean,
     overlayBackgroundColor: Color,
@@ -1466,7 +1476,7 @@ private fun RowScope.EmptySlot(
 ) {
     val darkTheme = LocalDarkTheme.current
     val appThemeMode = LocalAppThemeMode.current
-    val shape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(getRoundedCorner()) else ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
+    val shape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(BorderRadius.lg) else ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
     val selectionBorderColor = Color(0xFF4789FE)
     
     var cellBounds by remember { mutableStateOf(CellBounds(0, 0, 0, 0)) }
@@ -1497,7 +1507,7 @@ private fun RowScope.EmptySlot(
     ) {
         Box(
             modifier = Modifier
-                .height(cellHeight.dp)
+                .height(cellHeight)
                 .fillMaxWidth()
                 .clip(shape)
                 .background(
@@ -1547,7 +1557,7 @@ private fun CourseOverlayCard(
     isCustomTime: Boolean,
     currentWeek: Int,
     columnWidth: Int,
-    cellHeight: Int,
+    cellHeight: Dp,
     cellSpacing: Int,
     timeColumnWidth: Int,
     showNonCurrentWeekCourses: Boolean,
@@ -1582,7 +1592,7 @@ private fun CourseOverlayCard(
     val cellPaddingPx = with(density) { ScheduleDimensions.CellPadding.toPx().toInt() }
     
     val cardWidth = (columnWidth - cellPaddingPx * 2).coerceAtLeast(1)
-    val singleCellHeightPx = with(density) { cellHeight.dp.toPx().toInt() }
+    val singleCellHeightPx = with(density) { cellHeight.toPx().toInt() }
     val totalHeightPx = (singleCellHeightPx * span + cellSpacing * (span - 1)).roundToInt().coerceAtLeast(1)
 
     val offsetX = timeColumnWidth + dayIndex * columnWidth + cellPaddingPx
