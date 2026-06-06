@@ -8,12 +8,16 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,10 +58,18 @@ fun EducationWebViewScreen(
 
     var webView by remember { mutableStateOf<WebView?>(null) }
     var isLoading by remember { mutableStateOf(true) }
-    var currentUrl by remember { mutableStateOf("") }
+    var currentUrl by remember { mutableStateOf(schoolInfo?.loginUrl ?: "") }
     var isFetchingSchedule by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     var canFetchSchedule by remember { mutableStateOf(false) }
+
+    // URL text field state - lifted out of webViewContent lambda
+    var urlTextFieldValue by remember { mutableStateOf(schoolInfo?.loginUrl ?: "") }
+
+    // Sync text field when WebView navigates
+    LaunchedEffect(currentUrl) {
+        urlTextFieldValue = currentUrl
+    }
 
     // Check if current URL matches schedule page
     fun isScheduleUrl(url: String): Boolean {
@@ -71,7 +83,6 @@ fun EducationWebViewScreen(
         errorMessage = ""
         wv.evaluateJavascript("document.documentElement.outerHTML") { html ->
             if (html != null) {
-                // evaluateJavascript returns the value JSON-encoded, so strip quotes and unescape
                 val cleanHtml = html
                     .removeSurrounding("\"")
                     .replace("\\u003C", "<")
@@ -158,8 +169,107 @@ fun EducationWebViewScreen(
         return
     }
 
-    val webViewContent: @Composable () -> Unit = {
-        Box(modifier = Modifier.fillMaxSize()) {
+    // Address bar composable - defined at top level, not inside a lambda
+    val addressBar: @Composable () -> Unit = {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (appThemeMode == AppThemeMode.MIUIX) {
+                top.yukonga.miuix.kmp.basic.TextField(
+                    value = urlTextFieldValue,
+                    onValueChange = { urlTextFieldValue = it },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    label = "输入网址",
+                    useLabelAsPlaceholder = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                    keyboardActions = KeyboardActions(
+                        onGo = {
+                            var url = urlTextFieldValue.trim()
+                            if (url.isNotEmpty()) {
+                                if (!url.contains("://")) {
+                                    url = "https://$url"
+                                }
+                                webView?.loadUrl(url)
+                                currentUrl = url
+                            }
+                        }
+                    )
+                )
+            } else {
+                OutlinedTextField(
+                    value = urlTextFieldValue,
+                    onValueChange = { urlTextFieldValue = it },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    placeholder = {
+                        Text(
+                            "输入网址",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    },
+                    textStyle = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                    keyboardActions = KeyboardActions(
+                        onGo = {
+                            var url = urlTextFieldValue.trim()
+                            if (url.isNotEmpty()) {
+                                if (!url.contains("://")) {
+                                    url = "https://$url"
+                                }
+                                webView?.loadUrl(url)
+                                currentUrl = url
+                            }
+                        }
+                    )
+                )
+            }
+
+            // Refresh button
+            if (appThemeMode == AppThemeMode.MIUIX) {
+                top.yukonga.miuix.kmp.basic.IconButton(onClick = { webView?.reload() }) {
+                    if (isLoading) {
+                        top.yukonga.miuix.kmp.basic.CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "刷新",
+                            tint = MiuixTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            } else {
+                IconButton(onClick = { webView?.reload() }) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "刷新",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // WebView + bottom bar composable - needs ColumnScope for weight
+    val webViewAndBottomBar: @Composable ColumnScope.() -> Unit = {
+        Box(modifier = Modifier.weight(1f)) {
             AndroidView(
                 factory = { ctx ->
                     WebView(ctx).apply {
@@ -179,7 +289,7 @@ fun EducationWebViewScreen(
                                 if (isScheduleUrl(url)) {
                                     view.postDelayed({
                                         fetchScheduleFromWebView(view)
-                                    }, 1500) // Wait for page to fully load
+                                    }, 1500)
                                 }
                                 return false
                             }
@@ -194,6 +304,13 @@ fun EducationWebViewScreen(
                                 isLoading = false
                                 currentUrl = url
                                 canFetchSchedule = isScheduleUrl(url)
+                            }
+
+                            override fun onReceivedError(view: WebView?, request: android.webkit.WebResourceRequest?, error: android.webkit.WebResourceError?) {
+                                super.onReceivedError(view, request, error)
+                                if (request?.isForMainFrame == true) {
+                                    isLoading = false
+                                }
                             }
                         }
 
@@ -214,68 +331,67 @@ fun EducationWebViewScreen(
                         .align(Alignment.TopCenter)
                 )
             }
+        }
 
-            // Bottom bar with fetch button
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-            ) {
-                if (errorMessage.isNotEmpty()) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        modifier = Modifier.fillMaxWidth()
+        // Bottom bar with fetch button
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
+        ) {
+            if (errorMessage.isNotEmpty()) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
+            if (isFetchingSchedule) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = errorMessage,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        Text("正在解析课表...", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
-
-                if (isFetchingSchedule) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        modifier = Modifier.fillMaxWidth()
+            } else {
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 3.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        Text(
+                            text = if (canFetchSchedule) "已检测到课表页面" else "请在网页中登录并打开课表页面",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (canFetchSchedule) BrandColors.Primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Button(
+                            onClick = {
+                                webView?.let { fetchScheduleFromWebView(it) }
+                            },
+                            enabled = canFetchSchedule && !isFetchingSchedule
                         ) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                            Text("正在解析课表...", style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                } else {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 3.dp,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = if (canFetchSchedule) "已检测到课表页面" else "请在网页中登录并打开课表页面",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (canFetchSchedule) BrandColors.Primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Button(
-                                onClick = {
-                                    webView?.let { fetchScheduleFromWebView(it) }
-                                },
-                                enabled = canFetchSchedule && !isFetchingSchedule
-                            ) {
-                                Text("获取课表")
-                            }
+                            Text("获取课表")
                         }
                     }
                 }
@@ -286,47 +402,61 @@ fun EducationWebViewScreen(
     if (appThemeMode == AppThemeMode.MIUIX) {
         Scaffold(
             topBar = {
-                SmallTopAppBar(
-                    title = schoolInfo.name,
-                    scrollBehavior = MiuixScrollBehavior(),
-                    color = Color.Transparent,
-                    titleColor = MiuixTheme.colorScheme.onSurface,
-                    defaultWindowInsetsPadding = false,
-                    navigationIcon = {
-                        top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                Column {
+                    SmallTopAppBar(
+                        title = schoolInfo.name,
+                        scrollBehavior = MiuixScrollBehavior(),
+                        color = Color.Transparent,
+                        titleColor = MiuixTheme.colorScheme.onSurface,
+                        defaultWindowInsetsPadding = false,
+                        navigationIcon = {
+                            top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                            }
                         }
-                    }
-                )
+                    )
+                    addressBar()
+                }
             }
         ) { paddingValues ->
-            Box(modifier = Modifier.padding(top = paddingValues.calculateTopPadding())) {
-                webViewContent()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = paddingValues.calculateTopPadding())
+            ) {
+                webViewAndBottomBar()
             }
         }
     } else {
         Scaffold(
             contentWindowInsets = WindowInsets(0),
             topBar = {
-                TopAppBar(
-                    title = { Text(schoolInfo.name) },
-                    navigationIcon = {
-                        GlassSymbolIconButton(
-                            onClick = onNavigateBack,
-                            style = GlassSymbolButtonStyle.NonTinted,
-                            buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
-                            contentPadding = PaddingValues(start = Spacing.sm)
-                        ) {
-                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = labelsPrimary)
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
-                )
+                Column {
+                    TopAppBar(
+                        title = { Text(schoolInfo.name) },
+                        navigationIcon = {
+                            GlassSymbolIconButton(
+                                onClick = onNavigateBack,
+                                style = GlassSymbolButtonStyle.NonTinted,
+                                buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
+                                contentPadding = PaddingValues(start = Spacing.sm)
+                            ) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = labelsPrimary)
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                    )
+                    addressBar()
+                }
             },
             containerColor = MaterialTheme.colorScheme.background
         ) { paddingValues ->
-            Box(modifier = Modifier.padding(top = paddingValues.calculateTopPadding())) {
-                webViewContent()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = paddingValues.calculateTopPadding())
+            ) {
+                webViewAndBottomBar()
             }
         }
     }
