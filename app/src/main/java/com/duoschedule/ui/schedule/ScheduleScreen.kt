@@ -141,16 +141,12 @@ fun ScheduleScreen(
 
     val personName by viewModel.getPersonName(personType).collectAsState()
 
-    val pagerState = rememberPagerState(initialPage = (currentWeek - 1).coerceIn(0, kotlin.math.max(totalWeeks - 1, 0)), pageCount = { totalWeeks })
-    val selectedWeek by remember { derivedStateOf { pagerState.currentPage + 1 } }
-    var sharedScrollPosition by remember { mutableIntStateOf(0) }
-    val coroutineScope = rememberCoroutineScope()
+    var selectedWeek by remember { mutableIntStateOf(1) }
     var showWeekSelector by remember { mutableStateOf(false) }
-    var isDataLoaded by remember { mutableStateOf(false) }
 
-    LaunchedEffect(totalPeriods, currentWeek, totalWeeks) {
-        if (totalPeriods > 0 && currentWeek > 0 && totalWeeks > 0) {
-            isDataLoaded = true
+    val isDataReady by remember {
+        derivedStateOf {
+            totalPeriods > 0 && currentWeek > 0 && totalWeeks > 0
         }
     }
 
@@ -324,23 +320,35 @@ fun ScheduleScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            if (showWeekSelector) {
-                WeekSelectorDropdown(
-                    totalWeeks = totalWeeks,
-                    currentWeek = currentWeek,
-                    selectedWeek = selectedWeek,
-                    onWeekSelected = { week ->
-                        showWeekSelector = false
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(week - 1)
-                        }
-                    },
-                    onDismiss = { showWeekSelector = false },
-                    backdrop = LocalBackdrop.current ?: emptyBackdrop()
+                key(isDataReady) {
+                if (isDataReady) {
+                val pagerState = rememberPagerState(
+                    initialPage = (currentWeek - 1).coerceIn(0, kotlin.math.max(totalWeeks - 1, 0)),
+                    pageCount = { totalWeeks }
                 )
-            }
+                var sharedScrollPosition by remember { mutableIntStateOf(0) }
+                val coroutineScope = rememberCoroutineScope()
 
-            if (isDataLoaded) {
+                LaunchedEffect(pagerState.currentPage) {
+                    selectedWeek = pagerState.currentPage + 1
+                }
+
+                if (showWeekSelector) {
+                    WeekSelectorDropdown(
+                        totalWeeks = totalWeeks,
+                        currentWeek = currentWeek,
+                        selectedWeek = selectedWeek,
+                        onWeekSelected = { week ->
+                            showWeekSelector = false
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(week - 1)
+                            }
+                        },
+                        onDismiss = { showWeekSelector = false },
+                        backdrop = LocalBackdrop.current ?: emptyBackdrop()
+                    )
+                }
+
                 HorizontalPager(
                     state = pagerState,
                     beyondViewportPageCount = 1,
@@ -473,6 +481,7 @@ fun ScheduleScreen(
                     }
                 }
             }
+            } // key(isDataReady)
         }
     }
         } else {

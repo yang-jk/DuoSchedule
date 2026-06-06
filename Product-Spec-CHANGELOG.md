@@ -6,6 +6,38 @@
 
 ---
 
+## [4.13.1] - 2026-06-07
+
+### 变更类型：修复
+
+### 状态：已实现
+
+### 变更内容
+
+**修复课表首次打开闪烁问题：用 derivedStateOf + key() 替代 LaunchedEffect 控制 pager 创建**
+
+1. **修复**：将 `isDataLoaded` 从 `LaunchedEffect`（异步）改为 `derivedStateOf`（同步计算），确保数据就绪判断与数据更新在同一帧完成
+2. **修复**：用 `key(isDataReady)` 包裹 pager 创建区域，确保 `rememberPagerState` 在数据就绪时同步重建，消除 LaunchedEffect 异步调度导致的帧延迟
+
+---
+
+## [4.13.0] - 2026-06-07
+
+### 变更类型：优化
+
+### 状态：已实现
+
+### 变更内容
+
+**currentWeek 改为实时计算，不再存储到 DataStore**
+
+1. **优化**：currentWeek 不再作为独立字段存储在 DataStore 中，改为由 semesterStartDate 和 totalWeeks 实时计算得出
+2. **优化**：移除 setCurrentWeek 方法及相关调用，减少数据冗余和不一致风险
+3. **优化**：移除 DuoScheduleApp 中的 updateCurrentWeekIfNeeded 方法，currentWeek 自动随日期变化
+4. **优化**：同步功能中 currentWeek 也改为计算得出，而非从存储中读取
+
+---
+
 ## [4.12.0] - 2026-06-06
 
 ### 变更类型：优化

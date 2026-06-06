@@ -523,16 +523,18 @@ class SyncManager @Inject constructor(
     private suspend fun applySettings(personType: PersonType, settings: CloudSettings) {
         settingsDataStore.setSemesterStartDate(personType, LocalDate.ofEpochDay(settings.semesterStartDate))
         settingsDataStore.setTotalWeeks(personType, settings.totalWeeks)
-        settingsDataStore.setCurrentWeek(personType, settings.currentWeek)
         settingsDataStore.setTotalPeriods(personType, settings.totalPeriods)
         settingsDataStore.setPeriodTimes(personType, settings.periodTimes)
     }
 
     private suspend fun getCloudSettings(personType: PersonType): CloudSettings {
+        val startDate = settingsDataStore.getSemesterStartDate(personType).first()
+        val totalWeeks = settingsDataStore.getTotalWeeks(personType).first()
+        val currentWeek = settingsDataStore.calculateCurrentWeek(startDate, totalWeeks)
         return CloudSettings(
-            semesterStartDate = settingsDataStore.getSemesterStartDate(personType).first().toEpochDay(),
-            totalWeeks = settingsDataStore.getTotalWeeks(personType).first(),
-            currentWeek = settingsDataStore.getCurrentWeek(personType).first(),
+            semesterStartDate = startDate.toEpochDay(),
+            totalWeeks = totalWeeks,
+            currentWeek = currentWeek,
             totalPeriods = settingsDataStore.getTotalPeriods(personType).first(),
             periodTimes = settingsDataStore.getPeriodTimes(personType).first()
         )

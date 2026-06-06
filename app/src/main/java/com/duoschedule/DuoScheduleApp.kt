@@ -108,8 +108,6 @@ class DuoScheduleApp : Application(), Configuration.Provider {
         applicationScope.launch {
             BootReceiverManager.updateBootReceiverEnabled(this@DuoScheduleApp, database.courseDao())
 
-            updateCurrentWeekIfNeeded()
-
             checkAndRestoreRingerMode()
 
             rescheduleNotifications("app_start")
@@ -165,7 +163,6 @@ class DuoScheduleApp : Application(), Configuration.Provider {
         override fun onStart(owner: LifecycleOwner) {
             Log.i("DuoScheduleApp", "App entered foreground")
             applicationScope.launch {
-                updateCurrentWeekIfNeeded()
                 checkAndRestoreRingerMode()
                 val hasOngoingCourse = notificationManager.checkAndShowOngoingNotification()
                 Log.i("DuoScheduleApp", "当前课程检查结果: hasOngoingCourse=$hasOngoingCourse")
@@ -210,46 +207,6 @@ class DuoScheduleApp : Application(), Configuration.Provider {
             Log.e("DuoScheduleApp", "Failed to preload settings", e)
         }
         PerformanceMonitor.endTrace("settings_preload")
-    }
-    
-    private suspend fun updateCurrentWeekIfNeeded() {
-        try {
-            val personAStartDate = settingsDataStore.getSemesterStartDate(PersonType.PERSON_A).first()
-            val personBStartDate = settingsDataStore.getSemesterStartDate(PersonType.PERSON_B).first()
-            val personATotalWeeks = settingsDataStore.getTotalWeeks(PersonType.PERSON_A).first()
-            val personBTotalWeeks = settingsDataStore.getTotalWeeks(PersonType.PERSON_B).first()
-            val personACurrentWeek = settingsDataStore.getCurrentWeek(PersonType.PERSON_A).first()
-            val personBCurrentWeek = settingsDataStore.getCurrentWeek(PersonType.PERSON_B).first()
-            
-            Log.i("DuoScheduleApp", "我开学日期: $personAStartDate, 总周数: $personATotalWeeks, 当前周: $personACurrentWeek")
-            Log.i("DuoScheduleApp", "Ta开学日期: $personBStartDate, 总周数: $personBTotalWeeks, 当前周: $personBCurrentWeek")
-            Log.i("DuoScheduleApp", "今天日期: ${java.time.LocalDate.now()}")
-            
-            val calculatedWeekA = settingsDataStore.calculateCurrentWeek(personAStartDate, personATotalWeeks)
-            val calculatedWeekB = settingsDataStore.calculateCurrentWeek(personBStartDate, personBTotalWeeks)
-            
-            Log.i("DuoScheduleApp", "计算得到我周次: $calculatedWeekA, Ta周次: $calculatedWeekB")
-            
-            var weekChanged = false
-
-            if (calculatedWeekA != personACurrentWeek) {
-                Log.i("DuoScheduleApp", "自动更新我的当前周次: $personACurrentWeek -> $calculatedWeekA")
-                settingsDataStore.setCurrentWeek(PersonType.PERSON_A, calculatedWeekA)
-                weekChanged = true
-            }
-
-            if (calculatedWeekB != personBCurrentWeek) {
-                Log.i("DuoScheduleApp", "自动更新Ta的当前周次: $personBCurrentWeek -> $calculatedWeekB")
-                settingsDataStore.setCurrentWeek(PersonType.PERSON_B, calculatedWeekB)
-                weekChanged = true
-            }
-
-            if (weekChanged) {
-                rescheduleNotifications("week_updated")
-            }
-        } catch (e: Exception) {
-            Log.e("DuoScheduleApp", "Failed to update current week", e)
-        }
     }
     
     private suspend fun preloadViewModels() {

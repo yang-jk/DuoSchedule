@@ -16,6 +16,7 @@ import com.duoschedule.data.model.TodayCourseDisplayMode
 import com.duoschedule.notification.SilentModeType
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.DayOfWeek
@@ -40,9 +41,6 @@ class SettingsDataStore @Inject constructor(
         
         private val PERSON_A_TOTAL_WEEKS = intPreferencesKey("person_a_total_weeks")
         private val PERSON_B_TOTAL_WEEKS = intPreferencesKey("person_b_total_weeks")
-        
-        private val PERSON_A_CURRENT_WEEK = intPreferencesKey("person_a_current_week")
-        private val PERSON_B_CURRENT_WEEK = intPreferencesKey("person_b_current_week")
         
         private val PERSON_A_TOTAL_PERIODS = intPreferencesKey("person_a_total_periods")
         private val PERSON_B_TOTAL_PERIODS = intPreferencesKey("person_b_total_periods")
@@ -106,10 +104,10 @@ class SettingsDataStore @Inject constructor(
         preferences[key] ?: 16
     }
 
-    fun getCurrentWeek(personType: PersonType): Flow<Int> = context.dataStore.data.map { preferences ->
-        val key = if (personType == PersonType.PERSON_A) PERSON_A_CURRENT_WEEK else PERSON_B_CURRENT_WEEK
-        preferences[key] ?: 1
-    }
+    fun getCurrentWeek(personType: PersonType): Flow<Int> =
+        combine(getSemesterStartDate(personType), getTotalWeeks(personType)) { startDate, totalWeeks ->
+            calculateCurrentWeek(startDate, totalWeeks)
+        }
 
     fun getTotalPeriods(personType: PersonType): Flow<Int> = context.dataStore.data.map { preferences ->
         val key = if (personType == PersonType.PERSON_A) PERSON_A_TOTAL_PERIODS else PERSON_B_TOTAL_PERIODS
@@ -248,13 +246,6 @@ class SettingsDataStore @Inject constructor(
         context.dataStore.edit { preferences ->
             val key = if (personType == PersonType.PERSON_A) PERSON_A_TOTAL_WEEKS else PERSON_B_TOTAL_WEEKS
             preferences[key] = weeks
-        }
-    }
-
-    suspend fun setCurrentWeek(personType: PersonType, week: Int) {
-        context.dataStore.edit { preferences ->
-            val key = if (personType == PersonType.PERSON_A) PERSON_A_CURRENT_WEEK else PERSON_B_CURRENT_WEEK
-            preferences[key] = week
         }
     }
 
@@ -427,11 +418,6 @@ class SettingsDataStore @Inject constructor(
             val bTotalWeeks = preferences[PERSON_B_TOTAL_WEEKS]
             if (aTotalWeeks != null) preferences[PERSON_B_TOTAL_WEEKS] = aTotalWeeks
             if (bTotalWeeks != null) preferences[PERSON_A_TOTAL_WEEKS] = bTotalWeeks
-
-            val aCurrentWeek = preferences[PERSON_A_CURRENT_WEEK]
-            val bCurrentWeek = preferences[PERSON_B_CURRENT_WEEK]
-            if (aCurrentWeek != null) preferences[PERSON_B_CURRENT_WEEK] = aCurrentWeek
-            if (bCurrentWeek != null) preferences[PERSON_A_CURRENT_WEEK] = bCurrentWeek
 
             val aTotalPeriods = preferences[PERSON_A_TOTAL_PERIODS]
             val bTotalPeriods = preferences[PERSON_B_TOTAL_PERIODS]

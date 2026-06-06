@@ -160,12 +160,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun setCurrentWeek(personType: PersonType, week: Int) {
-        viewModelScope.launch {
-            repository.setCurrentWeek(personType, week)
-        }
-    }
-
     fun setTotalPeriods(personType: PersonType, periods: Int) {
         viewModelScope.launch {
             repository.setTotalPeriods(personType, periods)
@@ -313,18 +307,12 @@ class SettingsViewModel @Inject constructor(
     fun setPersonSemesterStart(personType: PersonType, date: LocalDate) {
         viewModelScope.launch {
             repository.setSemesterStartDate(personType, date)
-            val totalWeeks = repository.getTotalWeeks(personType).first()
-            val calculatedWeek = repository.calculateCurrentWeek(date, totalWeeks)
-            repository.setCurrentWeek(personType, calculatedWeek)
         }
     }
 
     fun setPersonTotalWeeks(personType: PersonType, weeks: Int) {
         viewModelScope.launch {
             repository.setTotalWeeks(personType, weeks)
-            val startDate = repository.getSemesterStartDate(personType).first()
-            val calculatedWeek = repository.calculateCurrentWeek(startDate, weeks)
-            repository.setCurrentWeek(personType, calculatedWeek)
         }
     }
 
@@ -334,7 +322,6 @@ class SettingsViewModel @Inject constructor(
             val totalWeeks = repository.getTotalWeeks(personType).first()
             val newStartDate = repository.calculateSemesterStartDateFromWeek(week, startDate, totalWeeks)
             repository.setSemesterStartDate(personType, newStartDate)
-            repository.setCurrentWeek(personType, week)
             notificationManager.scheduleReminderNotifications()
         }
     }
@@ -666,7 +653,6 @@ class SettingsViewModel @Inject constructor(
                 settingsA?.let { settings ->
                     repository.setSemesterStartDate(PersonType.PERSON_A, java.time.LocalDate.ofEpochDay(settings.semesterStartDate))
                     repository.setTotalWeeks(PersonType.PERSON_A, settings.totalWeeks)
-                    repository.setCurrentWeek(PersonType.PERSON_A, settings.currentWeek)
                     repository.setTotalPeriods(PersonType.PERSON_A, settings.totalPeriods)
                     if (settings.periodTimes.isNotEmpty()) {
                         repository.setPeriodTimes(PersonType.PERSON_A, settings.periodTimes)
@@ -676,7 +662,6 @@ class SettingsViewModel @Inject constructor(
                 settingsB?.let { settings ->
                     repository.setSemesterStartDate(PersonType.PERSON_B, java.time.LocalDate.ofEpochDay(settings.semesterStartDate))
                     repository.setTotalWeeks(PersonType.PERSON_B, settings.totalWeeks)
-                    repository.setCurrentWeek(PersonType.PERSON_B, settings.currentWeek)
                     repository.setTotalPeriods(PersonType.PERSON_B, settings.totalPeriods)
                     if (settings.periodTimes.isNotEmpty()) {
                         repository.setPeriodTimes(PersonType.PERSON_B, settings.periodTimes)

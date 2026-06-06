@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.schedule
+package com.duoschedule.ui.schedule
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -79,22 +79,22 @@ class ScheduleViewModel @Inject constructor(
 
     private val personACurrentWeek: StateFlow<Int> = getCachedFlow("personACurrentWeek") {
         repository.getCurrentWeek(PersonType.PERSON_A)
-            .stateIn(viewModelScope, SharingStarted.Eagerly, 1)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
     }
 
     private val personBCurrentWeek: StateFlow<Int> = getCachedFlow("personBCurrentWeek") {
         repository.getCurrentWeek(PersonType.PERSON_B)
-            .stateIn(viewModelScope, SharingStarted.Eagerly, 1)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
     }
 
     private val personATotalWeeks: StateFlow<Int> = getCachedFlow("personATotalWeeks") {
         repository.getTotalWeeks(PersonType.PERSON_A)
-            .stateIn(viewModelScope, SharingStarted.Eagerly, 16)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
     }
 
     private val personBTotalWeeks: StateFlow<Int> = getCachedFlow("personBTotalWeeks") {
         repository.getTotalWeeks(PersonType.PERSON_B)
-            .stateIn(viewModelScope, SharingStarted.Eagerly, 16)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
     }
 
     private val personASemesterStartDate: StateFlow<LocalDate> = getCachedFlow("personASemesterStartDate") {
@@ -109,12 +109,12 @@ class ScheduleViewModel @Inject constructor(
 
     private val personATotalPeriods: StateFlow<Int> = getCachedFlow("personATotalPeriods") {
         repository.getTotalPeriods(PersonType.PERSON_A)
-            .stateIn(viewModelScope, SharingStarted.Eagerly, 5)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
     }
 
     private val personBTotalPeriods: StateFlow<Int> = getCachedFlow("personBTotalPeriods") {
         repository.getTotalPeriods(PersonType.PERSON_B)
-            .stateIn(viewModelScope, SharingStarted.Eagerly, 5)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
     }
 
     private val personAPeriodTimes: StateFlow<List<String>> = getCachedFlow("personAPeriodTimes") {

@@ -161,9 +161,6 @@ class CourseRepository @Inject constructor(
     suspend fun setTotalWeeks(personType: PersonType, weeks: Int) = 
         settingsDataStore.setTotalWeeks(personType, weeks)
 
-    suspend fun setCurrentWeek(personType: PersonType, week: Int) = 
-        settingsDataStore.setCurrentWeek(personType, week)
-
     suspend fun setTotalPeriods(personType: PersonType, periods: Int) = 
         settingsDataStore.setTotalPeriods(personType, periods)
 

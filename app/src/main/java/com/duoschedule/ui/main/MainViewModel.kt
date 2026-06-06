@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.main
+package com.duoschedule.ui.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -235,18 +235,9 @@ class MainViewModel @Inject constructor(
         return 60_000L
     }
 
-    fun setCurrentWeek(personType: PersonType, week: Int) {
-        viewModelScope.launch {
-            repository.setCurrentWeek(personType, week)
-        }
-    }
-
     fun setSemesterStartDate(personType: PersonType, date: LocalDate) {
         viewModelScope.launch {
             repository.setSemesterStartDate(personType, date)
-            val totalWeeks = repository.getTotalWeeks(personType).stateIn(viewModelScope).value
-            val week = repository.calculateCurrentWeek(date, totalWeeks)
-            repository.setCurrentWeek(personType, week)
         }
     }
 
