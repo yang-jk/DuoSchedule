@@ -93,6 +93,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          set -o pipefail
           ./gradlew clean assembleRelease 2>&1 | tee build_output.log
         continue-on-error: true
 
