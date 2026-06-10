@@ -1,18 +1,11 @@
 package com.duoschedule.ui.schedule
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -67,8 +60,8 @@ import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.Todo
 import com.duoschedule.ui.edit.CoursePreviewBottomSheet
-import com.duoschedule.ui.edit.CourseEditContent
 import com.duoschedule.ui.theme.*
+import com.duoschedule.ui.theme.LocalBackdrop
 import com.duoschedule.ui.settings.components.GlassConfirmDialog
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Button
@@ -76,11 +69,15 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator as MiuixCircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.basic.DropdownImpl
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
+import top.yukonga.miuix.kmp.window.WindowListPopup
+import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.window.WindowDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlin.math.roundToInt
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -109,7 +106,6 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.colorControls
 import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -118,25 +114,16 @@ private val EaseInOutCubic = CubicBezierEasing(0.645f, 0.045f, 0.355f, 1.0f)
 
 private val MicroTween: TweenSpec<Float> = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing)
 
-@Immutable
-data class EditTarget(
-    val courseId: Long?,
-    val dayOfWeek: Int?,
-    val periodIndex: Int?
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(
     personType: PersonType,
-    onNavigateToTodoEdit: (todoId: Long?, date: Long?, startHour: Int?, startMinute: Int?, endHour: Int?, endMinute: Int?, personType: PersonType?) -> Unit = { _, _, _, _, _, _, _ -> },
+    onNavigateToEdit: (Long?, Int?, Int?, PersonType?) -> Unit,
+    onNavigateToTodoEdit: (Long?, Long?, PersonType?, Int, Int, Int, Int) -> Unit = { _, _, _, _, _, _, _ -> },
     viewModel: ScheduleViewModel = hiltViewModel()
 ) {
     val courses by viewModel.getCoursesByPerson(personType).collectAsState(initial = emptyList())
-    var editTarget by remember { mutableStateOf<EditTarget?>(null) }
-    val editTransitionScope = rememberCoroutineScope()
 
-    BackHandler(enabled = editTarget != null) { editTarget = null }
     val currentWeek by viewModel.getCurrentWeek(personType).collectAsState()
     val totalWeeks by viewModel.getTotalWeeks(personType).collectAsState()
     val semesterStartDate by viewModel.getSemesterStartDate(personType).collectAsState()
@@ -188,8 +175,7 @@ fun ScheduleScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     
     var showAddMenu by remember { mutableStateOf(false) }
-    var addMenuButtonBounds by remember { mutableStateOf(CellBounds(0, 0, 0, 0)) }
-    
+
     var showContextMenu by remember { mutableStateOf(false) }
     var contextMenuCellBounds by remember { mutableStateOf(CellBounds(0, 0, 0, 0)) }
     var contextMenuItems by remember { mutableStateOf<List<ContextMenuItem>>(emptyList()) }
@@ -218,57 +204,6 @@ fun ScheduleScreen(
 
     val sharedTransitionScope = LocalSharedTransitionScope.current
 
-    AnimatedContent(
-        targetState = editTarget,
-        transitionSpec = {
-            if (targetState != null) {
-                // Entering edit mode: slide in from right + fade
-                if (appThemeMode == AppThemeMode.MIUIX) {
-                    slideInHorizontally(
-                        animationSpec = tween(350, easing = FastOutSlowInEasing),
-                        initialOffsetX = { it }
-                    ) + fadeIn(animationSpec = tween(350, easing = FastOutSlowInEasing)) togetherWith
-                    slideOutHorizontally(
-                        animationSpec = tween(350, easing = FastOutSlowInEasing),
-                        targetOffsetX = { -(it * 30 / 100) }
-                    ) + fadeOut(animationSpec = tween(350, easing = FastOutSlowInEasing), targetAlpha = 0.7f)
-                } else {
-                    slideInHorizontally(
-                        animationSpec = tween(400, easing = FastOutSlowInEasing),
-                        initialOffsetX = { it }
-                    ) + fadeIn(animationSpec = tween(400, easing = FastOutSlowInEasing)) togetherWith
-                    slideOutHorizontally(
-                        animationSpec = tween(400, easing = FastOutSlowInEasing),
-                        targetOffsetX = { -(it * 30 / 100) }
-                    ) + fadeOut(animationSpec = tween(400, easing = FastOutSlowInEasing), targetAlpha = 0.7f)
-                }
-            } else {
-                // Exiting edit mode: slide out to right + fade
-                if (appThemeMode == AppThemeMode.MIUIX) {
-                    slideInHorizontally(
-                        animationSpec = tween(300, easing = FastOutSlowInEasing),
-                        initialOffsetX = { -(it * 30 / 100) }
-                    ) + fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing), initialAlpha = 0.7f) togetherWith
-                    slideOutHorizontally(
-                        animationSpec = tween(300, easing = FastOutSlowInEasing),
-                        targetOffsetX = { it }
-                    ) + fadeOut(animationSpec = tween(300, easing = FastOutSlowInEasing))
-                } else {
-                    slideInHorizontally(
-                        animationSpec = tween(300, easing = FastOutSlowInEasing),
-                        initialOffsetX = { -(it * 30 / 100) }
-                    ) + fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing), initialAlpha = 0.7f) togetherWith
-                    slideOutHorizontally(
-                        animationSpec = tween(300, easing = FastOutSlowInEasing),
-                        targetOffsetX = { it }
-                    ) + fadeOut(animationSpec = tween(300, easing = FastOutSlowInEasing))
-                }
-            }
-        },
-        label = "schedule_edit_transition"
-    ) { target ->
-        val animatedVisibilityScope = this
-        if (target == null) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -286,20 +221,42 @@ fun ScheduleScreen(
                         color = MiuixTheme.colorScheme.onBackground,
                         modifier = Modifier.clickable { showWeekSelector = !showWeekSelector }
                     )
-                    IconButton(
-                        onClick = { showAddMenu = !showAddMenu },
-                        modifier = Modifier.onGloballyPositioned { coordinates ->
-                            val position = coordinates.positionInWindow()
-                            val size = coordinates.size
-                            addMenuButtonBounds = CellBounds(
-                                x = position.x.roundToInt(),
-                                y = position.y.roundToInt(),
-                                width = size.width,
-                                height = size.height
-                            )
+                    Box {
+                        IconButton(
+                            onClick = { showAddMenu = !showAddMenu }
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "添加", tint = MiuixTheme.colorScheme.onBackground)
                         }
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "添加", tint = MiuixTheme.colorScheme.onBackground)
+                        WindowListPopup(
+                            show = showAddMenu,
+                            alignment = PopupPositionProvider.Align.End,
+                            onDismissRequest = { showAddMenu = false },
+                            enableWindowDim = false
+                        ) {
+                            val dismissState = LocalDismissState.current
+                            ListPopupColumn {
+                                DropdownImpl(
+                                    text = "添加课程",
+                                    optionSize = 2,
+                                    isSelected = false,
+                                    index = 0,
+                                    onSelectedIndexChange = {
+                                        onNavigateToEdit(null, null, null, personType)
+                                        dismissState?.invoke()
+                                    }
+                                )
+                                DropdownImpl(
+                                    text = "添加待办",
+                                    optionSize = 2,
+                                    isSelected = false,
+                                    index = 1,
+                                    onSelectedIndexChange = {
+                                        onNavigateToTodoEdit(null, LocalDate.now().toEpochDay(), personType, -1, -1, -1, -1)
+                                        dismissState?.invoke()
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             )
@@ -332,21 +289,78 @@ fun ScheduleScreen(
                 modifier = Modifier.weight(1f),
                 contentAlignment = Alignment.CenterEnd
             ) {
+                var addButtonHeight by remember { mutableIntStateOf(0) }
                 GlassSymbolIconButton(
                     onClick = { showAddMenu = !showAddMenu },
                     style = GlassSymbolButtonStyle.NonTinted,
-                    modifier = Modifier.onGloballyPositioned { coordinates ->
-                        val position = coordinates.positionInWindow()
-                        val size = coordinates.size
-                        addMenuButtonBounds = CellBounds(
-                            x = position.x.roundToInt(),
-                            y = position.y.roundToInt(),
-                            width = size.width,
-                            height = size.height
-                        )
-                    }
+                    modifier = Modifier.onGloballyPositioned { addButtonHeight = it.size.height }
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "添加", tint = labelsPrimary)
+                }
+                if (showAddMenu) {
+                    val localDensity = LocalDensity.current
+                    Popup(
+                        alignment = Alignment.TopEnd,
+                        offset = IntOffset(0, addButtonHeight + with(localDensity) { 4.dp.roundToPx() }),
+                        properties = PopupProperties(dismissOnBackPress = true, dismissOnClickOutside = true, focusable = true),
+                        onDismissRequest = { showAddMenu = false }
+                    ) {
+                        val backdrop = LocalBackdrop.current ?: emptyBackdrop()
+                        val cornerRadius = BorderRadius.iOS26.container
+                        val separatorColor = if (darkTheme) Color(0x26FFFFFF) else Color(0x14000000)
+                        val containerColor = if (darkTheme) Color(0xFF121212).copy(alpha = 0.4f) else Color(0xFFFAFAFA).copy(alpha = 0.6f)
+
+                        Box(
+                            modifier = Modifier
+                                .width(IntrinsicSize.Max)
+                                .drawBackdrop(
+                                    backdrop = backdrop,
+                                    shape = { ContinuousRoundedRectangle(cornerRadius) },
+                                    effects = {
+                                        colorControls(
+                                            brightness = if (darkTheme) 0f else 0.2f,
+                                            saturation = 1.5f
+                                        )
+                                        blur(with(localDensity) { 8.dp.toPx() })
+                                        lens(
+                                            refractionHeight = with(localDensity) { 24.dp.toPx() },
+                                            refractionAmount = with(localDensity) { 48.dp.toPx() },
+                                            chromaticAberration = true,
+                                            depthEffect = true
+                                        )
+                                    },
+                                    highlight = { Highlight.Plain },
+                                    onDrawSurface = { drawRect(containerColor) }
+                                )
+                                .padding(4.dp)
+                        ) {
+                            Column(modifier = Modifier.width(IntrinsicSize.Max)) {
+                                iOSMenuItem(
+                                    text = "添加课程",
+                                    darkTheme = darkTheme,
+                                    onClick = {
+                                        onNavigateToEdit(null, null, null, personType)
+                                        showAddMenu = false
+                                    }
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(0.5.dp)
+                                        .padding(horizontal = 8.dp)
+                                        .background(separatorColor)
+                                )
+                                iOSMenuItem(
+                                    text = "添加待办",
+                                    darkTheme = darkTheme,
+                                    onClick = {
+                                        onNavigateToTodoEdit(null, LocalDate.now().toEpochDay(), personType, -1, -1, -1, -1)
+                                        showAddMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -444,7 +458,7 @@ fun ScheduleScreen(
                         todos = weekTodos,
                         onCourseClick = handleCourseClick,
                         onEmptySlotClick = { dayOfWeek, periodIndex ->
-                            editTarget = EditTarget(null, dayOfWeek, periodIndex)
+                            onNavigateToEdit(null, dayOfWeek, periodIndex, personType)
                         },
                         onCourseLongPress = { course, cellBounds ->
                             contextMenuCellBounds = cellBounds
@@ -460,10 +474,7 @@ fun ScheduleScreen(
                                 },
                                 ContextMenuItem(label = "编辑") {
                                     showContextMenu = false
-                                    editTransitionScope.launch {
-                                        delay(150)
-                                        editTarget = EditTarget(course.id, null, null)
-                                    }
+                                    onNavigateToEdit(course.id, null, null, personType)
                                 },
                                 ContextMenuItem(label = "删除", isDestructive = true) {
                                     selectedCourse = course
@@ -505,7 +516,8 @@ fun ScheduleScreen(
                             
                             items.add(
                                 ContextMenuItem(label = "添加课程") {
-                                    editTarget = EditTarget(null, dayOfWeek, period)
+                                    showContextMenu = false
+                                    onNavigateToEdit(null, dayOfWeek, period, personType)
                                 }
                             )
 
@@ -533,12 +545,7 @@ fun ScheduleScreen(
                             items.add(
                                 ContextMenuItem(label = "添加待办") {
                                     showContextMenu = false
-                                    onNavigateToTodoEdit(
-                                        null,
-                                        dateForSlot?.toEpochDay(),
-                                        slotStartHour, slotStartMinute, slotEndHour, slotEndMinute,
-                                        personType
-                                    )
+                                    onNavigateToTodoEdit(null, dateForSlot?.toEpochDay(), personType, slotStartHour, slotStartMinute, slotEndHour, slotEndMinute)
                                 }
                             )
                             
@@ -546,10 +553,10 @@ fun ScheduleScreen(
                             showContextMenu = true
                         },
                         onTodoClick = { todo ->
-                            onNavigateToTodoEdit(todo.id, null, null, null, null, null, null)
+                            onNavigateToTodoEdit(todo.id, null, null, -1, -1, -1, -1)
                         },
-                        editingCourseId = editTarget?.courseId,
-                        animatedVisibilityScope = animatedVisibilityScope,
+                        editingCourseId = null,
+                        animatedVisibilityScope = null,
                         scrollState = scrollState
                     )
                 }
@@ -570,19 +577,6 @@ fun ScheduleScreen(
             } // key(isDataReady)
         }
     }
-        } else {
-            CourseEditContent(
-                courseId = target.courseId,
-                initialDayOfWeek = target.dayOfWeek,
-                initialPeriod = target.periodIndex,
-                initialPersonType = personType,
-                onNavigateBack = { editTarget = null },
-                viewModel = hiltViewModel(key = "edit_${target.courseId ?: "new"}_${personType.name}"),
-                sharedElementKey = if (target.courseId != null) "course_${target.courseId}" else null,
-                animatedVisibilityScope = animatedVisibilityScope
-            )
-        }
-    }
 
     if (showPreview && selectedCourse != null) {
         CoursePreviewBottomSheet(
@@ -595,7 +589,9 @@ fun ScheduleScreen(
                 showPreview = false
                 val course = selectedCourse
                 selectedCourse = null
-                course?.let { editTarget = EditTarget(it.id, null, null) }
+                course?.let {
+                    onNavigateToEdit(it.id, null, null, it.personType)
+                }
             },
             onDelete = {
                 showDeleteConfirm = true
@@ -740,24 +736,6 @@ fun ScheduleScreen(
         },
         menuItems = contextMenuItems,
         cellBounds = contextMenuCellBounds,
-        backdrop = LocalBackdrop.current ?: emptyBackdrop()
-    )
-
-    // 添加菜单（"+"按钮弹出）
-    AddMenuPopup(
-        expanded = showAddMenu,
-        onDismiss = { showAddMenu = false },
-        buttonBounds = addMenuButtonBounds,
-        onAddCourse = {
-            showAddMenu = false
-            editTarget = EditTarget(null, null, null)
-        },
-        onAddTodo = {
-            showAddMenu = false
-            // 使用今天的日期
-            val today = LocalDate.now()
-            onNavigateToTodoEdit(null, today.toEpochDay(), null, null, null, null, personType)
-        },
         backdrop = LocalBackdrop.current ?: emptyBackdrop()
     )
 }
@@ -1039,211 +1017,6 @@ private fun TodoOverlayCard(
                 )
             }
         }
-    }
-}
-
-/** "+"按钮的添加菜单弹出框 */
-@Composable
-private fun AddMenuPopup(
-    expanded: Boolean,
-    onDismiss: () -> Unit,
-    buttonBounds: CellBounds,
-    onAddCourse: () -> Unit,
-    onAddTodo: () -> Unit,
-    backdrop: com.kyant.backdrop.Backdrop
-) {
-    val appThemeMode = LocalAppThemeMode.current
-    val localDensity = LocalDensity.current
-
-    if (!expanded) return
-
-    if (appThemeMode == AppThemeMode.MIUIX) {
-        // Miuix 风格：菜单在按钮下方弹出
-        val menuOffsetY = buttonBounds.bottom + with(localDensity) { 4.dp.roundToPx() }
-
-        Popup(
-            alignment = Alignment.TopStart,
-            offset = IntOffset(buttonBounds.x, menuOffsetY),
-            properties = PopupProperties(
-                dismissOnBackPress = true,
-                dismissOnClickOutside = true,
-                focusable = true
-            ),
-            onDismissRequest = onDismiss
-        ) {
-            Surface(
-                shape = RoundedCornerShape(ContextMenuDefaults.CornerRadius),
-                color = MiuixTheme.colorScheme.surface,
-                modifier = Modifier.wrapContentSize()
-            ) {
-                Column(
-                    modifier = Modifier.wrapContentSize()
-                ) {
-                    // 添加课程选项
-                    top.yukonga.miuix.kmp.basic.Text(
-                        text = "添加课程",
-                        color = MiuixTheme.colorScheme.onBackground,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onAddCourse()
-                                onDismiss()
-                            }
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                    )
-                    // 分隔线
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(0.5.dp)
-                            .padding(horizontal = 12.dp)
-                            .background(MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.1f))
-                    )
-                    // 添加待办选项
-                    top.yukonga.miuix.kmp.basic.Text(
-                        text = "添加待办",
-                        color = MiuixTheme.colorScheme.onBackground,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onAddTodo()
-                                onDismiss()
-                            }
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                    )
-                }
-            }
-        }
-    } else {
-        // iOS 风格：毛玻璃水平菜单在按钮下方弹出
-        val darkTheme = LocalDarkTheme.current
-        val labelsPrimary = getLabelsVibrantPrimary()
-        val menuOffsetY = buttonBounds.bottom + with(localDensity) { 4.dp.roundToPx() }
-
-        val containerColor = if (darkTheme) {
-            Color(0xFF121212).copy(alpha = 0.4f)
-        } else {
-            Color(0xFFFAFAFA).copy(alpha = 0.6f)
-        }
-
-        val separatorColor = if (darkTheme) {
-            Color(0x26FFFFFF)
-        } else {
-            Color(0x14000000)
-        }
-
-        Popup(
-            alignment = Alignment.TopStart,
-            offset = IntOffset(buttonBounds.x, menuOffsetY),
-            properties = PopupProperties(
-                dismissOnBackPress = true,
-                dismissOnClickOutside = true,
-                focusable = true
-            ),
-            onDismissRequest = onDismiss
-        ) {
-            Box(
-                modifier = Modifier
-                    .wrapContentSize()
-                    .drawBackdrop(
-                        backdrop = backdrop,
-                        shape = { ContinuousRoundedRectangle(ContextMenuDefaults.CornerRadius) },
-                        effects = {
-                            colorControls(
-                                brightness = if (darkTheme) 0f else 0.2f,
-                                saturation = 1.5f
-                            )
-                            blur(with(localDensity) { 8.dp.toPx() })
-                            lens(
-                                refractionHeight = with(localDensity) { 24.dp.toPx() },
-                                refractionAmount = with(localDensity) { 48.dp.toPx() },
-                                chromaticAberration = true,
-                                depthEffect = true
-                            )
-                        },
-                        highlight = { Highlight.Plain },
-                        onDrawSurface = { drawRect(containerColor) }
-                    )
-                    .padding(horizontal = 4.dp, vertical = 4.dp)
-            ) {
-                Row(
-                    modifier = Modifier.wrapContentSize(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // 添加课程选项
-                    AddMenuItem(
-                        label = "添加课程",
-                        onClick = {
-                            onAddCourse()
-                            onDismiss()
-                        }
-                    )
-                    // 分隔线
-                    Box(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(20.dp)
-                            .background(separatorColor)
-                    )
-                    // 添加待办选项
-                    AddMenuItem(
-                        label = "添加待办",
-                        onClick = {
-                            onAddTodo()
-                            onDismiss()
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-/** iOS 风格添加菜单项 */
-@Composable
-private fun AddMenuItem(
-    label: String,
-    onClick: () -> Unit
-) {
-    val darkTheme = LocalDarkTheme.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.97f else 1f,
-        animationSpec = tween(100),
-        label = "add_menu_item_scale"
-    )
-    val pressedBackgroundColor = if (darkTheme) {
-        Color(0x33FFFFFF)
-    } else {
-        Color(0x14000000)
-    }
-
-    Box(
-        modifier = Modifier
-            .scale(scale)
-            .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.medium))
-            .background(if (isPressed) pressedBackgroundColor else Color.Transparent)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
-            .padding(horizontal = 16.dp, vertical = 16.dp)
-            .wrapContentSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                lineHeight = 20.sp
-            ),
-            color = getLabelsVibrantPrimary(),
-            maxLines = 1,
-            softWrap = false
-        )
     }
 }
 
@@ -2117,5 +1890,50 @@ private fun CourseOverlayCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun iOSMenuItem(
+    text: String,
+    darkTheme: Boolean,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = tween(100),
+        label = "item_scale"
+    )
+
+    val pressedBackgroundColor = if (darkTheme) Color(0x33FFFFFF) else Color(0x14000000)
+
+    Box(
+        modifier = Modifier
+            .defaultMinSize(minWidth = 80.dp)
+            .scale(scale)
+            .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.medium))
+            .background(if (isPressed) pressedBackgroundColor else Color.Transparent)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 18.sp
+            ),
+            color = getLabelsVibrantPrimary(),
+            maxLines = 1,
+            softWrap = false
+        )
     }
 }

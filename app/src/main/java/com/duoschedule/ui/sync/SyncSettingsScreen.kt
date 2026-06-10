@@ -57,6 +57,8 @@ fun SyncSettingsScreen(
     val isCreating by viewModel.isCreating.collectAsState()
     val isJoining by viewModel.isJoining.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
+    val isTestingConnection by viewModel.isTestingConnection.collectAsState()
+    val testConnectionResult by viewModel.testConnectionResult.collectAsState()
     val roomCode by viewModel.roomCode.collectAsState()
     val message by viewModel.message.collectAsState()
     val conflictResult by viewModel.conflictResult.collectAsState()
@@ -88,6 +90,13 @@ fun SyncSettingsScreen(
         if (message != null) {
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             viewModel.clearMessage()
+        }
+    }
+
+    LaunchedEffect(testConnectionResult) {
+        if (testConnectionResult != null) {
+            Toast.makeText(context, testConnectionResult, Toast.LENGTH_SHORT).show()
+            viewModel.clearTestResult()
         }
     }
 
@@ -123,7 +132,9 @@ fun SyncSettingsScreen(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
                     .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
-                verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
+                verticalArrangement = Arrangement.spacedBy(
+                    if (appThemeMode == AppThemeMode.MIUIX) Spacing.lg else Spacing.iOS26.groupSpacing
+                )
             ) {
                 SettingsSection(title = "同步状态") {
                     SettingsRow(
@@ -219,6 +230,27 @@ fun SyncSettingsScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
+                        }
+
+                        Spacer(modifier = Modifier.height(Spacing.xs))
+
+                        if (appThemeMode == AppThemeMode.MIUIX) {
+                            Button(
+                                onClick = { viewModel.testConnection(username, password) },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(),
+                                enabled = username.isNotBlank() && password.isNotBlank()
+                            ) {
+                                top.yukonga.miuix.kmp.basic.Text("测试连接")
+                            }
+                        } else {
+                            LiquidGlassButton(
+                                text = "测试连接",
+                                onClick = { viewModel.testConnection(username, password) },
+                                style = LiquidGlassButtonStyle.NonTinted,
+                                enabled = username.isNotBlank() && password.isNotBlank(),
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(Spacing.xs))
@@ -373,6 +405,32 @@ fun SyncSettingsScreen(
                 Spacer(modifier = Modifier.height(Spacing.xl))
                 Spacer(modifier = Modifier.height(LiquidBottomTabsSpec.Height + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()))
             }
+        }
+    }
+
+    if (isTestingConnection) {
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            WindowDialog(
+                show = true,
+                title = "请稍候",
+                onDismissRequest = {}
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    top.yukonga.miuix.kmp.basic.CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp)
+                    )
+                    top.yukonga.miuix.kmp.basic.Text("正在测试连接...")
+                }
+            }
+        } else {
+            GlassLoadingDialog(
+                backdrop = backdrop,
+                message = "正在测试连接...",
+                onDismiss = {}
+            )
         }
     }
 

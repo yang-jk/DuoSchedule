@@ -147,9 +147,6 @@ fun DuoScheduleNavGraph(
                 },
                 onNavigateToTodoEdit = { todoId ->
                     navController.navigate("todo_edit?todoId=$todoId")
-                },
-                onNavigateToTodoAdd = {
-                    navController.navigate("todo_edit")
                 }
             )
         }
@@ -157,8 +154,13 @@ fun DuoScheduleNavGraph(
         composable(BottomNavItem.ScheduleA.route) {
             ScheduleScreen(
                 personType = PersonType.PERSON_A,
-                onNavigateToTodoEdit = { todoId, date, startHour, startMinute, endHour, endMinute, personType ->
-                    navController.navigate(buildTodoEditRoute(todoId, date, startHour, startMinute, endHour, endMinute, personType))
+                onNavigateToEdit = { courseId, dayOfWeek, period, personType ->
+                    val route = buildEditRoute(courseId, dayOfWeek, period, personType)
+                    navController.navigate(route)
+                },
+                onNavigateToTodoEdit = { todoId, date, personType, startHour, startMinute, endHour, endMinute ->
+                    val route = buildTodoEditRoute(todoId, date, startHour, startMinute, endHour, endMinute, personType)
+                    navController.navigate(route)
                 }
             )
         }
@@ -166,8 +168,13 @@ fun DuoScheduleNavGraph(
         composable(BottomNavItem.ScheduleB.route) {
             ScheduleScreen(
                 personType = PersonType.PERSON_B,
-                onNavigateToTodoEdit = { todoId, date, startHour, startMinute, endHour, endMinute, personType ->
-                    navController.navigate(buildTodoEditRoute(todoId, date, startHour, startMinute, endHour, endMinute, personType))
+                onNavigateToEdit = { courseId, dayOfWeek, period, personType ->
+                    val route = buildEditRoute(courseId, dayOfWeek, period, personType)
+                    navController.navigate(route)
+                },
+                onNavigateToTodoEdit = { todoId, date, personType, startHour, startMinute, endHour, endMinute ->
+                    val route = buildTodoEditRoute(todoId, date, startHour, startMinute, endHour, endMinute, personType)
+                    navController.navigate(route)
                 }
             )
         }
@@ -179,7 +186,8 @@ fun DuoScheduleNavGraph(
                 onNavigateToDataManagement = { navController.navigate("settings/data") },
                 onNavigateToNotificationSettings = { navController.navigate("settings/notification") },
                 onNavigateToSyncSettings = { navController.navigate("settings/sync") },
-                onNavigateToAbout = { navController.navigate("settings/about") }
+                onNavigateToAbout = { navController.navigate("settings/about") },
+                onNavigateToLogViewer = { navController.navigate("settings/log-viewer") }
             )
         }
 
@@ -265,6 +273,12 @@ fun DuoScheduleNavGraph(
 
         composable("settings/sync") {
             SyncSettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("settings/log-viewer") {
+            LogViewerScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

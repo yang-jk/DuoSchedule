@@ -1,8 +1,40 @@
+## 4.25.0
+
+- 重新设计课表界面加号按钮下拉菜单：Miuix主题改用OverlayListPopup原生组件，iOS主题改用毛玻璃竖排风格
+
+## 4.24.0
+
+- 课表编辑和待办编辑从弹窗改为独立二级页面导航
+- 右上角"+"按钮添加菜单改为小型下拉菜单（Miuix主题使用Miuix风格DropdownPopup，iOS主题使用Material3 DropdownMenu）
+
 # 产品变更记录
 
 本文档记录产品需求文档的所有变更历史，遵循语义化版本规范。
 
 版本号计算公式：versionCode = MAJOR × 10000 + MINOR × 100 + PATCH
+
+---
+
+## [4.23.0] - 2026-06-10
+
+### 变更类型：功能更新
+
+### 状态：已实现
+
+### 变更内容
+
+**课程和待办编辑从页面导航改为弹窗形式**
+
+1. **修改**：ScheduleScreen 中课程添加/编辑操作从页面导航（AnimatedContent）改为 WindowDialog/ModalBottomSheet 弹窗形式
+2. **修改**：ScheduleScreen 中待办添加/编辑操作从页面导航改为 WindowDialog/ModalBottomSheet 弹窗形式
+3. **新增**：`CourseEditDialogContent` 可组合函数，提取课程编辑表单为独立弹窗内容组件
+4. **新增**：`TodoEditDialogContent` 可组合函数，提取待办编辑表单为独立弹窗内容组件
+5. **修改**：课程预览弹窗的"编辑"操作改为打开课程编辑弹窗
+6. **修改**：长按空白区域的"添加课程/待办"改为打开对应编辑弹窗
+7. **修改**：待办色块点击改为打开待办编辑弹窗
+8. **修改**："+"按钮菜单的添加课程/待办改为打开对应编辑弹窗
+9. **移除**：ScheduleScreen 的 `onNavigateToTodoEdit` 参数和 `EditTarget` 数据类
+10. **保持**：Miuix 主题使用 WindowDialog，iOS 主题使用 ModalBottomSheet 的双主题适配
 
 ---
 

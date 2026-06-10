@@ -58,7 +58,6 @@ import java.time.format.DateTimeFormatter
 fun MainScreen(
     onNavigateToEdit: (Long?, Int?, Int?, PersonType?) -> Unit,
     onNavigateToTodoEdit: (Long?) -> Unit = {},
-    onNavigateToTodoAdd: () -> Unit = {},
     viewModel: MainViewModel = hiltViewModel()
 ) {
     val singleModeEnabled by viewModel.singleModeEnabled.collectAsState()
@@ -126,7 +125,6 @@ fun MainScreen(
                     },
                     onTodoClick = { id -> onNavigateToTodoEdit(id) },
                     onToggleTodoStatus = { id -> viewModel.toggleTodoStatus(id) },
-                    onAddItem = onNavigateToTodoAdd,
                     singleModeEnabled = singleModeEnabled,
                     currentHour = currentHour,
                     currentMinute = currentMinute,

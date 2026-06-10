@@ -22,11 +22,13 @@ import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import com.duoschedule.ui.theme.GlassSymbolIconButton
 import com.duoschedule.ui.theme.GlassSymbolButtonStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -336,20 +338,20 @@ fun CourseEditScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.md)
                 ) {
-                    Button(
+                    top.yukonga.miuix.kmp.basic.Button(
                         onClick = { showDeleteDialog = false },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors()
+                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
                     ) {
                         top.yukonga.miuix.kmp.basic.Text("取消")
                     }
-                    Button(
+                    top.yukonga.miuix.kmp.basic.Button(
                         onClick = {
                             viewModel.deleteCourse()
                             showDeleteDialog = false
                         },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors()
+                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
                     ) {
                         top.yukonga.miuix.kmp.basic.Text("删除")
                     }
@@ -369,6 +371,289 @@ fun CourseEditScreen(
             )
         }
     }
+    }
+}
+
+/**
+ * 课程编辑弹窗内容，用于在 WindowDialog/ModalBottomSheet 中展示课程编辑表单。
+ * 不包含 Scaffold/TopBar，由外部弹窗提供标题和容器。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CourseEditDialogContent(
+    courseId: Long?,
+    personType: PersonType,
+    initialDayOfWeek: Int? = null,
+    initialPeriodIndex: Int? = null,
+    onSaved: () -> Unit,
+    onDeleted: () -> Unit
+) {
+    val viewModel: CourseEditViewModel = hiltViewModel()
+    val state by viewModel.state.collectAsState()
+    val totalWeeks by viewModel.totalWeeks.collectAsState()
+    val totalPeriods by viewModel.totalPeriods.collectAsState()
+    val periodTimes by viewModel.periodTimes.collectAsState()
+    val courseHistory by viewModel.courseHistory.collectAsState()
+    val teacherHistory by viewModel.teacherHistory.collectAsState()
+    val singleModeEnabled by viewModel.singleModeEnabled.collectAsState()
+    val appThemeMode = LocalAppThemeMode.current
+
+    val weekPickerState = rememberModalBottomSheetState()
+    val periodPickerState = rememberModalBottomSheetState()
+    val customTimePickerState = rememberModalBottomSheetState()
+    var showWeekPicker by remember { mutableStateOf(false) }
+    var showPeriodPicker by remember { mutableStateOf(false) }
+    var showCustomTimePicker by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showCourseNameSuggestions by remember { mutableStateOf(false) }
+    var showTeacherSuggestions by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        if (courseId != null && courseId > 0) {
+            viewModel.loadCourse(courseId)
+        } else {
+            viewModel.resetForNewCourse(personType)
+        }
+    }
+
+    LaunchedEffect(initialDayOfWeek, initialPeriodIndex) {
+        if (courseId == null || courseId <= 0) {
+            initialDayOfWeek?.let { viewModel.setInitialDayOfWeek(it) }
+            initialPeriodIndex?.let { viewModel.setInitialPeriod(it) }
+        }
+    }
+
+    LaunchedEffect(state.saved) {
+        if (state.saved) {
+            onSaved()
+            viewModel.resetNavigationState()
+        }
+    }
+
+    LaunchedEffect(state.deleted) {
+        if (state.deleted) {
+            onDeleted()
+            viewModel.resetNavigationState()
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false),
+            contentPadding = PaddingValues(
+                top = Spacing.md,
+                bottom = Spacing.lg
+            ),
+            verticalArrangement = Arrangement.spacedBy(Spacing.lg)
+        ) {
+            item {
+                AnimatedVisibility(
+                    visible = state.errorMessage != null,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    ErrorMessageCard(
+                        message = state.errorMessage ?: "",
+                        modifier = Modifier.padding(horizontal = Spacing.lg)
+                    )
+                }
+            }
+
+            item {
+                CourseNameAndPersonSection(
+                    name = state.name,
+                    onNameChange = {
+                        viewModel.setName(it)
+                        showCourseNameSuggestions = it.isNotEmpty()
+                    },
+                    courseHistory = courseHistory,
+                    showSuggestions = showCourseNameSuggestions,
+                    onSuggestionClick = { history ->
+                        viewModel.selectFromHistory(history)
+                        showCourseNameSuggestions = false
+                    },
+                    onDismissSuggestions = { showCourseNameSuggestions = false },
+                    personType = state.personType,
+                    onPersonTypeChange = viewModel::setPersonType,
+                    showPersonType = !singleModeEnabled
+                )
+            }
+
+            item {
+                CourseDetailsSection(
+                    dayOfWeek = state.dayOfWeek,
+                    startPeriod = state.startPeriod,
+                    endPeriod = state.endPeriod,
+                    selectedWeeks = state.selectedWeeks,
+                    totalWeeks = totalWeeks,
+                    location = state.location,
+                    teacher = state.teacher,
+                    teacherHistory = teacherHistory,
+                    showTeacherSuggestions = showTeacherSuggestions,
+                    isCustomTime = state.isCustomTime,
+                    customStartHour = state.customStartHour,
+                    customStartMinute = state.customStartMinute,
+                    customEndHour = state.customEndHour,
+                    customEndMinute = state.customEndMinute,
+                    onTimeModeChange = viewModel::setTimeMode,
+                    onPeriodClick = {
+                        if (state.isCustomTime) {
+                            showCustomTimePicker = true
+                        } else {
+                            showPeriodPicker = true
+                        }
+                    },
+                    onWeekClick = { showWeekPicker = true },
+                    onLocationChange = viewModel::setLocation,
+                    onTeacherChange = {
+                        viewModel.setTeacher(it)
+                        showTeacherSuggestions = it.isNotEmpty()
+                    },
+                    onTeacherSuggestionClick = { teacher ->
+                        viewModel.setTeacher(teacher)
+                        showTeacherSuggestions = false
+                    }
+                )
+            }
+        }
+
+        // 底部按钮
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.lg, vertical = Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+        ) {
+            if (state.isEditing) {
+                if (appThemeMode == AppThemeMode.MIUIX) {
+                    top.yukonga.miuix.kmp.basic.Button(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier.weight(1f),
+                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("删除课程")
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("删除课程")
+                    }
+                }
+            }
+            if (appThemeMode == AppThemeMode.MIUIX) {
+                top.yukonga.miuix.kmp.basic.Button(
+                    onClick = viewModel::saveCourse,
+                    modifier = Modifier.weight(1f),
+                    colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary()
+                ) {
+                    top.yukonga.miuix.kmp.basic.Text("保存")
+                }
+            } else {
+                androidx.compose.material3.Button(
+                    onClick = viewModel::saveCourse,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("保存")
+                }
+            }
+        }
+    }
+
+    // 选择器弹窗
+    if (showWeekPicker) {
+        WeekPickerBottomSheet(
+            totalWeeks = totalWeeks,
+            selectedWeeks = state.selectedWeeks,
+            onWeeksChange = viewModel::setSelectedWeeks,
+            onDismiss = { showWeekPicker = false },
+            sheetState = weekPickerState
+        )
+    }
+
+    if (showPeriodPicker) {
+        PeriodPickerBottomSheet(
+            totalPeriods = totalPeriods,
+            selectedDayOfWeek = state.dayOfWeek,
+            selectedStartPeriod = state.startPeriod,
+            selectedEndPeriod = state.endPeriod,
+            onSelectionChange = { dayOfWeek, startPeriod, endPeriod ->
+                viewModel.setDayOfWeek(dayOfWeek)
+                viewModel.setPeriods(startPeriod, endPeriod)
+            },
+            onDismiss = { showPeriodPicker = false },
+            sheetState = periodPickerState
+        )
+    }
+
+    if (showCustomTimePicker) {
+        CustomTimePickerBottomSheet(
+            selectedDayOfWeek = state.dayOfWeek,
+            startHour = state.customStartHour,
+            startMinute = state.customStartMinute,
+            endHour = state.customEndHour,
+            endMinute = state.customEndMinute,
+            onSelectionChange = { dayOfWeek, startHour, startMinute, endHour, endMinute ->
+                viewModel.setDayOfWeek(dayOfWeek)
+                viewModel.setCustomTime(startHour, startMinute, endHour, endMinute)
+            },
+            onDismiss = { showCustomTimePicker = false },
+            sheetState = customTimePickerState
+        )
+    }
+
+    // 删除确认对话框
+    if (showDeleteDialog) {
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            WindowDialog(
+                show = true,
+                title = "删除课程",
+                onDismissRequest = { showDeleteDialog = false }
+            ) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "确定要删除这门课程吗？此操作不可撤销。",
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    modifier = Modifier.padding(bottom = Spacing.md)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    top.yukonga.miuix.kmp.basic.Button(
+                        onClick = { showDeleteDialog = false },
+                        modifier = Modifier.weight(1f),
+                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("取消")
+                    }
+                    top.yukonga.miuix.kmp.basic.Button(
+                        onClick = {
+                            viewModel.deleteCourse()
+                            showDeleteDialog = false
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("删除")
+                    }
+                }
+            }
+        } else {
+            GlassAlert(
+                onDismissRequest = { showDeleteDialog = false },
+                onConfirm = {
+                    viewModel.deleteCourse()
+                    showDeleteDialog = false
+                },
+                title = "删除课程",
+                text = "确定要删除这门课程吗？此操作不可撤销。",
+                confirmText = "删除",
+                dismissText = "取消"
+            )
+        }
     }
 }
 
@@ -1320,20 +1605,20 @@ fun CourseEditContent(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.md)
                 ) {
-                    Button(
+                    top.yukonga.miuix.kmp.basic.Button(
                         onClick = { showDeleteDialog = false },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors()
+                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
                     ) {
                         top.yukonga.miuix.kmp.basic.Text("取消")
                     }
-                    Button(
+                    top.yukonga.miuix.kmp.basic.Button(
                         onClick = {
                             viewModel.deleteCourse()
                             showDeleteDialog = false
                         },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors()
+                        colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColors()
                     ) {
                         top.yukonga.miuix.kmp.basic.Text("删除")
                     }

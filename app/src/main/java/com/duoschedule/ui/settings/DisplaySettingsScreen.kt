@@ -55,6 +55,7 @@ fun DisplaySettingsScreen(
     }
 
     val blurEnabled = scrollState.value > 0
+    val appThemeMode = LocalAppThemeMode.current
 
     Scaffold(
         topBar = {
@@ -87,7 +88,9 @@ fun DisplaySettingsScreen(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
                     .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
-                verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
+                verticalArrangement = Arrangement.spacedBy(
+                    if (appThemeMode == AppThemeMode.MIUIX) Spacing.lg else Spacing.iOS26.groupSpacing
+                )
             ) {
             SettingsSection(title = "主页显示") {
                 SettingsMenuRow(

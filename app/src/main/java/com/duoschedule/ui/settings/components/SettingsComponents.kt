@@ -67,7 +67,15 @@ fun SettingsSection(
             verticalArrangement = Arrangement.spacedBy(Spacing.sm)
         ) {
             if (title != null) {
-                SmallTitle(text = title)
+                SmallTitle(
+                    text = title,
+                    insideMargin = PaddingValues(
+                        start = SettingsDefaults.ItemHorizontalPadding,
+                        top = 8.dp,
+                        end = 8.dp,
+                        bottom = 8.dp
+                    )
+                )
             }
             Surface(
                 modifier = Modifier.fillMaxWidth(),

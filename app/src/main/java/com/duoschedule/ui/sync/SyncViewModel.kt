@@ -31,6 +31,12 @@ class SyncViewModel @Inject constructor(
     val lastSyncTime: StateFlow<Long> = syncPreferences.lastSyncTime
         .stateIn(viewModelScope, SharingStarted.Lazily, 0L)
 
+    private val _isTestingConnection = MutableStateFlow(false)
+    val isTestingConnection: StateFlow<Boolean> = _isTestingConnection.asStateFlow()
+
+    private val _testConnectionResult = MutableStateFlow<String?>(null)
+    val testConnectionResult: StateFlow<String?> = _testConnectionResult.asStateFlow()
+
     private val _isCreating = MutableStateFlow(false)
     val isCreating: StateFlow<Boolean> = _isCreating.asStateFlow()
 
@@ -57,6 +63,24 @@ class SyncViewModel @Inject constructor(
 
     private val _conflictResult = MutableStateFlow<SyncResult.Conflict?>(null)
     val conflictResult: StateFlow<SyncResult.Conflict?> = _conflictResult.asStateFlow()
+
+    fun testConnection(username: String, password: String) {
+        viewModelScope.launch {
+            _isTestingConnection.value = true
+            try {
+                val result = syncManager.testConnection(username, password)
+                _testConnectionResult.value = result
+            } catch (e: Exception) {
+                _testConnectionResult.value = "连接失败: ${e.message}"
+            } finally {
+                _isTestingConnection.value = false
+            }
+        }
+    }
+
+    fun clearTestResult() {
+        _testConnectionResult.value = null
+    }
 
     fun createRoom(username: String, password: String) {
         viewModelScope.launch {

@@ -9,7 +9,7 @@ import android.util.Log
 import androidx.work.*
 import com.duoschedule.MainActivity
 import com.duoschedule.data.model.PersonType
-import com.duoschedule.util.AppLog
+import com.duoschedule.util.AppLogger
 import com.duoschedule.util.SafeConverters
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDate
@@ -76,13 +76,13 @@ class AlarmScheduler @Inject constructor(
         val reminderDateTime = LocalDateTime.of(LocalDate.now(), reminderTime)
         val triggerTime = reminderDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
 
-        AppLog.d(TAG, "scheduleReminderWithAlarm: ${course.name}")
-        AppLog.d(TAG, "  reminderDateTime: $reminderDateTime")
-        AppLog.d(TAG, "  triggerTime(ms): $triggerTime")
-        AppLog.d(TAG, "  currentTime(ms): ${System.currentTimeMillis()}")
+        AppLogger.d(TAG, "scheduleReminderWithAlarm: ${course.name}")
+        AppLogger.d(TAG, "  reminderDateTime: $reminderDateTime")
+        AppLogger.d(TAG, "  triggerTime(ms): $triggerTime")
+        AppLogger.d(TAG, "  currentTime(ms): ${System.currentTimeMillis()}")
 
         if (triggerTime <= System.currentTimeMillis()) {
-            AppLog.d(TAG, "  触发时间已过，跳过")
+            AppLogger.d(TAG, "  触发时间已过，跳过")
             return
         }
 
@@ -112,7 +112,7 @@ class AlarmScheduler @Inject constructor(
                         label = "课前提醒: ${course.name}"
                     )
                     recordAlarm(SafeConverters.safeRequestCode(course.id), "reminder", course.name, triggerTime, true)
-                    AppLog.d(TAG, "  AlarmClock已设置: ${course.name} at $reminderTime")
+                    AppLogger.d(TAG, "  AlarmClock已设置: ${course.name} at $reminderTime")
                     NotificationDebugLogger.log(NotificationDebugLog(
                         type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
                         result = NotificationDebugLog.LogResult.SUCCESS,
@@ -126,7 +126,7 @@ class AlarmScheduler @Inject constructor(
                         pendingIntent
                     )
                     recordAlarm(SafeConverters.safeRequestCode(course.id), "reminder", course.name, triggerTime, false)
-                    AppLog.d(TAG, "  非精确闹钟已设置(无精确闹钟权限): ${course.name} at $reminderTime")
+                    AppLogger.d(TAG, "  非精确闹钟已设置(无精确闹钟权限): ${course.name} at $reminderTime")
                     NotificationDebugLogger.log(NotificationDebugLog(
                         type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
                         result = NotificationDebugLog.LogResult.SUCCESS,
@@ -141,7 +141,7 @@ class AlarmScheduler @Inject constructor(
                     label = "课前提醒: ${course.name}"
                 )
                 recordAlarm(SafeConverters.safeRequestCode(course.id), "reminder", course.name, triggerTime, true)
-                AppLog.d(TAG, "  AlarmClock已设置: ${course.name} at $reminderTime")
+                AppLogger.d(TAG, "  AlarmClock已设置: ${course.name} at $reminderTime")
                 NotificationDebugLogger.log(NotificationDebugLog(
                     type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
                     result = NotificationDebugLog.LogResult.SUCCESS,
@@ -166,13 +166,13 @@ class AlarmScheduler @Inject constructor(
         val courseStartDateTime = LocalDateTime.of(LocalDate.now(), courseStartTime)
         val triggerTime = courseStartDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
 
-        AppLog.d(TAG, "scheduleOngoingCourseAlarm: ${course.name}")
-        AppLog.d(TAG, "  courseStartTime: $courseStartTime")
-        AppLog.d(TAG, "  triggerTime(ms): $triggerTime")
-        AppLog.d(TAG, "  currentTime(ms): ${System.currentTimeMillis()}")
+        AppLogger.d(TAG, "scheduleOngoingCourseAlarm: ${course.name}")
+        AppLogger.d(TAG, "  courseStartTime: $courseStartTime")
+        AppLogger.d(TAG, "  triggerTime(ms): $triggerTime")
+        AppLogger.d(TAG, "  currentTime(ms): ${System.currentTimeMillis()}")
 
         if (triggerTime <= System.currentTimeMillis()) {
-            AppLog.d(TAG, "  触发时间已过，跳过")
+            AppLogger.d(TAG, "  触发时间已过，跳过")
             return
         }
 
@@ -201,7 +201,7 @@ class AlarmScheduler @Inject constructor(
                         label = "课程开始: ${course.name}"
                     )
                     recordAlarm(SafeConverters.safeRequestCode(course.id, 10000), "ongoing", course.name, triggerTime, true)
-                    AppLog.d(TAG, "  课程开始AlarmClock已设置: ${course.name} at $courseStartTime")
+                    AppLogger.d(TAG, "  课程开始AlarmClock已设置: ${course.name} at $courseStartTime")
                     NotificationDebugLogger.log(NotificationDebugLog(
                         type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
                         result = NotificationDebugLog.LogResult.SUCCESS,
@@ -215,7 +215,7 @@ class AlarmScheduler @Inject constructor(
                         pendingIntent
                     )
                     recordAlarm(SafeConverters.safeRequestCode(course.id, 10000), "ongoing", course.name, triggerTime, false)
-                    AppLog.d(TAG, "  课程开始闹钟已设置(非精确-无权限): ${course.name} at $courseStartTime")
+                    AppLogger.d(TAG, "  课程开始闹钟已设置(非精确-无权限): ${course.name} at $courseStartTime")
                     NotificationDebugLogger.log(NotificationDebugLog(
                         type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
                         result = NotificationDebugLog.LogResult.SUCCESS,
@@ -230,7 +230,7 @@ class AlarmScheduler @Inject constructor(
                     label = "课程开始: ${course.name}"
                 )
                 recordAlarm(SafeConverters.safeRequestCode(course.id, 10000), "ongoing", course.name, triggerTime, true)
-                AppLog.d(TAG, "  课程开始AlarmClock已设置: ${course.name} at $courseStartTime")
+                AppLogger.d(TAG, "  课程开始AlarmClock已设置: ${course.name} at $courseStartTime")
                 NotificationDebugLogger.log(NotificationDebugLog(
                     type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
                     result = NotificationDebugLog.LogResult.SUCCESS,
@@ -253,12 +253,12 @@ class AlarmScheduler @Inject constructor(
         val preStartDateTime = LocalDateTime.of(LocalDate.now(), preStartTime)
         val triggerTime = preStartDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
 
-        AppLog.d(TAG, "schedulePreStartServiceAlarm: ${course.name}")
-        AppLog.d(TAG, "  preStartTime: $preStartTime")
-        AppLog.d(TAG, "  triggerTime(ms): $triggerTime")
+        AppLogger.d(TAG, "schedulePreStartServiceAlarm: ${course.name}")
+        AppLogger.d(TAG, "  preStartTime: $preStartTime")
+        AppLogger.d(TAG, "  triggerTime(ms): $triggerTime")
 
         if (triggerTime <= System.currentTimeMillis()) {
-            AppLog.d(TAG, "  触发时间已过，跳过")
+            AppLogger.d(TAG, "  触发时间已过，跳过")
             return
         }
 
@@ -285,7 +285,7 @@ class AlarmScheduler @Inject constructor(
                 pendingIntent
             )
             recordAlarm(SafeConverters.safeRequestCode(course.id, 60000), "pre_start", course.name, triggerTime, canScheduleExactAlarms())
-            AppLog.i(TAG, "  预启动服务闹钟已设置: ${course.name} at $preStartTime")
+            AppLogger.i(TAG, "  预启动服务闹钟已设置: ${course.name} at $preStartTime")
             NotificationDebugLogger.log(NotificationDebugLog(
                 type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
                 result = NotificationDebugLog.LogResult.SUCCESS,
@@ -307,13 +307,13 @@ class AlarmScheduler @Inject constructor(
         val preCheckDateTime = LocalDateTime.of(LocalDate.now(), preCheckTime)
         val triggerTime = preCheckDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
 
-        AppLog.d(TAG, "schedulePreCheckAlarm: ${course.name}")
-        AppLog.d(TAG, "  preCheckTime: $preCheckTime")
-        AppLog.d(TAG, "  triggerTime(ms): $triggerTime")
-        AppLog.d(TAG, "  currentTime(ms): ${System.currentTimeMillis()}")
+        AppLogger.d(TAG, "schedulePreCheckAlarm: ${course.name}")
+        AppLogger.d(TAG, "  preCheckTime: $preCheckTime")
+        AppLogger.d(TAG, "  triggerTime(ms): $triggerTime")
+        AppLogger.d(TAG, "  currentTime(ms): ${System.currentTimeMillis()}")
 
         if (triggerTime <= System.currentTimeMillis()) {
-            AppLog.d(TAG, "  触发时间已过，跳过")
+            AppLogger.d(TAG, "  触发时间已过，跳过")
             return
         }
 
@@ -335,7 +335,7 @@ class AlarmScheduler @Inject constructor(
                 pendingIntent
             )
             recordAlarm(SafeConverters.safeRequestCode(course.id, 50000), "pre_check", course.name, triggerTime, canScheduleExactAlarms())
-            AppLog.i(TAG, "  课前检查闹钟已设置：${course.name} at $preCheckTime")
+            AppLogger.i(TAG, "  课前检查闹钟已设置：${course.name} at $preCheckTime")
             NotificationDebugLogger.log(NotificationDebugLog(
                 type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
                 result = NotificationDebugLog.LogResult.SUCCESS,
@@ -367,11 +367,11 @@ class AlarmScheduler @Inject constructor(
             return
         }
 
-        AppLog.d(TAG, "scheduleSilentStartAlarm: ${course.name}")
-        AppLog.d(TAG, "  triggerDateTime: $triggerDateTime")
-        AppLog.d(TAG, "  triggerTime: $triggerTime")
-        AppLog.d(TAG, "  currentTime: ${System.currentTimeMillis()}")
-        AppLog.d(TAG, "  endTimeMillis: $endTimeMillis")
+        AppLogger.d(TAG, "scheduleSilentStartAlarm: ${course.name}")
+        AppLogger.d(TAG, "  triggerDateTime: $triggerDateTime")
+        AppLogger.d(TAG, "  triggerTime: $triggerTime")
+        AppLogger.d(TAG, "  currentTime: ${System.currentTimeMillis()}")
+        AppLogger.d(TAG, "  endTimeMillis: $endTimeMillis")
 
         val intent = Intent(context, SilentModeReceiver::class.java).apply {
             action = SilentModeReceiver.ACTION_SILENT_START
@@ -394,7 +394,7 @@ class AlarmScheduler @Inject constructor(
                 pendingIntent
             )
             recordAlarm(SafeConverters.safeRequestCode(course.id, 20000), "silent_start", course.name, triggerTime, canScheduleExactAlarms())
-            AppLog.i(TAG, "  静音开始闹钟已设置: ${course.name}")
+            AppLogger.i(TAG, "  静音开始闹钟已设置: ${course.name}")
             NotificationDebugLogger.log(NotificationDebugLog(
                 type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
                 result = NotificationDebugLog.LogResult.SUCCESS,
@@ -415,7 +415,7 @@ class AlarmScheduler @Inject constructor(
     fun scheduleSilentEndAlarm(course: com.duoschedule.data.model.Course, triggerDateTime: LocalDateTime) {
         val triggerTime = triggerDateTime.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
         if (triggerTime <= System.currentTimeMillis()) {
-            AppLog.d(TAG, "scheduleSilentEndAlarm: 触发时间已过，发送即时广播: ${course.name}")
+            AppLogger.d(TAG, "scheduleSilentEndAlarm: 触发时间已过，发送即时广播: ${course.name}")
             val intent = Intent(context, SilentModeReceiver::class.java).apply {
                 action = SilentModeReceiver.ACTION_SILENT_END
                 putExtra(SilentModeReceiver.EXTRA_COURSE_ID, course.id)
@@ -425,9 +425,9 @@ class AlarmScheduler @Inject constructor(
             return
         }
 
-        AppLog.d(TAG, "scheduleSilentEndAlarm: ${course.name}")
-        AppLog.d(TAG, "  triggerDateTime: $triggerDateTime")
-        AppLog.d(TAG, "  triggerTime: $triggerTime")
+        AppLogger.d(TAG, "scheduleSilentEndAlarm: ${course.name}")
+        AppLogger.d(TAG, "  triggerDateTime: $triggerDateTime")
+        AppLogger.d(TAG, "  triggerTime: $triggerTime")
 
         val intent = Intent(context, SilentModeReceiver::class.java).apply {
             action = SilentModeReceiver.ACTION_SILENT_END
@@ -449,7 +449,7 @@ class AlarmScheduler @Inject constructor(
                 pendingIntent
             )
             recordAlarm(SafeConverters.safeRequestCode(course.id, 30000), "silent_end", course.name, triggerTime, canScheduleExactAlarms())
-            AppLog.i(TAG, "  静音结束闹钟已设置: ${course.name}")
+            AppLogger.i(TAG, "  静音结束闹钟已设置: ${course.name}")
             NotificationDebugLogger.log(NotificationDebugLog(
                 type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
                 result = NotificationDebugLog.LogResult.SUCCESS,
@@ -490,7 +490,7 @@ class AlarmScheduler @Inject constructor(
                 pendingIntent
             )
             recordAlarm(9999, "daily_reschedule", "", triggerTime, canScheduleExactAlarms())
-            AppLog.d(TAG, "每日重新调度任务已设置: $midnight")
+            AppLogger.d(TAG, "每日重新调度任务已设置: $midnight")
             NotificationDebugLogger.log(NotificationDebugLog(
                 type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
                 result = NotificationDebugLog.LogResult.SUCCESS,
@@ -556,7 +556,7 @@ class AlarmScheduler @Inject constructor(
             scheduledAlarms.remove(entry.key)
         }
 
-        AppLog.d(TAG, "cancelAllSilentAlarms: 已取消 ${silentAlarmEntries.size} 个静音闹钟")
+        AppLogger.d(TAG, "cancelAllSilentAlarms: 已取消 ${silentAlarmEntries.size} 个静音闹钟")
         NotificationDebugLogger.log(NotificationDebugLog(
             type = NotificationDebugLog.LogType.ALARM_CANCELLED,
             result = NotificationDebugLog.LogResult.SUCCESS,
@@ -586,7 +586,7 @@ class AlarmScheduler @Inject constructor(
                 pendingIntent
             )
             recordAlarm(SafeConverters.safeRequestCode(courseId, 30000), "silent_end_test", courseName, triggerTimeMillis, canScheduleExactAlarms())
-            AppLog.i(TAG, "测试静音结束闹钟已设置: $courseName, ${((triggerTimeMillis - System.currentTimeMillis()) / 1000)}秒后触发")
+            AppLogger.i(TAG, "测试静音结束闹钟已设置: $courseName, ${((triggerTimeMillis - System.currentTimeMillis()) / 1000)}秒后触发")
             NotificationDebugLogger.log(NotificationDebugLog(
                 type = NotificationDebugLog.LogType.ALARM_SCHEDULED,
                 result = NotificationDebugLog.LogResult.SUCCESS,
@@ -617,7 +617,7 @@ class AlarmScheduler @Inject constructor(
         )
 
         alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
-        AppLog.d(TAG, "AlarmClock scheduled: $label at $triggerTime")
+        AppLogger.d(TAG, "AlarmClock scheduled: $label at $triggerTime")
     }
 
     private fun scheduleReminderWork(course: com.duoschedule.data.model.Course, reminderTime: LocalTime, advanceMinutes: Int) {
@@ -647,6 +647,6 @@ class AlarmScheduler @Inject constructor(
             ExistingWorkPolicy.REPLACE,
             workRequest
         )
-        AppLog.d(TAG, "  WorkManager任务已设置: ${course.name}, delay=$delayMinutes 分钟")
+        AppLogger.d(TAG, "  WorkManager任务已设置: ${course.name}, delay=$delayMinutes 分钟")
     }
 }

@@ -73,6 +73,8 @@ fun PeriodTimesSettingsScreen(
         lastTotalPeriods = totalPeriods
     }
     
+    val appThemeMode = LocalAppThemeMode.current
+
     val hazeState = rememberHazeState()
     val lazyListState = rememberLazyListState()
 
@@ -95,7 +97,6 @@ fun PeriodTimesSettingsScreen(
                     titleColor = MiuixTheme.colorScheme.onSurface,
                     defaultWindowInsetsPadding = false,
                     navigationIcon = {
-                        val appThemeMode = LocalAppThemeMode.current
                         if (appThemeMode == AppThemeMode.MIUIX) {
                             top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
                                 Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
@@ -134,7 +135,9 @@ fun PeriodTimesSettingsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
-                verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
+                verticalArrangement = Arrangement.spacedBy(
+                    if (appThemeMode == AppThemeMode.MIUIX) Spacing.lg else Spacing.iOS26.groupSpacing
+                )
             ) {
             SettingsFooter(
                 text = "点击时间可编辑每节课的开始和结束时间。"

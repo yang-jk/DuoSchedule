@@ -6,6 +6,7 @@ import android.util.Log
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.WeekType
+import com.duoschedule.util.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -35,6 +36,7 @@ object CsvExporter {
         personBName: String,
         swapPersons: Boolean = false
     ): Result<Unit> = withContext(Dispatchers.IO) {
+        AppLogger.i("ImportExport", "开始导出 CSV: ${courses.size} 门课程")
         try {
             context.contentResolver.openOutputStream(uri)?.use { outputStream ->
                 OutputStreamWriter(outputStream, "UTF-8").use { writer ->
@@ -42,8 +44,10 @@ object CsvExporter {
                     writeExportContent(writer, courses, settingsA, settingsB, personAName, personBName, swapPersons)
                 }
             }
+            AppLogger.i("ImportExport", "导出 CSV 成功: ${courses.size} 门课程")
             Result.success(Unit)
         } catch (e: Exception) {
+            AppLogger.e("ImportExport", "导出 CSV 失败", e)
             Result.failure(e)
         }
     }
@@ -142,6 +146,7 @@ object CsvExporter {
         periodTimes: List<String> = emptyList(),
         totalWeeks: Int = 16
     ): ImportResult = withContext(Dispatchers.IO) {
+        AppLogger.i("ImportExport", "开始导入 CSV: targetPerson=$targetPerson")
         try {
             Log.d(TAG, "importFromCsv: starting import, targetPerson=$targetPerson, periodTimes=$periodTimes, totalWeeks=$totalWeeks")
             val courses = mutableListOf<CourseImportData>()
@@ -265,11 +270,13 @@ object CsvExporter {
             }
 
             if (courses.isEmpty() && errors.isEmpty()) {
+                AppLogger.w("ImportExport", "导入 CSV 失败: 文件格式错误")
                 ImportResult(
                     success = false,
                     errors = listOf("文件格式错误，请对照模板检查")
                 )
             } else if (courses.isEmpty() && errors.isNotEmpty()) {
+                AppLogger.w("ImportExport", "导入 CSV 失败: ${errors.size} 个错误")
                 ImportResult(
                     success = false,
                     errors = listOf("文件格式错误，请对照模板检查")
@@ -281,6 +288,8 @@ object CsvExporter {
                 val personBCount = courses.count { it.personType == PersonType.PERSON_B }
                 Log.d(TAG, "importFromCsv: parsed ${courses.size} courses (A=$personACount, B=$personBCount), ${errors.size} errors, fileType=$fileType, exportVersion=$exportVersion")
                 Log.d(TAG, "importFromCsv: periodTimesA=${settingsAMap["课程时间"]}, periodTimesB=${settingsBMap["课程时间"]}")
+                
+                AppLogger.i("ImportExport", "导入 CSV 成功: ${courses.size} 门课程, ${errors.size} 个错误, fileType=$fileType")
                 
                 val settingsA = if (isAppExport && settingsAMap.isNotEmpty()) {
                     ScheduleSettingsExport(
@@ -321,6 +330,7 @@ object CsvExporter {
                 )
             }
         } catch (e: Exception) {
+            AppLogger.e("ImportExport", "导入 CSV 异常", e)
             ImportResult(
                 success = false,
                 errors = listOf("文件格式错误，请对照模板检查")

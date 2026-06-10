@@ -52,6 +52,7 @@ fun SettingsScreen(
     onNavigateToNotificationSettings: () -> Unit,
     onNavigateToSyncSettings: () -> Unit = {},
     onNavigateToAbout: () -> Unit = {},
+    onNavigateToLogViewer: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val personAName by viewModel.personAName.collectAsState()
@@ -124,7 +125,9 @@ fun SettingsScreen(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
                     .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
-                verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
+                verticalArrangement = Arrangement.spacedBy(
+                    if (appThemeMode == AppThemeMode.MIUIX) Spacing.lg else Spacing.iOS26.groupSpacing
+                )
             ) {
             if (appThemeMode == AppThemeMode.MIUIX) {
                 top.yukonga.miuix.kmp.basic.Text(
@@ -304,6 +307,16 @@ fun SettingsScreen(
                     icon = Icons.Outlined.Info,
                     iconBackgroundColor = IOSColors.Blue,
                     onClick = onNavigateToAbout
+                )
+
+                Separator(modifier = Modifier.padding(horizontal = Spacing.lg))
+
+                SettingsNavigationRow(
+                    title = "查看日志",
+                    subtitle = "查看应用运行日志",
+                    icon = Icons.Outlined.BugReport,
+                    iconBackgroundColor = IOSColors.Gray,
+                    onClick = onNavigateToLogViewer
                 )
             }
 

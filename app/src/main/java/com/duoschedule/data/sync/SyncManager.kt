@@ -7,6 +7,7 @@ import com.duoschedule.data.local.TodoDao
 import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.Todo
+import com.duoschedule.util.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -33,6 +34,28 @@ class SyncManager @Inject constructor(
     private val syncMutex = Mutex()
 
     val syncStatus = MutableStateFlow(SyncStatus())
+
+    suspend fun testConnection(username: String, password: String): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val config = SyncConfig(
+                    webDavUrl = "https://dav.jianguoyun.com/dav/",
+                    username = username,
+                    password = password,
+                    roomId = "",
+                    deviceId = ""
+                )
+                val result = webDavClient.testConnection(config)
+                if (result.isSuccess) {
+                    "连接成功"
+                } else {
+                    "连接失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
+                }
+            } catch (e: Exception) {
+                "连接失败: ${e.message}"
+            }
+        }
+    }
 
     suspend fun createRoom(config: SyncConfig): Result<String> {
         return withContext(Dispatchers.IO) {
@@ -81,9 +104,11 @@ class SyncManager @Inject constructor(
                 syncPreferences.updateLastSyncVersion(0L)
                 syncPreferences.saveRoomCode(roomCode)
 
+                AppLogger.i("Sync", "创建房间成功: roomCode=$roomCode")
                 Result.success(roomCode)
             } catch (e: Exception) {
                 Log.e(TAG, "createRoom failed", e)
+                AppLogger.e("Sync", "创建房间失败", e)
                 Result.failure(e)
             }
         }
@@ -99,6 +124,7 @@ class SyncManager @Inject constructor(
                 Result.success(findResult.getOrThrow())
             } catch (e: Exception) {
                 Log.e(TAG, "joinRoom failed", e)
+                AppLogger.e("Sync", "加入房间失败", e)
                 Result.failure(e)
             }
         }
@@ -199,9 +225,11 @@ class SyncManager @Inject constructor(
                 syncPreferences.setSyncEnabled(true)
                 syncPreferences.saveRoomCode(joinInfo.roomCode)
 
+                AppLogger.i("Sync", "加入房间成功: roomCode=${joinInfo.roomCode}")
                 Result.success(Unit)
             } catch (e: Exception) {
                 Log.e(TAG, "joinRoomWithRoleSelection failed", e)
+                AppLogger.e("Sync", "加入房间（选择角色）失败", e)
                 Result.failure(e)
             }
         }
@@ -291,6 +319,8 @@ class SyncManager @Inject constructor(
 
             syncStatus.value = SyncStatus(state = SyncState.SYNCING)
 
+            AppLogger.i("Sync", "开始同步...")
+
             return@withContext try {
                 val metaResult = webDavClient.downloadJson(config, webDavClient.getMetaPath(config.roomId))
                 if (metaResult.isFailure) {
@@ -330,6 +360,7 @@ class SyncManager @Inject constructor(
                         lastSyncVersion = cloudVersion,
                         lastSyncTime = System.currentTimeMillis()
                     )
+                    AppLogger.i("Sync", "同步完成: 无变更")
                     return@withContext SyncResult.NoChanges
                 }
 
@@ -343,6 +374,7 @@ class SyncManager @Inject constructor(
                 val allConflicts = courseConflicts + todoConflicts
                 if (allConflicts.isNotEmpty()) {
                     syncStatus.value = SyncStatus(state = SyncState.CONFLICT, lastSyncVersion = localLastSyncVersion)
+                    AppLogger.w("Sync", "同步冲突: ${allConflicts.size} 个冲突项")
                     return@withContext SyncResult.Conflict(
                         localVersion = localLastSyncVersion,
                         cloudVersion = cloudVersion,
@@ -387,10 +419,12 @@ class SyncManager @Inject constructor(
                     lastSyncTime = System.currentTimeMillis()
                 )
 
+                AppLogger.i("Sync", "同步完成: 合并 ${mergedCourses.size} 门课程, ${mergedTodos.size} 个待办")
                 SyncResult.Success(pulledCourses = mergedCourses.size, pushedCourses = mergedCourses.size)
             } catch (e: Exception) {
                 Log.e(TAG, "sync failed", e)
                 syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = e.message)
+                AppLogger.e("Sync", "同步失败", e)
                 SyncResult.Error(e.message ?: "Sync failed", e)
             }
         }
@@ -402,6 +436,8 @@ class SyncManager @Inject constructor(
             if (config == null) return@withContext SyncResult.NotConfigured
 
             syncStatus.value = SyncStatus(state = SyncState.SYNCING)
+
+            AppLogger.i("Sync", "开始推送本地变更...")
 
             return@withContext try {
                 val metaResult = webDavClient.downloadJson(config, webDavClient.getMetaPath(config.roomId))
@@ -419,6 +455,7 @@ class SyncManager @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "pushChanges failed", e)
                 syncStatus.value = SyncStatus(state = SyncState.ERROR, errorMessage = e.message)
+                AppLogger.e("Sync", "推送变更失败", e)
                 SyncResult.Error(e.message ?: "Push failed", e)
             }
         }

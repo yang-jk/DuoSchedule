@@ -233,7 +233,9 @@ fun NotificationSettingsScreen(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
                     .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
-                verticalArrangement = Arrangement.spacedBy(Spacing.iOS26.groupSpacing)
+                verticalArrangement = Arrangement.spacedBy(
+                    if (appThemeMode == AppThemeMode.MIUIX) Spacing.lg else Spacing.iOS26.groupSpacing
+                )
             ) {
             if (!notificationEnabled || !hasNotificationPermission) {
                 SettingsSection(title = "通知状态") {

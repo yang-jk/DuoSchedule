@@ -75,6 +75,7 @@ fun ScheduleSettingsScreen(
     }
 
     val blurEnabled = scrollState.value > 0
+    val appThemeMode = LocalAppThemeMode.current
 
     Scaffold(
         topBar = {
