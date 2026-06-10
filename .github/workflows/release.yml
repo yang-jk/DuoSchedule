@@ -93,7 +93,7 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          ./gradlew assembleRelease 2>&1 | tee build_output.log
+          ./gradlew clean assembleRelease 2>&1 | tee build_output.log
         continue-on-error: true
 
       - name: 提取构建错误
