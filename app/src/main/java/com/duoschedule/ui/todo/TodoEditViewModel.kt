@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.util.UUID
 import javax.inject.Inject
 
 data class TodoEditState(
@@ -39,7 +38,9 @@ data class TodoEditState(
     val repeatRuleId: String? = null,
     val repeatRule: RepeatRule? = null,
     val isEditing: Boolean = false,
+    val isSaving: Boolean = false,
     val isSaved: Boolean = false,
+    val isDeleted: Boolean = false,
     val errorMessage: String? = null,
     val syncId: String = ""
 )
@@ -108,6 +109,29 @@ class TodoEditViewModel @Inject constructor(
         }
     }
 
+    fun initialize(
+        todoId: Long?,
+        initialDate: Long? = null,
+        initialPersonType: PersonType? = null,
+        initialStartHour: Int = -1,
+        initialStartMinute: Int = -1,
+        initialEndHour: Int = -1,
+        initialEndMinute: Int = -1
+    ) {
+        if (todoId != null && todoId > 0) {
+            loadTodo(todoId)
+        } else {
+            initialDate?.let { _state.value = _state.value.copy(date = it) }
+            initialPersonType?.let { _state.value = _state.value.copy(personType = it) }
+            if (initialStartHour >= 0 && initialStartMinute >= 0) {
+                _state.value = _state.value.copy(startHour = initialStartHour, startMinute = initialStartMinute)
+            }
+            if (initialEndHour >= 0 && initialEndMinute >= 0) {
+                _state.value = _state.value.copy(endHour = initialEndHour, endMinute = initialEndMinute)
+            }
+        }
+    }
+
     fun setTitle(title: String) {
         _state.value = _state.value.copy(title = title, errorMessage = null)
     }
@@ -164,9 +188,10 @@ class TodoEditViewModel @Inject constructor(
 
     fun saveTodo() {
         val currentState = _state.value
+        _state.value = _state.value.copy(isSaving = true)
 
         if (currentState.title.isBlank()) {
-            _state.value = currentState.copy(errorMessage = "请输入待办标题")
+            _state.value = currentState.copy(errorMessage = "请输入待办标题", isSaving = false)
             return
         }
 
@@ -201,7 +226,7 @@ class TodoEditViewModel @Inject constructor(
                 todoRepository.insertTodo(todo)
             }
 
-            _state.value = currentState.copy(isSaved = true)
+            _state.value = currentState.copy(isSaved = true, isSaving = false)
         }
     }
 
@@ -211,25 +236,8 @@ class TodoEditViewModel @Inject constructor(
 
         viewModelScope.launch {
             todoRepository.deleteTodoById(currentState.id)
-            _state.value = currentState.copy(isSaved = true)
+            _state.value = currentState.copy(isDeleted = true)
         }
     }
 
-    fun setInitialDate(epochDay: Long) {
-        _state.value = _state.value.copy(date = epochDay)
-    }
-
-    fun setInitialPersonType(personType: PersonType) {
-        _state.value = _state.value.copy(personType = personType)
-    }
-
-    /** 设置初始开始时间（仅新建时生效） */
-    fun setInitialStartTime(hour: Int, minute: Int) {
-        _state.value = _state.value.copy(startHour = hour, startMinute = minute)
-    }
-
-    /** 设置初始结束时间（仅新建时生效） */
-    fun setInitialEndTime(hour: Int, minute: Int) {
-        _state.value = _state.value.copy(endHour = hour, endMinute = minute)
-    }
 }

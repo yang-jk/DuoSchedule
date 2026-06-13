@@ -35,8 +35,8 @@ android {
         applicationId = "com.duoschedule"
         minSdk = 26
         targetSdk = 37
-        versionCode = 42500
-        versionName = "4.25.0"
+        versionCode = 43000
+        versionName = "4.30.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -129,7 +129,7 @@ dependencies {
     
     implementation("androidx.core:core-splashscreen:1.0.1")
     
-    implementation("io.github.kyant0:backdrop:2.0.0-alpha03")
+    implementation("io.github.kyant0:backdrop:2.0.0")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:0.9.0")
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:0.9.0")
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:0.9.0")

@@ -1,6 +1,6 @@
-﻿# 产品需求文档
+# 产品需求文档
 
-当前版本：4.25.0
+当前版本：4.30.0
 
 版本号计算公式：versionCode = MAJOR × 10000 + MINOR × 100 + PATCH
 
@@ -102,6 +102,7 @@
 56. **预测式返回**：可开关的 Android 预测式返回动画
 57. **SegmentedControl**：分段选择器，滑块动画
 58. **沉浸式系统栏**：edge-to-edge 显示，适配小米 HyperOS 和 OPPO ColorOS
+59. **统一 Snackbar**：AppSnackbarHost 组件，Miuix 主题圆角卡片风格，iOS 主题 Material3 风格，slideInVertically + fadeIn 动画
 
 ---
 
