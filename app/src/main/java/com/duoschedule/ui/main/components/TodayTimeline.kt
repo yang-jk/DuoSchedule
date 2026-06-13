@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -46,10 +47,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,6 +68,7 @@ import com.duoschedule.ui.theme.SegmentedControl
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
 import com.kyant.backdrop.drawBackdrop
+
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
@@ -685,7 +688,16 @@ private fun TimelineTodoCard(
     val appThemeMode = LocalAppThemeMode.current
 
     val isCompleted = todo.status == TodoStatus.COMPLETED
-    val contentAlpha = if (isCompleted) 0.5f else 1f
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (isCompleted) 0.5f else 1f,
+        animationSpec = tween(300),
+        label = "todo_content_alpha"
+    )
+    val strikethroughProgress by animateFloatAsState(
+        targetValue = if (isCompleted) 1f else 0f,
+        animationSpec = tween(300),
+        label = "todo_strikethrough"
+    )
 
     val personColor = if (todo.personType == PersonType.PERSON_A) getPersonAColor() else getPersonBColor()
     val personLabel = if (todo.personType == PersonType.PERSON_A) "A" else "B"
@@ -756,14 +768,21 @@ private fun TimelineTodoCard(
                             color = miuixTextPrimary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                            style = if (isCompleted) {
-                                androidx.compose.ui.text.TextStyle(
-                                    textDecoration = TextDecoration.LineThrough
-                                )
-                            } else {
-                                androidx.compose.ui.text.TextStyle()
-                            }
+                            modifier = Modifier
+                                .weight(1f)
+                                .graphicsLayer { alpha = contentAlpha }
+                                .drawWithContent {
+                                    drawContent()
+                                    if (strikethroughProgress > 0f) {
+                                        drawLine(
+                                            color = miuixTextPrimary,
+                                            start = Offset(0f, size.height / 2),
+                                            end = Offset(size.width * strikethroughProgress, size.height / 2),
+                                            strokeWidth = 1.5.dp.toPx(),
+                                            cap = StrokeCap.Round
+                                        )
+                                    }
+                                }
                         )
 
                         // 时间文本
@@ -772,7 +791,8 @@ private fun TimelineTodoCard(
                             top.yukonga.miuix.kmp.basic.Text(
                                 text = timeText,
                                 color = miuixTextSecondary,
-                                maxLines = 1
+                                maxLines = 1,
+                                modifier = Modifier.graphicsLayer { alpha = contentAlpha }
                             )
                         }
                     }
@@ -911,16 +931,30 @@ private fun TimelineTodoCard(
                     )
 
                     // 标题
+                    val titleColor = if (isCompleted) labelsTertiary else labelsPrimary
                     Text(
                         text = todo.title,
                         style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.Medium,
-                            textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                            fontWeight = FontWeight.Medium
                         ),
-                        color = if (isCompleted) labelsTertiary else labelsPrimary,
+                        color = titleColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .graphicsLayer { alpha = contentAlpha }
+                            .drawWithContent {
+                                drawContent()
+                                if (strikethroughProgress > 0f) {
+                                    drawLine(
+                                        color = titleColor,
+                                        start = Offset(0f, size.height / 2),
+                                        end = Offset(size.width * strikethroughProgress, size.height / 2),
+                                        strokeWidth = 1.5.dp.toPx(),
+                                        cap = StrokeCap.Round
+                                    )
+                                }
+                            }
                     )
 
                     // 时间文本
@@ -932,7 +966,8 @@ private fun TimelineTodoCard(
                                 fontWeight = FontWeight.Medium
                             ),
                             color = if (isCompleted) labelsTertiary else labelsSecondary,
-                            maxLines = 1
+                            maxLines = 1,
+                            modifier = Modifier.graphicsLayer { alpha = contentAlpha }
                         )
                     }
                 }

@@ -201,7 +201,7 @@ fun NotificationSettingsScreen(
 
     Scaffold(
         topBar = {
-            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled, contentBackdrop = contentBackdrop) {
                 SmallTopAppBar(
                     title = "通知设置",
                     scrollBehavior = MiuixScrollBehavior(),

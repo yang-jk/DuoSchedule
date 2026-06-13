@@ -1,15 +1,23 @@
 package com.duoschedule.ui.theme
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import dev.chrisbanes.haze.HazeState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import dev.chrisbanes.haze.HazeState
 import androidx.compose.ui.zIndex
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurBlendMode
@@ -254,6 +262,7 @@ fun BlurredBar(
     hazeState: HazeState,
     backdrop: Backdrop? = null,
     enabled: Boolean = true,
+    contentBackdrop: com.kyant.backdrop.backdrops.LayerBackdrop? = null,
     content: @Composable () -> Unit,
 ) {
     val appThemeMode = LocalAppThemeMode.current
@@ -296,7 +305,7 @@ fun BlurredBar(
         return
     }
 
-    // iOS 模式：使用半透明背景色
+    // iOS 模式：使用半透明背景色，通过 contentBackdrop 提供折射源
     val darkTheme = LocalDarkTheme.current
 
     val containerColor = if (darkTheme) {
@@ -305,12 +314,79 @@ fun BlurredBar(
         Color(0x80FAFAFA)
     }
 
-    Box(
-        modifier = Modifier
-            .zIndex(1f)
-            .background(containerColor)
-    ) {
-        content()
+    CompositionLocalProvider(LocalBackdrop provides contentBackdrop) {
+        Box(
+            modifier = Modifier
+                .zIndex(1f)
+                .background(containerColor)
+        ) {
+            content()
+        }
+    }
+}
+
+class AppSnackbarHostState(
+    val snackbarHostState: SnackbarHostState
+) {
+    suspend fun showAppSnackbar(message: String) {
+        snackbarHostState.showSnackbar(message)
+    }
+}
+
+val LocalAppSnackbarHostState = compositionLocalOf<AppSnackbarHostState?> { null }
+
+@Composable
+fun AppSnackbarHost(
+    snackbarHostState: SnackbarHostState
+) {
+    val appThemeMode = LocalAppThemeMode.current
+
+    if (appThemeMode == AppThemeMode.MIUIX) {
+        SnackbarHost(
+            hostState = snackbarHostState
+        ) { data ->
+            val darkTheme = LocalDarkTheme.current
+            val containerColor = MiuixTheme.colorScheme.surfaceContainer
+            val contentColor = MiuixTheme.colorScheme.onSurface
+
+            AnimatedVisibility(
+                visible = data.visuals.message.isNotEmpty(),
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .background(
+                            color = containerColor,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = data.visuals.message,
+                        color = contentColor,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    } else {
+        SnackbarHost(
+            hostState = snackbarHostState
+        ) { data ->
+            AnimatedVisibility(
+                visible = data.visuals.message.isNotEmpty(),
+                enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            ) {
+                Snackbar(
+                    snackbarData = data
+                )
+            }
+        }
     }
 }
 

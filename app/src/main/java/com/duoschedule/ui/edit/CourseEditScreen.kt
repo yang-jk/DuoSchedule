@@ -1,5 +1,6 @@
 package com.duoschedule.ui.edit
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -11,6 +12,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -22,6 +24,7 @@ import com.kyant.capsule.ContinuousRoundedRectangle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +42,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,6 +56,7 @@ import com.duoschedule.ui.settings.components.SettingsDefaults
 import com.duoschedule.ui.settings.components.SettingsSection
 import com.duoschedule.ui.theme.Separator
 import com.duoschedule.ui.theme.*
+import com.duoschedule.ui.theme.LocalAppSnackbarHostState
 import com.duoschedule.ui.edit.CustomTimePickerBottomSheet
 import com.kyant.backdrop.backdrops.emptyBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
@@ -64,6 +70,7 @@ import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import com.kyant.backdrop.drawBackdrop
+
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
@@ -96,6 +103,10 @@ fun CourseEditScreen(
     val teacherHistory by viewModel.teacherHistory.collectAsState()
     val singleModeEnabled by viewModel.singleModeEnabled.collectAsState()
 
+    val appSnackbarHostState = LocalAppSnackbarHostState.current
+    val hapticFeedback = LocalHapticFeedback.current
+    var isSaving by remember { mutableStateOf(false) }
+
     val weekPickerState = rememberModalBottomSheetState()
     val periodPickerState = rememberModalBottomSheetState()
     val customTimePickerState = rememberModalBottomSheetState()
@@ -125,7 +136,13 @@ fun CourseEditScreen(
     }
 
     LaunchedEffect(state.saved, state.deleted) {
-        if (state.saved || state.deleted) {
+        if (state.saved) {
+            isSaving = false
+            appSnackbarHostState?.showAppSnackbar("课程已保存")
+            onNavigateBack()
+            viewModel.resetNavigationState()
+        } else if (state.deleted) {
+            appSnackbarHostState?.showAppSnackbar("课程已删除")
             onNavigateBack()
             viewModel.resetNavigationState()
         }
@@ -150,7 +167,7 @@ fun CourseEditScreen(
     Scaffold(
         topBar = {
             val appThemeMode = LocalAppThemeMode.current
-            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled, contentBackdrop = contentBackdrop) {
                 SmallTopAppBar(
                     title = "编辑课程",
                     scrollBehavior = MiuixScrollBehavior(),
@@ -175,17 +192,62 @@ fun CourseEditScreen(
                                     Icon(Icons.Default.Delete, contentDescription = "删除", tint = MiuixTheme.colorScheme.error)
                                 }
                             }
-                            top.yukonga.miuix.kmp.basic.IconButton(onClick = viewModel::saveCourse) {
-                                Icon(Icons.Default.Check, contentDescription = "保存", tint = MiuixTheme.colorScheme.primary)
+                            top.yukonga.miuix.kmp.basic.IconButton(
+                                onClick = {
+                                    if (!isSaving) {
+                                        isSaving = true
+                                        viewModel.saveCourse()
+                                    }
+                                },
+                                enabled = !isSaving
+                            ) {
+                                AnimatedContent(
+                                    targetState = isSaving,
+                                    transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
+                                    label = "save_button"
+                                ) { saving ->
+                                    if (saving) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(20.dp),
+                                            strokeWidth = 2.dp,
+                                            color = MiuixTheme.colorScheme.primary
+                                        )
+                                    } else {
+                                        Icon(Icons.Default.Check, contentDescription = "保存", tint = MiuixTheme.colorScheme.primary)
+                                    }
+                                }
                             }
                         } else {
                             if (state.isEditing) {
-                                IconButton(onClick = { showDeleteDialog = true }) {
+                                GlassSymbolIconButton(onClick = { showDeleteDialog = true }, style = GlassSymbolButtonStyle.NonTinted) {
                                     Icon(Icons.Default.Delete, contentDescription = "删除", tint = SemanticColors.ErrorLight)
                                 }
                             }
-                            IconButton(onClick = viewModel::saveCourse) {
-                                Icon(Icons.Default.Check, contentDescription = "保存", tint = Color.White)
+                            GlassSymbolIconButton(
+                                onClick = {
+                                    if (!isSaving) {
+                                        isSaving = true
+                                        viewModel.saveCourse()
+                                    }
+                                },
+                                enabled = !isSaving,
+                                style = GlassSymbolButtonStyle.Tinted
+                            ) {
+                                AnimatedContent(
+                                    targetState = isSaving,
+                                    transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
+                                    label = "save_button"
+                                ) { saving ->
+                                    if (saving) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(20.dp),
+                                            strokeWidth = 2.dp,
+                                            color = Color.White
+                                        )
+                                    } else {
+                                        Icon(Icons.Default.Check, contentDescription = "保存", tint = Color.White)
+                                    }
+                                }
                             }
                         }
                     },
@@ -347,6 +409,7 @@ fun CourseEditScreen(
                     }
                     top.yukonga.miuix.kmp.basic.Button(
                         onClick = {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                             viewModel.deleteCourse()
                             showDeleteDialog = false
                         },
@@ -361,6 +424,7 @@ fun CourseEditScreen(
             GlassAlert(
                 onDismissRequest = { showDeleteDialog = false },
                 onConfirm = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     viewModel.deleteCourse()
                     showDeleteDialog = false
                 },
@@ -1343,6 +1407,10 @@ fun CourseEditContent(
     val teacherHistory by viewModel.teacherHistory.collectAsState()
     val singleModeEnabled by viewModel.singleModeEnabled.collectAsState()
 
+    val appSnackbarHostState = LocalAppSnackbarHostState.current
+    val hapticFeedback = LocalHapticFeedback.current
+    var isSaving by remember { mutableStateOf(false) }
+
     val weekPickerState = rememberModalBottomSheetState()
     val periodPickerState = rememberModalBottomSheetState()
     val customTimePickerState = rememberModalBottomSheetState()
@@ -1372,7 +1440,13 @@ fun CourseEditContent(
     }
 
     LaunchedEffect(state.saved, state.deleted) {
-        if (state.saved || state.deleted) {
+        if (state.saved) {
+            isSaving = false
+            appSnackbarHostState?.showAppSnackbar("课程已保存")
+            onNavigateBack()
+            viewModel.resetNavigationState()
+        } else if (state.deleted) {
+            appSnackbarHostState?.showAppSnackbar("课程已删除")
             onNavigateBack()
             viewModel.resetNavigationState()
         }
@@ -1415,7 +1489,7 @@ fun CourseEditContent(
         Scaffold(
             topBar = {
                 val appThemeMode = LocalAppThemeMode.current
-                BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = editBlurEnabled) {
+                BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = editBlurEnabled, contentBackdrop = editContentBackdrop) {
                     SmallTopAppBar(
                         title = "编辑课程",
                         scrollBehavior = MiuixScrollBehavior(),
@@ -1440,17 +1514,62 @@ fun CourseEditContent(
                                         Icon(Icons.Default.Delete, contentDescription = "删除", tint = MiuixTheme.colorScheme.error)
                                     }
                                 }
-                                top.yukonga.miuix.kmp.basic.IconButton(onClick = viewModel::saveCourse) {
-                                    Icon(Icons.Default.Check, contentDescription = "保存", tint = MiuixTheme.colorScheme.primary)
+                                top.yukonga.miuix.kmp.basic.IconButton(
+                                    onClick = {
+                                        if (!isSaving) {
+                                            isSaving = true
+                                            viewModel.saveCourse()
+                                        }
+                                    },
+                                    enabled = !isSaving
+                                ) {
+                                    AnimatedContent(
+                                        targetState = isSaving,
+                                        transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
+                                        label = "save_button"
+                                    ) { saving ->
+                                        if (saving) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(20.dp),
+                                                strokeWidth = 2.dp,
+                                                color = MiuixTheme.colorScheme.primary
+                                            )
+                                        } else {
+                                            Icon(Icons.Default.Check, contentDescription = "保存", tint = MiuixTheme.colorScheme.primary)
+                                        }
+                                    }
                                 }
                             } else {
                                 if (state.isEditing) {
-                                    IconButton(onClick = { showDeleteDialog = true }) {
+                                    GlassSymbolIconButton(onClick = { showDeleteDialog = true }, style = GlassSymbolButtonStyle.NonTinted) {
                                         Icon(Icons.Default.Delete, contentDescription = "删除", tint = SemanticColors.ErrorLight)
                                     }
                                 }
-                                IconButton(onClick = viewModel::saveCourse) {
-                                    Icon(Icons.Default.Check, contentDescription = "保存", tint = Color.White)
+                                GlassSymbolIconButton(
+                                    onClick = {
+                                        if (!isSaving) {
+                                            isSaving = true
+                                            viewModel.saveCourse()
+                                        }
+                                    },
+                                    enabled = !isSaving,
+                                    style = GlassSymbolButtonStyle.Tinted
+                                ) {
+                                    AnimatedContent(
+                                        targetState = isSaving,
+                                        transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
+                                        label = "save_button"
+                                    ) { saving ->
+                                        if (saving) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(20.dp),
+                                                strokeWidth = 2.dp,
+                                                color = Color.White
+                                            )
+                                        } else {
+                                            Icon(Icons.Default.Check, contentDescription = "保存", tint = Color.White)
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -1614,6 +1733,7 @@ fun CourseEditContent(
                     }
                     top.yukonga.miuix.kmp.basic.Button(
                         onClick = {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                             viewModel.deleteCourse()
                             showDeleteDialog = false
                         },
@@ -1628,6 +1748,7 @@ fun CourseEditContent(
             GlassAlert(
                 onDismissRequest = { showDeleteDialog = false },
                 onConfirm = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     viewModel.deleteCourse()
                     showDeleteDialog = false
                 },

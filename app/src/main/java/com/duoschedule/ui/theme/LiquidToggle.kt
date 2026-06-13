@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.theme
+package com.duoschedule.ui.theme
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -14,7 +14,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
@@ -42,6 +41,7 @@ import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.shapes.Capsule
 import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.ui.draw.drawBehind
 
 @Composable
 fun LiquidToggle(
@@ -108,7 +108,7 @@ fun LiquidToggle(
                 val target = if (isChecked) 1f else 0f
                 if (target != fraction) {
                     fraction = target
-                    dampedDragAnimation.snapToValue(target)
+                    dampedDragAnimation.animateToValue(target)
                 }
             }
     }

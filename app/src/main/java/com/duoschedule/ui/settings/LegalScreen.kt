@@ -52,7 +52,7 @@ fun LegalScreen(
 
     Scaffold(
         topBar = {
-            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled, contentBackdrop = contentBackdrop) {
                 SmallTopAppBar(
                     title = "法律信息",
                     scrollBehavior = MiuixScrollBehavior(),

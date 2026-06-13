@@ -108,7 +108,7 @@ fun SettingsScreen(
 
     Scaffold(
         topBar = {
-            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled, contentBackdrop = contentBackdrop) {
                 SmallTopAppBar(
                     title = "",
                     scrollBehavior = MiuixScrollBehavior(),

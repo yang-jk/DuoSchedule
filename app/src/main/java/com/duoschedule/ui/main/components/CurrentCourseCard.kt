@@ -2,6 +2,8 @@ package com.duoschedule.ui.main.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -9,6 +11,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import com.kyant.capsule.ContinuousRoundedRectangle
@@ -16,8 +21,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.LocalCafe
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -31,6 +40,7 @@ import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
 import com.kyant.backdrop.drawBackdrop
+
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
@@ -44,18 +54,44 @@ fun CurrentCourseCard(
     personBState: CurrentCourseState,
     modifier: Modifier = Modifier,
     singleModeEnabled: Boolean = false,
-    backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop()
+    backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop(),
+    onClick: (() -> Unit)? = null
 ) {
     val appThemeMode = LocalAppThemeMode.current
     val darkTheme = LocalDarkTheme.current
     val personAColor = getPersonAColor()
     val personBColor = getPersonBColor()
 
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed && onClick != null) 0.98f else 1f,
+        animationSpec = spring(stiffness = 400f),
+        label = "current_course_scale"
+    )
+    val alpha by animateFloatAsState(
+        targetValue = if (isPressed && onClick != null) 0.9f else 1f,
+        animationSpec = spring(stiffness = 400f),
+        label = "current_course_alpha"
+    )
+
     if (appThemeMode == AppThemeMode.MIUIX) {
         Surface(
             color = MiuixTheme.colorScheme.surfaceContainer,
             shape = RoundedCornerShape(16.dp),
-            modifier = modifier.fillMaxWidth()
+            modifier = modifier
+                .fillMaxWidth()
+                .scale(scale)
+                .alpha(alpha)
+                .then(
+                    if (onClick != null) {
+                        Modifier.clickable(
+                            interactionSource = interactionSource,
+                            indication = null,
+                            onClick = onClick
+                        )
+                    } else Modifier
+                )
         ) {
             Row(
                 modifier = Modifier.padding(Spacing.md),
@@ -115,6 +151,17 @@ fun CurrentCourseCard(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .scale(scale)
+            .alpha(alpha)
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = onClick
+                    )
+                } else Modifier
+            )
             .drawBackdrop(
                 backdrop = backdrop,
                 shape = { ContinuousRoundedRectangle(BorderRadius.iOS26.large) },

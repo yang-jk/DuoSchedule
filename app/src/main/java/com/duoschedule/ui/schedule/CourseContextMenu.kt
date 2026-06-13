@@ -1,6 +1,8 @@
 package com.duoschedule.ui.schedule
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -113,12 +115,32 @@ fun CourseContextMenu(
                                         .background(MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.1f))
                                 )
                             }
+                            val interactionSource = remember { MutableInteractionSource() }
+                            val isPressed by interactionSource.collectIsPressedAsState()
+                            val scale by animateFloatAsState(
+                                targetValue = if (isPressed) 0.97f else 1f,
+                                animationSpec = spring(stiffness = 600f, dampingRatio = 0.7f),
+                                label = "miuix_menu_item_scale"
+                            )
+                            val backgroundColor by animateColorAsState(
+                                targetValue = if (isPressed) MiuixTheme.colorScheme.onBackground.copy(alpha = 0.08f) else Color.Transparent,
+                                animationSpec = tween(100),
+                                label = "miuix_menu_item_bg"
+                            )
                             top.yukonga.miuix.kmp.basic.Text(
                                 text = item.label,
                                 color = if (item.isDestructive) ContextMenuDefaults.DestructiveColor else MiuixTheme.colorScheme.onBackground,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable {
+                                    .scale(scale)
+                                    .background(backgroundColor)
+                                    .clickable(
+                                        interactionSource = interactionSource,
+                                        indication = null
+                                    ) {
+                                        if (item.isDestructive) {
+                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        }
                                         item.action()
                                         onDismiss()
                                     }
@@ -251,7 +273,7 @@ private fun HorizontalContextMenuItem(
     
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.97f else 1f,
-        animationSpec = tween(100),
+        animationSpec = spring(stiffness = 600f, dampingRatio = 0.7f),
         label = "item_scale"
     )
     

@@ -74,7 +74,7 @@ fun AcknowledgmentsScreen(
 
     Scaffold(
         topBar = {
-            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled, contentBackdrop = contentBackdrop) {
                 SmallTopAppBar(
                     title = "致谢",
                     scrollBehavior = MiuixScrollBehavior(),

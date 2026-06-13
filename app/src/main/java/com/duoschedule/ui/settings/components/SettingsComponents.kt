@@ -17,6 +17,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -164,7 +166,7 @@ fun SettingsRow(
     
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing),
+        animationSpec = spring(stiffness = 500f, dampingRatio = 0.75f),
         label = "row_scale"
     )
     
@@ -301,13 +303,20 @@ fun SettingsToggleRow(
     iconBackgroundColor: Color? = null,
     enabled: Boolean = true
 ) {
+    val hapticFeedback = LocalHapticFeedback.current
+
     SettingsRow(
         title = title,
         subtitle = subtitle,
         icon = icon,
         iconBackgroundColor = iconBackgroundColor,
         modifier = modifier,
-        onClick = { if (enabled) onCheckedChange(!checked) },
+        onClick = {
+            if (enabled) {
+                hapticFeedback.performHapticFeedback(if (!checked) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+                onCheckedChange(!checked)
+            }
+        },
         trailing = {
             IOSSwitch(
                 checked = checked,

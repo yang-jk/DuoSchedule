@@ -248,7 +248,7 @@ fun EducationWebViewScreen(
                     }
                 }
             } else {
-                IconButton(onClick = { webView?.reload() }) {
+                GlassSymbolIconButton(onClick = { webView?.reload() }, style = GlassSymbolButtonStyle.NonTinted) {
                     if (isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),

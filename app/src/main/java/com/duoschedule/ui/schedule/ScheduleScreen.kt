@@ -5,6 +5,7 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +30,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
@@ -77,7 +79,14 @@ import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.window.WindowDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.util.fastCoerceAtMost
+import androidx.compose.ui.util.lerp
 import kotlin.math.roundToInt
+import kotlin.math.tanh
+import kotlin.math.atan2
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -92,6 +101,7 @@ import com.duoschedule.ui.theme.GlassSymbolButtonStyle
 import com.duoschedule.ui.theme.getLabelsVibrantPrimary
 import com.duoschedule.ui.theme.getLabelsVibrantSecondary
 import com.duoschedule.ui.theme.getLabelsVibrantTertiary
+import com.duoschedule.ui.theme.InteractiveHighlight
 import com.duoschedule.ui.theme.LiquidGlassButton
 import com.duoschedule.ui.theme.LiquidGlassButtonStyle
 import com.duoschedule.ui.theme.getLiquidGlassFillShadow
@@ -102,6 +112,8 @@ import com.duoschedule.ui.theme.getScheduleGridSeparatorColor
 import com.duoschedule.ui.theme.getWeekChipSelectedColor
 import com.duoschedule.ui.theme.getWeekChipUnselectedColor
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop as kyantRememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.colorControls
@@ -201,6 +213,7 @@ fun ScheduleScreen(
     val labelsTertiary = getLabelsVibrantTertiary()
 
     val appThemeMode = LocalAppThemeMode.current
+    val contentBackdrop = kyantRememberLayerBackdrop()
 
     val sharedTransitionScope = LocalSharedTransitionScope.current
 
@@ -262,6 +275,7 @@ fun ScheduleScreen(
             )
         } else {
         Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+        CompositionLocalProvider(LocalBackdrop provides contentBackdrop) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -299,6 +313,12 @@ fun ScheduleScreen(
                 }
                 if (showAddMenu) {
                     val localDensity = LocalDensity.current
+                    val addMenuAnimationScope = rememberCoroutineScope()
+                    val addMenuInteractiveHighlight = remember(addMenuAnimationScope) {
+                        InteractiveHighlight(
+                            animationScope = addMenuAnimationScope
+                        )
+                    }
                     Popup(
                         alignment = Alignment.TopEnd,
                         offset = IntOffset(0, addButtonHeight + with(localDensity) { 4.dp.roundToPx() }),
@@ -329,9 +349,32 @@ fun ScheduleScreen(
                                             depthEffect = true
                                         )
                                     },
+                                    layerBlock = {
+                                        val progress = addMenuInteractiveHighlight.pressProgress
+                                        val scale = lerp(1f, 1f + 2f.dp.toPx() / size.height, progress)
+
+                                        val maxOffset = size.minDimension
+                                        val initialDerivative = 0.05f
+                                        val offset = addMenuInteractiveHighlight.offset
+                                        translationX = maxOffset * tanh(initialDerivative * offset.x / maxOffset)
+                                        translationY = maxOffset * tanh(initialDerivative * offset.y / maxOffset)
+
+                                        val maxDragScale = 2f.dp.toPx() / size.height
+                                        val offsetAngle = atan2(offset.y, offset.x)
+                                        scaleX =
+                                            scale +
+                                                    maxDragScale * abs(cos(offsetAngle) * offset.x / size.maxDimension) *
+                                                    (size.width / size.height).fastCoerceAtMost(1f)
+                                        scaleY =
+                                            scale +
+                                                    maxDragScale * abs(sin(offsetAngle) * offset.y / size.maxDimension) *
+                                                    (size.height / size.width).fastCoerceAtMost(1f)
+                                    },
                                     highlight = { Highlight.Plain },
                                     onDrawSurface = { drawRect(containerColor) }
                                 )
+                                .then(addMenuInteractiveHighlight.modifier)
+                                .then(addMenuInteractiveHighlight.gestureModifier)
                                 .padding(4.dp)
                         ) {
                             Column(modifier = Modifier.width(IntrinsicSize.Max)) {
@@ -364,10 +407,11 @@ fun ScheduleScreen(
                 }
             }
         }
+        } // end CompositionLocalProvider
         }
 
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize().kyantLayerBackdrop(contentBackdrop)
         ) {
                 key(isDataReady) {
                 if (isDataReady) {
@@ -943,8 +987,13 @@ private fun TodoOverlayCard(
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.97f else 1f,
-        animationSpec = MicroTween,
+        animationSpec = spring(stiffness = 600f, dampingRatio = 0.7f),
         label = "todo_card_scale"
+    )
+    val alpha by animateFloatAsState(
+        targetValue = if (isPressed) 0.85f else 1f,
+        animationSpec = spring(stiffness = 600f),
+        label = "todo_card_alpha"
     )
     
     Box(
@@ -953,6 +1002,7 @@ private fun TodoOverlayCard(
             .width(with(density) { cardWidth.toDp() })
             .height(with(density) { totalHeightPx.toDp() })
             .scale(scale)
+            .alpha(alpha)
             .clip(shape)
             .background(todoBackgroundColor)
             // 虚线边框，用于与课程块视觉区分
@@ -1735,10 +1785,15 @@ private fun CourseOverlayCard(
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.97f else 1f,
-        animationSpec = MicroTween,
+        animationSpec = spring(stiffness = 600f, dampingRatio = 0.7f),
         label = "card_scale"
     )
-    
+    val alpha by animateFloatAsState(
+        targetValue = if (isPressed) 0.85f else 1f,
+        animationSpec = spring(stiffness = 600f),
+        label = "card_alpha"
+    )
+
     val density = androidx.compose.ui.platform.LocalDensity.current
     val cellPaddingPx = with(density) { ScheduleDimensions.CellPadding.toPx().toInt() }
     
@@ -1786,6 +1841,7 @@ private fun CourseOverlayCard(
             }
         )
         .scale(scale)
+        .alpha(alpha)
         .clip(shape)
         .graphicsLayer {
             shadowElevation = 16.dp.toPx()

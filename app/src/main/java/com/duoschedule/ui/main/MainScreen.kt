@@ -31,6 +31,9 @@ import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.theme.LocalAppThemeMode
 import com.duoschedule.ui.theme.LiquidGlassButton
 import com.duoschedule.ui.theme.LiquidGlassButtonStyle
+import com.duoschedule.ui.theme.AppSnackbarHostState
+import com.duoschedule.ui.theme.AppSnackbarHost
+import com.duoschedule.ui.theme.LocalAppSnackbarHostState
 import dev.chrisbanes.haze.rememberHazeState
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
@@ -90,8 +93,13 @@ fun MainScreen(
 
     val contentBackdrop = kyantRememberLayerBackdrop()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val appSnackbarHostState = remember { AppSnackbarHostState(snackbarHostState) }
+
+    CompositionLocalProvider(LocalAppSnackbarHostState provides appSnackbarHostState) {
     Scaffold(
-        topBar = {}
+        topBar = {},
+        snackbarHost = { AppSnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(modifier = Modifier.hazeSource(hazeState).kyantLayerBackdrop(contentBackdrop)) {
             Column(
@@ -138,6 +146,7 @@ fun MainScreen(
             }
         }
     }
+    } // CompositionLocalProvider
 
     if (showPreview && selectedCourse != null) {
         CoursePreviewBottomSheet(
