@@ -243,14 +243,15 @@ jobs:
 
           if [ "$UPLOAD_HTTP_CODE" = "201" ]; then
             echo "✅ APK 已上传到 Gitee Release"
+            echo "success=true" >> $GITHUB_OUTPUT
           else
-            echo "⚠️ APK 上传到 Gitee 可能失败 (HTTP $UPLOAD_HTTP_CODE)"
+            echo "⚠️ APK 上传到 Gitee 失败 (HTTP $UPLOAD_HTTP_CODE)"
             echo "$UPLOAD_BODY"
             echo "gitee_error<<EOF" >> $GITHUB_OUTPUT
             echo "APK上传失败 (HTTP $UPLOAD_HTTP_CODE): $UPLOAD_BODY" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
+            echo "success=false" >> $GITHUB_OUTPUT
           fi
-          echo "success=true" >> $GITHUB_OUTPUT
 
       - name: 更新 update.json
         id: update_repo
