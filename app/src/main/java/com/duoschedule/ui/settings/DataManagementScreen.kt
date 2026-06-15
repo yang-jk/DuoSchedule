@@ -143,11 +143,9 @@ fun DataManagementScreen(
         drawContent()
     }
 
-    val blurEnabled = scrollState.value > 0
-
     Scaffold(
         topBar = {
-            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled, contentBackdrop = contentBackdrop) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
                 SmallTopAppBar(
                     title = "数据管理",
                     scrollBehavior = MiuixScrollBehavior(),

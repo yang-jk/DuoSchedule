@@ -99,8 +99,6 @@ fun TodoEditScreen(
         drawContent()
     }
 
-    val blurEnabled = lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0
-
     LaunchedEffect(todoId, initialDate, initialPersonType) {
         viewModel.initialize(
             todoId = todoId,
@@ -142,7 +140,6 @@ fun TodoEditScreen(
                 onDeleteClick = { currentDialog = TodoEditDialog.DeleteConfirm },
                 onSaveClick = { if (!state.isSaving) viewModel.saveTodo() },
                 hazeState = hazeState,
-                blurEnabled = blurEnabled,
                 contentBackdrop = contentBackdrop,
                 miuixBackdrop = miuixBackdrop
             )
@@ -358,12 +355,11 @@ private fun TodoEditTopBar(
     onDeleteClick: () -> Unit,
     onSaveClick: () -> Unit,
     hazeState: dev.chrisbanes.haze.HazeState,
-    blurEnabled: Boolean,
     contentBackdrop: com.kyant.backdrop.backdrops.LayerBackdrop,
     miuixBackdrop: top.yukonga.miuix.kmp.blur.LayerBackdrop
 ) {
     val appThemeMode = LocalAppThemeMode.current
-    BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled, contentBackdrop = contentBackdrop) {
+    BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
         SmallTopAppBar(
             title = if (isEditing) "编辑待办" else "新建待办",
             scrollBehavior = MiuixScrollBehavior(),

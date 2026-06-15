@@ -54,12 +54,11 @@ fun DisplaySettingsScreen(
         drawContent()
     }
 
-    val blurEnabled = scrollState.value > 0
     val appThemeMode = LocalAppThemeMode.current
 
     Scaffold(
         topBar = {
-            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled, contentBackdrop = contentBackdrop) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
                 SmallTopAppBar(
                     title = "显示设置",
                     scrollBehavior = MiuixScrollBehavior(),

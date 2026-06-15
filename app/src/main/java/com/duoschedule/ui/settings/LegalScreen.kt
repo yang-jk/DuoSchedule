@@ -34,13 +34,14 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+
 @Composable
 fun LegalScreen(
     onNavigateBack: () -> Unit
 ) {
     val hazeState = rememberHazeState()
     val scrollState = rememberScrollState()
-
+    val miuixTextStyles = MiuixTheme.textStyles
     val contentBackdrop = kyantRememberLayerBackdrop()
     val backgroundColor = MaterialTheme.colorScheme.surface
     val miuixBackdrop = rememberLayerBackdrop {
@@ -48,11 +49,9 @@ fun LegalScreen(
         drawContent()
     }
 
-    val blurEnabled = scrollState.value > 0
-
     Scaffold(
         topBar = {
-            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled, contentBackdrop = contentBackdrop) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
                 SmallTopAppBar(
                     title = "法律信息",
                     scrollBehavior = MiuixScrollBehavior(),
@@ -80,23 +79,22 @@ fun LegalScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-                    .padding(bottom = innerPadding.calculateBottomPadding())
+                    .padding(
+                        top = innerPadding.calculateTopPadding(),
+                        bottom = innerPadding.calculateBottomPadding()
+                    )
                     .padding(horizontal = 20.dp)
             ) {
-                Spacer(modifier = Modifier.height(8.dp))
-
                 Text(
                     text = "用户协议",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
+                    style = miuixTextStyles.title4,
                     color = getLabelsVibrantSecondary(),
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
 
                 Text(
                     text = "欢迎使用 DuoSchedule（以下简称\u201c本应用\u201d）。请您在使用本应用前仔细阅读以下条款。下载、安装或以任何方式使用本应用，即表示您已充分阅读、理解并同意接受本协议的全部条款。如果您不同意本协议的任何条款，请立即停止使用本应用。",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = miuixTextStyles.body1,
                     color = getLabelsVibrantPrimary(),
                     lineHeight = 1.6.em,
                     modifier = Modifier.padding(bottom = 6.dp)
@@ -104,7 +102,7 @@ fun LegalScreen(
 
                 Text(
                     text = "本协议最后更新日期：2026 年 5 月 28 日",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = miuixTextStyles.footnote1,
                     color = getLabelsVibrantTertiary(),
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
@@ -158,16 +156,14 @@ fun LegalScreen(
 
                 Text(
                     text = "隐私政策",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
+                    style = miuixTextStyles.title4,
                     color = getLabelsVibrantSecondary(),
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
 
                 Text(
                     text = "本隐私政策旨在向您说明本应用如何收集、使用、存储和保护您的信息。我们深知个人信息对您的重要性，并承诺以最高标准保护您的隐私。",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = miuixTextStyles.body1,
                     color = getLabelsVibrantPrimary(),
                     lineHeight = 1.6.em,
                     modifier = Modifier.padding(bottom = 6.dp)
@@ -175,7 +171,7 @@ fun LegalScreen(
 
                 Text(
                     text = "本政策最后更新日期：2026 年 5 月 28 日",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = miuixTextStyles.footnote1,
                     color = getLabelsVibrantTertiary(),
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
@@ -260,6 +256,8 @@ private fun LegalSection(
     title: String,
     content: String
 ) {
+    val miuixTextStyles = MiuixTheme.textStyles
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -273,7 +271,7 @@ private fun LegalSection(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleSmall.copy(
+                style = miuixTextStyles.subtitle.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
                 color = getLabelsVibrantPrimary(),
@@ -281,7 +279,7 @@ private fun LegalSection(
             )
             Text(
                 text = content,
-                style = MaterialTheme.typography.bodyMedium,
+                style = miuixTextStyles.body1,
                 color = getLabelsVibrantSecondary(),
                 lineHeight = 1.6.em
             )
@@ -295,6 +293,8 @@ private fun LegalSectionWithSubSections(
     content: String,
     subSections: List<LegalSubItem>
 ) {
+    val miuixTextStyles = MiuixTheme.textStyles
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -308,7 +308,7 @@ private fun LegalSectionWithSubSections(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleSmall.copy(
+                style = miuixTextStyles.subtitle.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
                 color = getLabelsVibrantPrimary(),
@@ -316,7 +316,7 @@ private fun LegalSectionWithSubSections(
             )
             Text(
                 text = content,
-                style = MaterialTheme.typography.bodyMedium,
+                style = miuixTextStyles.body1,
                 color = getLabelsVibrantSecondary(),
                 lineHeight = 1.6.em,
                 modifier = Modifier.padding(bottom = 12.dp)
@@ -343,6 +343,8 @@ private fun LegalSubSection(
     title: String,
     content: String
 ) {
+    val miuixTextStyles = MiuixTheme.textStyles
+
     Row(
         modifier = Modifier.padding(bottom = 12.dp)
     ) {
@@ -358,7 +360,7 @@ private fun LegalSubSection(
         Column {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyMedium.copy(
+                style = miuixTextStyles.body2.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
                 color = getLabelsVibrantSecondary(),
@@ -366,7 +368,7 @@ private fun LegalSubSection(
             )
             Text(
                 text = content,
-                style = MaterialTheme.typography.bodySmall,
+                style = miuixTextStyles.footnote1,
                 color = getLabelsVibrantTertiary(),
                 lineHeight = 1.5.em
             )

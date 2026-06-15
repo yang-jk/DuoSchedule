@@ -100,11 +100,9 @@ fun SyncSettingsScreen(
         }
     }
 
-    val blurEnabled = scrollState.value > 0
-
     Scaffold(
         topBar = {
-            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled, contentBackdrop = contentBackdrop) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
                 SmallTopAppBar(
                     title = "课表同步",
                     scrollBehavior = MiuixScrollBehavior(),
@@ -282,7 +280,7 @@ fun SyncSettingsScreen(
                                 .padding(vertical = Spacing.xs)
                         ) {
                             Text(
-                                text = "房间码",
+                                text = "邀请码",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = labelsSecondary,
                                 modifier = Modifier.padding(bottom = Spacing.xs)
@@ -291,7 +289,7 @@ fun SyncSettingsScreen(
                                 TextField(
                                     value = roomCodeInput,
                                     onValueChange = { roomCodeInput = it },
-                                    label = "输入6位房间码",
+                                    label = "输入邀请码",
                                     useLabelAsPlaceholder = true,
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth()
@@ -300,7 +298,7 @@ fun SyncSettingsScreen(
                                 GlassTextField(
                                     value = roomCodeInput,
                                     onValueChange = { roomCodeInput = it },
-                                    placeholder = "输入6位房间码",
+                                    placeholder = "输入邀请码",
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth()
                                 )
@@ -309,14 +307,12 @@ fun SyncSettingsScreen(
 
                         Spacer(modifier = Modifier.height(Spacing.xs))
 
-                        val roomCodeValid = roomCodeInput.length == 6 && roomCodeInput.all { it.isDigit() }
-
                         if (appThemeMode == AppThemeMode.MIUIX) {
                             Button(
                                 onClick = { viewModel.joinRoom(roomCodeInput) },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColorsPrimary(),
-                                enabled = roomCodeValid
+                                enabled = roomCodeInput.isNotBlank()
                             ) {
                                 top.yukonga.miuix.kmp.basic.Text("加入房间")
                             }
@@ -325,17 +321,17 @@ fun SyncSettingsScreen(
                                 text = "加入房间",
                                 onClick = { viewModel.joinRoom(roomCodeInput) },
                                 style = LiquidGlassButtonStyle.Tinted,
-                                enabled = roomCodeValid,
+                                enabled = roomCodeInput.isNotBlank(),
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
 
-                    SettingsFooter(text = "创建房间后分享房间码给对方，对方输入房间码即可加入")
+                    SettingsFooter(text = "创建房间后分享邀请码给对方，对方输入邀请码即可加入")
                 } else {
-                    SettingsSection(title = "房间码") {
+                    SettingsSection(title = "邀请码") {
                         SettingsRow(
-                            title = "房间码",
+                            title = "邀请码",
                             subtitle = roomCode,
                             icon = Icons.Outlined.QrCode,
                             iconBackgroundColor = IOSColors.Indigo
@@ -349,11 +345,11 @@ fun SyncSettingsScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColorsPrimary()
                             ) {
-                                top.yukonga.miuix.kmp.basic.Text("复制房间码")
+                                top.yukonga.miuix.kmp.basic.Text("复制邀请码")
                             }
                         } else {
                             LiquidGlassButton(
-                                text = "复制房间码",
+                                text = "复制邀请码",
                                 onClick = remember { { viewModel.copyRoomCode() } },
                                 style = LiquidGlassButtonStyle.Tinted,
                                 modifier = Modifier.fillMaxWidth()

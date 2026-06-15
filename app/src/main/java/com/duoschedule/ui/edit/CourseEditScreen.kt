@@ -162,12 +162,10 @@ fun CourseEditScreen(
         drawContent()
     }
 
-    val blurEnabled = lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0
-
     Scaffold(
         topBar = {
             val appThemeMode = LocalAppThemeMode.current
-            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled, contentBackdrop = contentBackdrop) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
                 SmallTopAppBar(
                     title = "编辑课程",
                     scrollBehavior = MiuixScrollBehavior(),
@@ -1489,7 +1487,7 @@ fun CourseEditContent(
         Scaffold(
             topBar = {
                 val appThemeMode = LocalAppThemeMode.current
-                BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = editBlurEnabled, contentBackdrop = editContentBackdrop) {
+                BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = editContentBackdrop) {
                     SmallTopAppBar(
                         title = "编辑课程",
                         scrollBehavior = MiuixScrollBehavior(),

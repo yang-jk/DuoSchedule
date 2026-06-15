@@ -1,50 +1,72 @@
-## 4.30.0
-
-- 待办编辑页面逻辑重构：删除 TodoEditDialogContent 死代码（~330行）
-- ViewModel：合并 setInitial* 冗余方法为 initialize() 统一初始化，isSaving 状态移入 ViewModel
-- 8个 showXxx 布尔状态合并为 TodoEditDialog 密封类，统一对话框状态管理
-- 8个独立 Section 合并为4个逻辑分组（基本信息、时间、分类、高级），减少视觉碎片化
-- 提取 SettingsNavigationRow 通用行组件，消除3处重复的导航行布局代码
-- 提取 TodoEditTopBar 组件，封装 TopBar 的 Miuix/iOS 分支逻辑
-- 提取 MiuixDatePickerBottomSheet / MiuixTimePickerBottomSheet 通用选择器组件，消除3处重复代码
-- AddTagDialog 内部管理 tagName 状态，不再暴露在主页面
-- 拆分 TodoEditScreen.kt 为3个文件：TodoEditScreen.kt、TodoEditSections.kt、TodoEditDialogs.kt
-
-## 4.29.0
-
-- 待办编辑页面添加操作结果反馈：保存成功触发 Snackbar "待办已保存"，删除成功触发 Snackbar "待办已删除" + 触觉反馈
-- 待办编辑页面保存按钮添加 AnimatedContent 状态动画（✓ ↔ CircularProgressIndicator）
-
-## 4.28.0
-
-- 设置页面开关添加触觉反馈（ToggleOn/ToggleOff）
-- 待办完成状态切换动画：透明度渐变 + 删除线展开动画
-- 课程卡片按压反馈增强：CourseOverlayCard、TodoOverlayCard、CurrentCourseCard 添加按压透明度动画
-- 缩放动画升级为弹簧动画：课程卡片、待办卡片、设置行、上下文菜单项
-- 新增统一 Snackbar 组件：AppSnackbarHostState、LocalAppSnackbarHostState、AppSnackbarHost，支持 Miuix/iOS 双主题视觉风格
-
-## 4.27.0
-
-- 适配 backdrop 2.0.0 API：LiquidToggle 使用 rememberCanvasBackdrop 替代 drawBehind+layerBackdrop 组合
-
-## 4.26.0
-
-- 升级 AndroidLiquidGlass（backdrop）依赖库从 2.0.0-alpha03 到 2.0.0 正式版（KMP 多平台库，API 兼容无需代码修改）
-
-## 4.25.0
-
-- 重新设计课表界面加号按钮下拉菜单：Miuix主题改用OverlayListPopup原生组件，iOS主题改用毛玻璃竖排风格
-
-## 4.24.0
-
-- 课表编辑和待办编辑从弹窗改为独立二级页面导航
-- 右上角"+"按钮添加菜单改为小型下拉菜单（Miuix主题使用Miuix风格DropdownPopup，iOS主题使用Material3 DropdownMenu）
-
 # 产品变更记录
 
-本文档记录产品需求文档的所有变更历史，遵循语义化版本规范。
-
 版本号计算公式：versionCode = MAJOR × 10000 + MINOR × 100 + PATCH
+
+---
+
+## [4.33.0] - 2026-06-15
+
+- [优化] 设置及二级页面渐变模糊：BlurredBar实现从上到下的渐变模糊效果（参考iOS 27/HyperOS 4液态玻璃设计），模糊始终启用不再依赖滚动状态
+- [优化] 关于页面顶栏添加渐变模糊效果
+
+## [4.32.0] - 2026-06-15
+
+- [新增] 课表同步邀请码：创建房间生成邀请码（编码WebDAV连接信息），加入房间仅需输入邀请码，无需手动配置WebDAV
+- [优化] 同步设置UI简化：加入房间区域移除用户名/密码输入，仅保留邀请码输入框
+- [优化] 房间码改为邀请码：已启用同步时显示邀请码和复制按钮
+
+## [4.31.0] - 2026-06-15
+
+- [优化] 关于页面改版：移除动态背景和滚动动画，重构为静态布局，"检查更新"按钮，可展开更新日志和致谢区域，底部Footer
+- [优化] 更新弹窗改版：白色圆角卡片弹窗，显示版本号、大小、日期、更新内容列表（带优化/修复标签），底部"稍后"和"下载"按钮
+- [优化] 更新日志页面改版：可展开/折叠的版本卡片列表，每个版本显示标签和描述
+- [优化] 数据模型扩展：UpdateInfo增加size和date字段，ChangelogEntry重构为支持List<ChangelogItem>
+
+## [4.30.1] - 2026-06-14
+
+- [修复] 底栏液态玻璃风格优化：blur 8dp→4dp，亮色容器透明度 0.4→0.16，暗色容器透明度 0.4→0.30，添加顶部高光线
+
+## [4.30.0] - 2026-06-13
+
+- [优化] 待办编辑页面逻辑重构：删除 TodoEditDialogContent 死代码（~330行）
+- [优化] ViewModel：合并 setInitial* 冗余方法为 initialize() 统一初始化，isSaving 状态移入 ViewModel
+- [优化] 8个 showXxx 布尔状态合并为 TodoEditDialog 密封类，统一对话框状态管理
+- [优化] 8个独立 Section 合并为4个逻辑分组（基本信息、时间、分类、高级），减少视觉碎片化
+- [优化] 提取 SettingsNavigationRow 通用行组件，消除3处重复的导航行布局代码
+- [优化] 提取 TodoEditTopBar 组件，封装 TopBar 的 Miuix/iOS 分支逻辑
+- [优化] 提取 MiuixDatePickerBottomSheet / MiuixTimePickerBottomSheet 通用选择器组件，消除3处重复代码
+- [优化] AddTagDialog 内部管理 tagName 状态，不再暴露在主页面
+- [优化] 拆分 TodoEditScreen.kt 为3个文件：TodoEditScreen.kt、TodoEditSections.kt、TodoEditDialogs.kt
+
+## [4.29.0] - 2026-06-12
+
+- [优化] 待办编辑页面添加操作结果反馈：保存成功触发 Snackbar，删除成功触发 Snackbar + 触觉反馈
+- [优化] 待办编辑页面保存按钮添加 AnimatedContent 状态动画
+
+## [4.28.0] - 2026-06-12
+
+- [优化] 设置页面开关添加触觉反馈（ToggleOn/ToggleOff）
+- [优化] 待办完成状态切换动画：透明度渐变 + 删除线展开动画
+- [优化] 课程卡片按压反馈增强：添加按压透明度动画
+- [优化] 缩放动画升级为弹簧动画：课程卡片、待办卡片、设置行、上下文菜单项
+- [优化] 新增统一 Snackbar 组件，支持 Miuix/iOS 双主题视觉风格
+
+## [4.27.0] - 2026-06-11
+
+- [优化] 适配 backdrop 2.0.0 API：LiquidToggle 使用 rememberCanvasBackdrop 替代 drawBehind+layerBackdrop 组合
+
+## [4.26.0] - 2026-06-11
+
+- [优化] 升级 AndroidLiquidGlass（backdrop）依赖库从 2.0.0-alpha03 到 2.0.0 正式版
+
+## [4.25.0] - 2026-06-11
+
+- [优化] 重新设计课表界面加号按钮下拉菜单：Miuix主题改用OverlayListPopup原生组件，iOS主题改用毛玻璃竖排风格
+
+## [4.24.0] - 2026-06-10
+
+- [优化] 课表编辑和待办编辑从弹窗改为独立二级页面导航
+- [优化] 右上角"+"按钮添加菜单改为小型下拉菜单
 
 ---
 

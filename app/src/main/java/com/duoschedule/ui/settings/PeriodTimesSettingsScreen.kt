@@ -85,11 +85,9 @@ fun PeriodTimesSettingsScreen(
         drawContent()
     }
 
-    val blurEnabled = lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0
-
     Scaffold(
         topBar = {
-            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled, contentBackdrop = contentBackdrop) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
                 SmallTopAppBar(
                     title = "时间设置",
                     scrollBehavior = MiuixScrollBehavior(),

@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -261,26 +262,26 @@ object ColorBlendToken {
 fun BlurredBar(
     hazeState: HazeState,
     backdrop: Backdrop? = null,
-    enabled: Boolean = true,
     contentBackdrop: com.kyant.backdrop.backdrops.LayerBackdrop? = null,
     content: @Composable () -> Unit,
 ) {
     val appThemeMode = LocalAppThemeMode.current
+    val darkTheme = LocalDarkTheme.current
+    val topColor = if (darkTheme) {
+        Color(0x80121212)
+    } else {
+        Color(0x80FAFAFA)
+    }
+    val gradientBrush = Brush.verticalGradient(
+        colorStops = arrayOf(
+            0.0f to topColor,
+            0.7f to topColor,
+            1.0f to Color.Transparent
+        )
+    )
 
     if (appThemeMode == AppThemeMode.MIUIX) {
-        // MIUIX 模式下使用 Miuix blur 实现模糊效果
-        val darkTheme = LocalDarkTheme.current
-        val containerColor = if (darkTheme) {
-            Color(0x80121212)
-        } else {
-            Color(0x80FAFAFA)
-        }
-        val blurColors = BlurDefaults.blurColors(
-            blendColors = listOf(
-                BlendColorEntry(containerColor, BlurBlendMode.SrcOver)
-            ),
-            saturation = 1.3f
-        )
+        val blurColors = BlurDefaults.blurColors(saturation = 1.3f)
         Box(
             modifier = Modifier
                 .zIndex(1f)
@@ -293,32 +294,28 @@ fun BlurredBar(
                             blurRadiusY = 25f,
                             noiseCoefficient = 0f,
                             colors = blurColors,
-                            enabled = enabled,
                         )
                     } else {
                         Modifier
                     }
                 )
         ) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(gradientBrush)
+            )
             content()
         }
         return
     }
 
-    // iOS 模式：使用半透明背景色，通过 contentBackdrop 提供折射源
-    val darkTheme = LocalDarkTheme.current
-
-    val containerColor = if (darkTheme) {
-        Color(0x80121212)
-    } else {
-        Color(0x80FAFAFA)
-    }
-
+    // iOS 模式：使用渐变背景色，通过 contentBackdrop 提供折射源
     CompositionLocalProvider(LocalBackdrop provides contentBackdrop) {
         Box(
             modifier = Modifier
                 .zIndex(1f)
-                .background(containerColor)
+                .background(gradientBrush)
         ) {
             content()
         }

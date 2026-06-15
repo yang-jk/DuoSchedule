@@ -2,13 +2,11 @@ package com.duoschedule.ui.settings
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material3.Icon
 import com.duoschedule.ui.theme.GlassSymbolIconButton
@@ -18,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -31,29 +28,39 @@ import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as kyantRememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
-import com.kyant.capsule.ContinuousRoundedRectangle
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 data class OpenSourceLibrary(
     val name: String,
     val author: String,
-    val description: String,
     val url: String
 )
 
 val libraries = listOf(
-    OpenSourceLibrary("Kotlin", "JetBrains", "Kotlin 编程语言", "https://kotlinlang.org"),
-    OpenSourceLibrary("Hilt", "Google", "依赖注入框架", "https://dagger.dev/hilt/"),
-    OpenSourceLibrary("OkHttp", "Square", "HTTP 客户端", "https://square.github.io/okhttp/"),
-    OpenSourceLibrary("jsoup", "Jonathan Hedley", "Java HTML 解析器", "https://jsoup.org/"),
-    OpenSourceLibrary("AndroidLiquidGlass", "kyant0", "Compose 液态玻璃效果", "https://github.com/kyant0/AndroidLiquidGlass"),
-    OpenSourceLibrary("Shapes", "kyant0", "iOS 风格平滑圆角形状", "https://github.com/kyant0/Shapes"),
-    OpenSourceLibrary("Capsule", "kyant0", "Compose 连续圆角矩形", "https://github.com/kyant0/Capsule")
+    OpenSourceLibrary("Jetpack Compose", "Google", "https://github.com/android/compose-samples"),
+    OpenSourceLibrary("Kotlin", "JetBrains", "https://github.com/JetBrains/kotlin"),
+    OpenSourceLibrary("Kotlin Coroutines", "JetBrains", "https://github.com/Kotlin/kotlinx.coroutines"),
+    OpenSourceLibrary("Room", "Google", "https://developer.android.com/topic/libraries/architecture/room"),
+    OpenSourceLibrary("Hilt", "Google", "https://github.com/google/dagger"),
+    OpenSourceLibrary("OkHttp", "Square", "https://github.com/square/okhttp"),
+    OpenSourceLibrary("jsoup", "Jonathan Hedley", "https://github.com/jhy/jsoup"),
+    OpenSourceLibrary("Miuix", "Yukonga", "https://github.com/miuix-kotlin-multiplatform/miuix"),
+    OpenSourceLibrary("AndroidLiquidGlass", "kyant0", "https://github.com/kyant0/AndroidLiquidGlass"),
+    OpenSourceLibrary("Backdrop", "kyant0", "https://github.com/kyant0/Backdrop"),
+    OpenSourceLibrary("Haze", "Chris Banes", "https://github.com/nickkimk/haze"),
+    OpenSourceLibrary("Shapes", "kyant0", "https://github.com/kyant0/Shapes"),
+    OpenSourceLibrary("Capsule", "kyant0", "https://github.com/kyant0/Capsule"),
+    OpenSourceLibrary("DataStore", "Google", "https://developer.android.com/topic/libraries/architecture/datastore"),
+    OpenSourceLibrary("Navigation", "Google", "https://developer.android.com/guide/navigation"),
+    OpenSourceLibrary("Glance", "Google", "https://developer.android.com/develop/ui/compose/glance"),
+    OpenSourceLibrary("WorkManager", "Google", "https://developer.android.com/topic/libraries/architecture/workmanager"),
+    OpenSourceLibrary("SplashScreen", "Google", "https://developer.android.com/develop/ui/views/launch/splash-screen"),
 )
 
 @Composable
@@ -70,11 +77,9 @@ fun AcknowledgmentsScreen(
         drawContent()
     }
 
-    val blurEnabled = scrollState.value > 0
-
     Scaffold(
         topBar = {
-            BlurredBar(hazeState, backdrop = miuixBackdrop, enabled = blurEnabled, contentBackdrop = contentBackdrop) {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
                 SmallTopAppBar(
                     title = "致谢",
                     scrollBehavior = MiuixScrollBehavior(),
@@ -109,7 +114,6 @@ fun AcknowledgmentsScreen(
                         LibraryRow(
                             name = library.name,
                             author = library.author,
-                            description = library.description,
                             url = library.url
                         )
                         if (index < libraries.size - 1) {
@@ -120,9 +124,11 @@ fun AcknowledgmentsScreen(
 
                 Spacer(modifier = Modifier.height(Spacing.xl))
 
+                val miuixTextStyles = MiuixTheme.textStyles
+
                 Text(
                     text = "感谢开源社区的贡献者们 ❤️",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = miuixTextStyles.footnote1,
                     color = getLabelsVibrantTertiary(),
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -138,69 +144,38 @@ fun AcknowledgmentsScreen(
 fun LibraryRow(
     name: String,
     author: String,
-    description: String,
     url: String
 ) {
     val context = LocalContext.current
+    val miuixTextStyles = MiuixTheme.textStyles
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
+            .padding(horizontal = Spacing.lg, vertical = Spacing.md),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = name,
+            color = IOSColors.Blue,
+            fontWeight = FontWeight.Medium,
+            style = miuixTextStyles.body1,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .clickable {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    context.startActivity(intent)
+                }
+        )
+        Text(
+            text = author,
+            color = IOSColors.Blue,
+            style = miuixTextStyles.body2,
+            modifier = Modifier.clickable {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                 context.startActivity(intent)
             }
-            .padding(horizontal = Spacing.lg, vertical = Spacing.md),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(29.dp)
-                .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.icon)),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(IOSColors.Gray),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = name.first().toString(),
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = Color.White
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                color = getLabelsVibrantPrimary()
-            )
-            Text(
-                text = author,
-                style = MaterialTheme.typography.bodySmall,
-                color = getLabelsVibrantSecondary()
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = getLabelsVibrantSecondary()
-            )
-        }
-
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = getLabelsVibrantSecondary()
         )
     }
 }
