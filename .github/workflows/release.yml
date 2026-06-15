@@ -237,7 +237,6 @@ jobs:
           JSON_BODY=$(python3 -c "
           import json, os
           data = {
-            'access_token': os.environ['GITEE_TOKEN'],
             'tag_name': 'v' + os.environ['VERSION_NAME'],
             'name': 'DuoSchedule ' + os.environ['VERSION_NAME'],
             'body': '版本号: ' + os.environ['VERSION_CODE'] + '\n\n' + os.environ.get('CHANGELOG', ''),
@@ -246,18 +245,29 @@ jobs:
           print(json.dumps(data, ensure_ascii=False))
           ")
 
-          RESPONSE=$(curl -s -X POST "${GITEE_API}/releases" \
+          RESPONSE=$(curl -s -X POST "${GITEE_API}/releases?access_token=${GITEE_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "$JSON_BODY")
 
-          RELEASE_ID=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null || echo "")
+          RELEASE_ID=$(echo "$RESPONSE" | python3 -c "
+          import sys, json
+          try:
+              data = json.load(sys.stdin)
+              rid = data.get('id', '')
+              if rid and isinstance(rid, int):
+                  print(rid)
+              else:
+                  print('')
+          except:
+              print('')
+          " 2>/dev/null)
 
           if [ -z "$RELEASE_ID" ]; then
             echo "Gitee Release 创建失败"
-            echo "$RESPONSE"
+            echo "响应内容: $RESPONSE"
             echo "success=false" >> $GITHUB_OUTPUT
             echo "gitee_error<<EOF" >> $GITHUB_OUTPUT
-            echo "$RESPONSE" >> $GITHUB_OUTPUT
+            echo "Release创建失败: $RESPONSE" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -276,8 +286,7 @@ jobs:
           UPLOAD_SUCCESS=false
           for i in 1 2 3; do
             echo "第 $i 次尝试上传..."
-            UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${GITEE_API}/releases/${RELEASE_ID}/attach_files" \
-              -F "access_token=${GITEE_TOKEN}" \
+            UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${GITEE_API}/releases/${RELEASE_ID}/attach_files?access_token=${GITEE_TOKEN}" \
               -F "file=@${APK_FILE}")
             UPLOAD_HTTP_CODE=$(echo "$UPLOAD_RESPONSE" | tail -1)
             UPLOAD_BODY=$(echo "$UPLOAD_RESPONSE" | sed '$d')
