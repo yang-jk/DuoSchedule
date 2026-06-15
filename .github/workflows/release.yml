@@ -264,21 +264,43 @@ jobs:
 
           echo "Gitee Release 已创建: $RELEASE_ID"
 
-          echo "上传 APK 到 Gitee Release..."
-          UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${GITEE_API}/releases/${RELEASE_ID}/attach_files" \
-            -F "access_token=${GITEE_TOKEN}" \
-            -F "file=@${APK_FILE}")
-          UPLOAD_HTTP_CODE=$(echo "$UPLOAD_RESPONSE" | tail -1)
-          UPLOAD_BODY=$(echo "$UPLOAD_RESPONSE" | sed '$d')
+          echo "验证 Release 是否存在..."
+          VERIFY_RESPONSE=$(curl -sf "${GITEE_API}/releases/${RELEASE_ID}?access_token=${GITEE_TOKEN}" 2>/dev/null || echo "")
+          if [ -z "$VERIFY_RESPONSE" ]; then
+            echo "⚠️ Release $RELEASE_ID 验证失败，可能不存在"
+          else
+            echo "✅ Release $RELEASE_ID 验证成功"
+          fi
 
-          if [ "$UPLOAD_HTTP_CODE" = "201" ]; then
-            echo "✅ APK 已上传到 Gitee Release"
+          echo "上传 APK 到 Gitee Release (最多重试3次)..."
+          UPLOAD_SUCCESS=false
+          for i in 1 2 3; do
+            echo "第 $i 次尝试上传..."
+            UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${GITEE_API}/releases/${RELEASE_ID}/attach_files" \
+              -F "access_token=${GITEE_TOKEN}" \
+              -F "file=@${APK_FILE}")
+            UPLOAD_HTTP_CODE=$(echo "$UPLOAD_RESPONSE" | tail -1)
+            UPLOAD_BODY=$(echo "$UPLOAD_RESPONSE" | sed '$d')
+
+            if [ "$UPLOAD_HTTP_CODE" = "201" ]; then
+              echo "✅ APK 已上传到 Gitee Release"
+              UPLOAD_SUCCESS=true
+              break
+            else
+              echo "⚠️ 上传失败 (HTTP $UPLOAD_HTTP_CODE): $UPLOAD_BODY"
+              if [ "$i" -lt 3 ]; then
+                echo "等待 5 秒后重试..."
+                sleep 5
+              fi
+            fi
+          done
+
+          if [ "$UPLOAD_SUCCESS" = "true" ]; then
             echo "success=true" >> $GITHUB_OUTPUT
           else
-            echo "⚠️ APK 上传到 Gitee 失败 (HTTP $UPLOAD_HTTP_CODE)"
-            echo "$UPLOAD_BODY"
+            echo "❌ APK 上传到 Gitee 失败（已重试3次）"
             echo "gitee_error<<EOF" >> $GITHUB_OUTPUT
-            echo "APK上传失败 (HTTP $UPLOAD_HTTP_CODE): $UPLOAD_BODY" >> $GITHUB_OUTPUT
+            echo "APK上传失败 (HTTP $UPLOAD_HTTP_CODE, 已重试3次): $UPLOAD_BODY" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
             echo "success=false" >> $GITHUB_OUTPUT
           fi
