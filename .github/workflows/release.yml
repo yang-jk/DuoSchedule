@@ -335,6 +335,9 @@ jobs:
           SERVERCHAN_URL: ${{ secrets.SERVERCHAN_URL }}
           VERSION_NAME: ${{ steps.version.outputs.version_name || steps.version_early.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code || '未知' }}
+          APK_SIZE: ${{ steps.apk_info.outputs.apk_size }}
+          RELEASE_DATE: ${{ steps.apk_info.outputs.release_date }}
+          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           RELEASE_OUTCOME: ${{ steps.release.outcome }}
           GITEE_RELEASE_OUTCOME: ${{ steps.gitee_release.outcome }}
@@ -349,6 +352,18 @@ jobs:
             echo "SERVERCHAN_URL 未配置，跳过通知"
             exit 0
           fi
+
+          format_status() {
+            local outcome="$1"
+            case "$outcome" in
+              success) echo "✅" ;;
+              failure) echo "❌" ;;
+              skipped) echo "⏭️" ;;
+              cancelled) echo "🚫" ;;
+              '') echo "⏭️" ;;
+              *) echo "❓" ;;
+            esac
+          }
 
           # 找出失败的步骤
           FAILED_STEPS=""
@@ -371,13 +386,25 @@ jobs:
             TITLE="❌ DuoSchedule v${VERSION_NAME} 构建失败"
           fi
 
-          export TITLE
+          BUILD_STATUS=$(format_status "$BUILD_OUTCOME")
+          RELEASE_STATUS=$(format_status "$RELEASE_OUTCOME")
+          GITEE_RELEASE_STATUS=$(format_status "$GITEE_RELEASE_OUTCOME")
+          UPDATE_REPO_STATUS=$(format_status "${{ steps.update_repo.outcome }}")
+
+          export TITLE BUILD_STATUS RELEASE_STATUS GITEE_RELEASE_STATUS UPDATE_REPO_STATUS
 
           python3 -c "
           import json, os
           version_name = os.environ['VERSION_NAME']
           version_code = os.environ['VERSION_CODE']
           title = os.environ['TITLE']
+          apk_size = os.environ.get('APK_SIZE', '')
+          release_date = os.environ.get('RELEASE_DATE', '')
+          changelog = os.environ.get('CHANGELOG', '')
+          build_status = os.environ['BUILD_STATUS']
+          release_status = os.environ['RELEASE_STATUS']
+          gitee_release_status = os.environ['GITEE_RELEASE_STATUS']
+          update_repo_status = os.environ['UPDATE_REPO_STATUS']
           gitee_release_success = os.environ.get('GITEE_RELEASE_SUCCESS', '')
           build_errors = os.environ.get('BUILD_ERRORS', '')
           gitee_error = os.environ.get('GITEE_ERROR', '')
@@ -385,8 +412,15 @@ jobs:
           run_url = os.environ['RUN_URL']
 
           desp = f'版本: {version_name} ({version_code})  '
+          if apk_size:
+              desp += f'  \n大小: {apk_size}  '
+          if release_date:
+              desp += f'  \n日期: {release_date}  '
+          desp += f'  \n\nAPK 构建: {build_status}  \nGitHub Release: {release_status}  \nGitee Release: {gitee_release_status}  \n更新仓库: {update_repo_status}  '
           if gitee_release_success == 'false':
               desp += f'  \n⚠️ Gitee Release 失败，downloadUrl 已回退到 GitHub  '
+          if changelog:
+              desp += f'  \n\n---  \n**更新内容:**  \n{changelog}  '
           error_parts = []
           if build_errors:
               error_parts.append(f'**APK 构建错误:**  \n\`\`\`\n{build_errors}\n\`\`\`')
