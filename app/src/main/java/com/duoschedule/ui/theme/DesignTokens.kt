@@ -206,18 +206,23 @@ object LiquidGlassColors {
         object NonTinted {
             val FillLayer1Light = Color(0xFFF7F7F7)
             val FillLayer2Light = Color(0xFFDDDDDD)
-            val FillLayer3Light = Color(0xA6FFFFFF)
+            val FillLayer3Light = Color(0x66FFFFFF)
             val HighlightGradientTopLight = Color(0x66FFFFFF)
             val HighlightGradientBottomLight = Color(0x19FFFFFF)
-            val GrayTintLight = Color(0xFF8E8E93)
-            
+            val GrayTintLight = Color(0x598E8E93)
+
             val FillLayer1Dark = Color(0x0FFFFFFF)
             val FillLayer2Dark = Color(0x99000000)
-            val FillLayer3Dark = Color(0x80CCCCCC)
+            val FillLayer3Dark = Color(0x40CCCCCC)
             val HighlightGradientTopDark = Color(0x4DFFFFFF)
             val HighlightGradientBottomDark = Color(0x1AFFFFFF)
-            val GrayTintDark = Color(0xFF636366)
-            
+            val GrayTintDark = Color(0x59636366)
+
+            val SubtleBackgroundLight = Color(0x59FFFFFF)
+            val SubtleBackgroundDark = Color(0x403A3A3A)
+            val HighlightLight = Color(0x4DFFFFFF)
+            val HighlightDark = Color(0x14FFFFFF)
+
             val BackgroundBaseLight = Color(0xE6FFFFFF)
             val BackgroundBaseDark = Color(0xE62C2C2E)
             val ShadowColor = Color(0x1E000000)
@@ -327,8 +332,8 @@ object ComponentSize {
     object LiquidGlassButton {
         val TextButtonWidth = 85.dp
         val TextButtonHeight = 48.dp
-        val IconButtonSize = 34.dp
-        val TopAppBarIconButtonSize = 32.dp
+        val IconButtonSize = 40.dp
+        val TopAppBarIconButtonSize = 40.dp
         val HorizontalPadding = 20.dp
         val VerticalPadding = 6.dp
         val ContentGap = 4.dp

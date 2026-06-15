@@ -67,13 +67,13 @@ object LiquidBottomTabsSpec {
 
     val SelectedColorLight = Color(0xFF0088FF)
     val SelectedColorDark = Color(0xFF0091FF)
-    val ContainerColorLight = Color(0xFFFAFAFA).copy(0.4f)
-    val ContainerColorDark = Color(0xFF121212).copy(0.4f)
+    val ContainerColorLight = Color(0xFFFAFAFA).copy(0.16f)
+    val ContainerColorDark = Color(0xFF121212).copy(0.30f)
     
     val ContentColorLight = Color.Black
     val ContentColorDark = Color.White
 
-    val BlurRadius = 8.dp
+    val BlurRadius = 4.dp
     val LensRefractionHeight = 24.dp
     val LensRefractionAmount = 24.dp
 }
@@ -200,8 +200,14 @@ fun LiquidBottomTabs(
                         shape = { Capsule() },
                         effects = {
                             vibrancy()
-                            blur(8f.dp.toPx())
-                            lens(24f.dp.toPx(), 24f.dp.toPx())
+                            blur(LiquidBottomTabsSpec.BlurRadius.toPx())
+                            lens(
+                                LiquidBottomTabsSpec.LensRefractionHeight.toPx(),
+                                LiquidBottomTabsSpec.LensRefractionAmount.toPx()
+                            )
+                        },
+                        highlight = {
+                            Highlight.Default.copy(width = 1f.dp, alpha = 0.75f)
                         },
                         layerBlock = {
                             val progress = dampedDragAnimation.pressProgress
@@ -239,10 +245,10 @@ fun LiquidBottomTabs(
                         effects = {
                             val progress = dampedDragAnimation.pressProgress
                             vibrancy()
-                            blur(8f.dp.toPx())
+                            blur(LiquidBottomTabsSpec.BlurRadius.toPx())
                             lens(
-                                24f.dp.toPx() * progress,
-                                24f.dp.toPx() * progress
+                                LiquidBottomTabsSpec.LensRefractionHeight.toPx() * progress,
+                                LiquidBottomTabsSpec.LensRefractionAmount.toPx() * progress
                             )
                         },
                         highlight = {

@@ -71,7 +71,7 @@ jobs:
         run: |
           CHANGELOG=""
           if [ -f Product-Spec-CHANGELOG.md ]; then
-            CHANGELOG=$(awk "/^## \\[${{ steps.version.outputs.version_name }}\\]/{flag=1;next}/^## \\[/{flag=0}flag" Product-Spec-CHANGELOG.md | sed '/^---$/d;/^### 状态/d;/^### 修改文件/d;/^- `.*$/d;/^$/d;s/^### 变更内容//;s/^### 变更类型//;s/\*\*//g;s/^## //')
+            CHANGELOG=$(awk "/^## \\[${{ steps.version.outputs.version_name }}\\]/{flag=1;next}/^## \\[/{flag=0}flag" Product-Spec-CHANGELOG.md | sed '/^---$/d;/^$/d')
           fi
           if [ -z "$CHANGELOG" ]; then
             CHANGELOG="版本 ${{ steps.version.outputs.version_name }} 更新"
@@ -117,6 +117,7 @@ jobs:
 
       - name: 重命名 APK 文件
         if: success()
+        id: apk_info
         run: |
           APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -1)
           if [ -z "$APK_PATH" ]; then
@@ -126,6 +127,14 @@ jobs:
           fi
           echo "找到 APK: $APK_PATH"
           mv "$APK_PATH" "app/build/outputs/apk/release/DuoSchedule-${{ steps.version.outputs.version_name }}.apk"
+
+          APK_FILE="app/build/outputs/apk/release/DuoSchedule-${{ steps.version.outputs.version_name }}.apk"
+          APK_BYTES=$(stat -c%s "$APK_FILE")
+          APK_MB=$(echo "scale=1; $APK_BYTES / 1048576" | bc)
+          echo "apk_size=${APK_MB} MB" >> $GITHUB_OUTPUT
+
+          RELEASE_DATE=$(date +%Y-%m-%d)
+          echo "release_date=${RELEASE_DATE}" >> $GITHUB_OUTPUT
 
       - name: 创建或更新 Git 标签
         if: success()
@@ -252,6 +261,8 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
           RELEASE_NOTES: ${{ steps.changelog.outputs.changelog }}
+          APK_SIZE: ${{ steps.apk_info.outputs.apk_size }}
+          RELEASE_DATE: ${{ steps.apk_info.outputs.release_date }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           GITEE_OWNER: su-zijie21
           GITEE_RELEASE_SUCCESS: ${{ steps.gitee_release.outputs.success }}

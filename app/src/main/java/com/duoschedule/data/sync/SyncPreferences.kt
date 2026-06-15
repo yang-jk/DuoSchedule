@@ -31,6 +31,7 @@ class SyncPreferences @Inject constructor(
         private val LAST_SYNC_VERSION = longPreferencesKey("last_sync_version")
         private val LAST_SYNC_TIME = longPreferencesKey("last_sync_time")
         private val ROOM_CODE = stringPreferencesKey("room_code")
+        private val INVITE_CODE = stringPreferencesKey("invite_code")
         private val SYNC_ENABLED = stringPreferencesKey("sync_enabled")
     }
 
@@ -107,6 +108,20 @@ class SyncPreferences @Inject constructor(
         return context.syncDataStore.data.map { prefs -> prefs[ROOM_CODE] }.first()
     }
 
+    val inviteCode: Flow<String?> = context.syncDataStore.data.map { prefs ->
+        prefs[INVITE_CODE]
+    }
+
+    suspend fun saveInviteCode(code: String) {
+        context.syncDataStore.edit { prefs ->
+            prefs[INVITE_CODE] = code
+        }
+    }
+
+    suspend fun getInviteCodeSync(): String? {
+        return context.syncDataStore.data.map { prefs -> prefs[INVITE_CODE] }.first()
+    }
+
     suspend fun saveProfileMapping(myProfileId: String, partnerProfileId: String?) {
         context.syncDataStore.edit { prefs ->
             prefs[MY_PROFILE_ID] = myProfileId
@@ -134,6 +149,7 @@ class SyncPreferences @Inject constructor(
             prefs.remove(LAST_SYNC_VERSION)
             prefs.remove(LAST_SYNC_TIME)
             prefs.remove(ROOM_CODE)
+            prefs.remove(INVITE_CODE)
             prefs[SYNC_ENABLED] = "false"
         }
     }

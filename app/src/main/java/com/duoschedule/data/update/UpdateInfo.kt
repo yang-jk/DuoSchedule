@@ -6,7 +6,9 @@ data class UpdateInfo(
     val minSupportedVersionCode: Int,
     val downloadUrl: String,
     val releaseNotes: String,
-    val forceUpdate: Boolean
+    val forceUpdate: Boolean,
+    val size: String = "",
+    val date: String = ""
 )
 
 enum class UpdateStatus {

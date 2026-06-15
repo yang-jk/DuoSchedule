@@ -112,7 +112,9 @@ class AppUpdateChecker @Inject constructor(
             minSupportedVersionCode = obj.optInt("minSupportedVersionCode", 1),
             downloadUrl = obj.getString("downloadUrl"),
             releaseNotes = obj.getString("releaseNotes"),
-            forceUpdate = obj.optBoolean("forceUpdate", false)
+            forceUpdate = obj.optBoolean("forceUpdate", false),
+            size = obj.optString("size", ""),
+            date = obj.optString("date", "")
         )
     }
 

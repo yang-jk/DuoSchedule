@@ -136,6 +136,10 @@ class UpdateViewModel @Inject constructor(
         }
     }
 
+    fun resetToIdle() {
+        _uiState.value = UpdateUiState.Idle
+    }
+
     fun canRequestInstall(context: Context): Boolean {
         return apkInstaller.canRequestInstall(context)
     }

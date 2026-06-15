@@ -103,10 +103,10 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    fun joinRoom(roomCode: String) {
+    fun joinRoom(inviteCode: String) {
         viewModelScope.launch {
             _isJoining.value = true
-            val result = syncManager.joinRoom(roomCode.trim())
+            val result = syncManager.joinRoom(inviteCode.trim())
             _isJoining.value = false
             if (result.isSuccess) {
                 _pendingJoinInfo.value = result.getOrThrow()
@@ -178,8 +178,8 @@ class SyncViewModel @Inject constructor(
         val code = _roomCode.value
         if (code.isNotEmpty()) {
             val clipboard = application.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText("房间码", code))
-            _message.value = "房间码已复制"
+            clipboard.setPrimaryClip(ClipData.newPlainText("邀请码", code))
+            _message.value = "邀请码已复制"
         }
     }
 

@@ -9,6 +9,8 @@ import urllib.parse
 VERSION_NAME = os.environ['VERSION_NAME']
 VERSION_CODE = int(os.environ['VERSION_CODE'])
 RELEASE_NOTES = os.environ.get('RELEASE_NOTES', '')
+APK_SIZE = os.environ.get('APK_SIZE', '')
+RELEASE_DATE = os.environ.get('RELEASE_DATE', '')
 TAG_NAME = f"v{VERSION_NAME}"
 
 GITHUB_OWNER = os.environ.get('GITHUB_OWNER', 'yang-jk')
@@ -24,7 +26,9 @@ def update_github(api_url, token, download_url):
         "minSupportedVersionCode": 1,
         "downloadUrl": download_url,
         "releaseNotes": RELEASE_NOTES,
-        "forceUpdate": False
+        "forceUpdate": False,
+        "size": APK_SIZE,
+        "date": RELEASE_DATE
     }
 
     content_json = json.dumps(update_data, ensure_ascii=False, indent=2)
@@ -77,7 +81,9 @@ def update_gitee(api_url, token, download_url):
         "minSupportedVersionCode": 1,
         "downloadUrl": download_url,
         "releaseNotes": RELEASE_NOTES,
-        "forceUpdate": False
+        "forceUpdate": False,
+        "size": APK_SIZE,
+        "date": RELEASE_DATE
     }
 
     content_json = json.dumps(update_data, ensure_ascii=False, indent=2)

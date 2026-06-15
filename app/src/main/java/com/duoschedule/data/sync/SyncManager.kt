@@ -74,6 +74,7 @@ class SyncManager @Inject constructor(
                 }
 
                 val roomCode = SyncCodeGenerator.generateRoomCode()
+                val inviteCode = SyncCodeGenerator.generateInviteCode(config)
                 val mapping = ensureProfileMapping(config)
                 val profiles = getLocalProfiles(mapping)
                 val meta = JSONObject().apply {
@@ -103,9 +104,10 @@ class SyncManager @Inject constructor(
                 syncPreferences.setSyncEnabled(true)
                 syncPreferences.updateLastSyncVersion(0L)
                 syncPreferences.saveRoomCode(roomCode)
+                syncPreferences.saveInviteCode(inviteCode)
 
-                AppLogger.i("Sync", "创建房间成功: roomCode=$roomCode")
-                Result.success(roomCode)
+                AppLogger.i("Sync", "创建房间成功: roomCode=$roomCode, inviteCode=$inviteCode")
+                Result.success(inviteCode)
             } catch (e: Exception) {
                 Log.e(TAG, "createRoom failed", e)
                 AppLogger.e("Sync", "创建房间失败", e)
@@ -114,12 +116,22 @@ class SyncManager @Inject constructor(
         }
     }
 
-    suspend fun joinRoom(roomCode: String): Result<JoinRoomInfo> {
+    suspend fun joinRoom(inviteCode: String): Result<JoinRoomInfo> {
         return withContext(Dispatchers.IO) {
             try {
-                val findResult = findRoomByCode(roomCode)
+                val config = SyncCodeGenerator.decodeInviteCode(inviteCode.trim())
+                if (config == null) {
+                    return@withContext Result.failure(Exception("邀请码无效"))
+                }
+
+                val testResult = webDavClient.testConnection(config)
+                if (testResult.isFailure) {
+                    return@withContext Result.failure(Exception("连接失败，请检查邀请码是否正确"))
+                }
+
+                val findResult = findRoomByConfig(config)
                 if (findResult.isFailure) {
-                    return@withContext Result.failure(findResult.exceptionOrNull() ?: Exception("Room not found"))
+                    return@withContext Result.failure(findResult.exceptionOrNull() ?: Exception("房间不存在或已过期"))
                 }
                 Result.success(findResult.getOrThrow())
             } catch (e: Exception) {
@@ -224,6 +236,7 @@ class SyncManager @Inject constructor(
                 syncPreferences.saveProfileMapping(mapping.myProfileId, mapping.partnerProfileId)
                 syncPreferences.setSyncEnabled(true)
                 syncPreferences.saveRoomCode(joinInfo.roomCode)
+                syncPreferences.saveInviteCode(SyncCodeGenerator.generateInviteCode(config))
 
                 AppLogger.i("Sync", "加入房间成功: roomCode=${joinInfo.roomCode}")
                 Result.success(Unit)
@@ -236,73 +249,50 @@ class SyncManager @Inject constructor(
     }
 
     /**
-     * 通过房间码在 WebDAV 的 duoschedule/sync/ 目录下查找匹配的房间
-     * 遍历子目录，下载每个 meta.json 检查 roomCode 是否匹配
+     * 通过邀请码解码的 config 直接查找房间
+     * 下载 meta.json 获取房间信息
      */
-    private suspend fun findRoomByCode(roomCode: String): Result<JoinRoomInfo> {
+    private suspend fun findRoomByConfig(config: SyncConfig): Result<JoinRoomInfo> {
         return withContext(Dispatchers.IO) {
             try {
-                // 获取当前 WebDAV 配置（用户需要先配置好 WebDAV）
-                val config = syncPreferences.getSyncConfigSync()
-                if (config == null) {
-                    return@withContext Result.failure(Exception("请先配置 WebDAV 连接"))
-                }
-
-                val testResult = webDavClient.testConnection(config)
-                if (testResult.isFailure) {
-                    return@withContext Result.failure(testResult.exceptionOrNull() ?: Exception("WebDAV 连接失败"))
-                }
-
-                val dirsResult = webDavClient.listDirectories(config, "duoschedule/sync/")
-                if (dirsResult.isFailure) {
-                    return@withContext Result.failure(dirsResult.exceptionOrNull() ?: Exception("无法列出同步目录"))
-                }
-
-                val directories = dirsResult.getOrThrow()
-                for (dirName in directories) {
-                    val metaPath = "duoschedule/sync/$dirName/meta.json"
-                    val metaResult = webDavClient.downloadJson(config, metaPath)
-                    if (metaResult.isFailure) continue
-
-                    val metaJson = metaResult.getOrThrow()
-                    val metaRoomCode = metaJson.optString("roomCode", "")
-
-                    if (metaRoomCode == roomCode) {
-                        // 找到匹配的房间，提取信息
-                        val roomId = metaJson.optString("roomId", dirName)
-                        val profiles = parseProfiles(metaJson.optJSONArray("profiles"))
-                        val personAName = metaJson.optString("personAName", "Me")
-                        val personBName = metaJson.optString("personBName", "Ta")
-
-                        // 从 profiles 或 meta 中获取 profile 信息
-                        val profileA = profiles.getOrElse(0) { CloudProfile(SyncCodeGenerator.generateProfileId(), personAName) }
-                        val profileB = profiles.getOrElse(1) { CloudProfile(SyncCodeGenerator.generateProfileId(), personBName) }
-
-                        val matchedConfig = config.copy(roomId = roomId)
-
-                        return@withContext Result.success(
-                            JoinRoomInfo(
-                                roomCode = roomCode,
-                                config = matchedConfig,
-                                profileA = profileA,
-                                profileB = profileB,
-                                personAName = profileA.name.ifBlank { personAName },
-                                personBName = profileB.name.ifBlank { personBName }
-                            )
-                        )
+                val metaPath = webDavClient.getMetaPath(config.roomId)
+                val metaResult = webDavClient.downloadJson(config, metaPath)
+                if (metaResult.isFailure) {
+                    val ex = metaResult.exceptionOrNull()
+                    if (ex?.message == "NOT_FOUND") {
+                        return@withContext Result.failure(Exception("房间不存在或已过期"))
                     }
+                    return@withContext Result.failure(ex ?: Exception("获取房间信息失败"))
                 }
 
-                Result.failure(Exception("未找到房间码为 $roomCode 的房间"))
+                val metaJson = metaResult.getOrThrow()
+                val roomCode = metaJson.optString("roomCode", "")
+                val profiles = parseProfiles(metaJson.optJSONArray("profiles"))
+                val personAName = metaJson.optString("personAName", "Me")
+                val personBName = metaJson.optString("personBName", "Ta")
+
+                val profileA = profiles.getOrElse(0) { CloudProfile(SyncCodeGenerator.generateProfileId(), personAName) }
+                val profileB = profiles.getOrElse(1) { CloudProfile(SyncCodeGenerator.generateProfileId(), personBName) }
+
+                Result.success(
+                    JoinRoomInfo(
+                        roomCode = roomCode,
+                        config = config,
+                        profileA = profileA,
+                        profileB = profileB,
+                        personAName = profileA.name.ifBlank { personAName },
+                        personBName = profileB.name.ifBlank { personBName }
+                    )
+                )
             } catch (e: Exception) {
-                Log.e(TAG, "findRoomByCode failed", e)
+                Log.e(TAG, "findRoomByConfig failed", e)
                 Result.failure(e)
             }
         }
     }
 
     suspend fun getRoomCode(): String? {
-        return syncPreferences.getRoomCodeSync()
+        return syncPreferences.getInviteCodeSync() ?: syncPreferences.getRoomCodeSync()
     }
 
     suspend fun sync(): SyncResult = syncMutex.withLock {

@@ -175,8 +175,8 @@ fun LiquidGlassButton(
     val tintColor = LiquidGlassColors.Button.Tinted.TintColor
 
     val nonTinted = LiquidGlassColors.Button.NonTinted
-    val grayTint = if (darkTheme) nonTinted.GrayTintDark else nonTinted.GrayTintLight
-    val fillLayer3 = if (darkTheme) nonTinted.FillLayer3Dark else nonTinted.FillLayer3Light
+    val subtleBackground = if (darkTheme) nonTinted.SubtleBackgroundDark else nonTinted.SubtleBackgroundLight
+    val highlightLayer = if (darkTheme) nonTinted.HighlightDark else nonTinted.HighlightLight
     val textColor = if (darkTheme) nonTinted.TextColorDark else nonTinted.TextColorLight
 
     val interactiveHighlight = remember(animationScope) {
@@ -222,8 +222,8 @@ fun LiquidGlassButton(
                         drawRect(tintColor, blendMode = BlendMode.Hue)
                         drawRect(tintColor.copy(alpha = 0.75f))
                     } else {
-                        drawRect(grayTint, blendMode = BlendMode.Hue)
-                        drawRect(fillLayer3)
+                        drawRect(subtleBackground)
+                        drawRect(highlightLayer, blendMode = BlendMode.ColorDodge)
                     }
                 }
             )
@@ -617,10 +617,9 @@ fun GlassIconButton(
     val density = LocalDensity.current
     val animationScope = rememberCoroutineScope()
 
-    val containerColor = if (darkTheme)
-        LiquidGlassColors.Button.BackgroundDark
-    else
-        LiquidGlassColors.Button.BackgroundLight
+    val nonTinted = LiquidGlassColors.Button.NonTinted
+    val subtleBackground = if (darkTheme) nonTinted.SubtleBackgroundDark else nonTinted.SubtleBackgroundLight
+    val highlightLayer = if (darkTheme) nonTinted.HighlightDark else nonTinted.HighlightLight
 
     val interactiveHighlight = remember(animationScope) {
         InteractiveHighlight(
@@ -653,7 +652,8 @@ fun GlassIconButton(
                     scaleY = scale
                 },
                 onDrawSurface = {
-                    drawRect(containerColor)
+                    drawRect(subtleBackground)
+                    drawRect(highlightLayer, blendMode = BlendMode.ColorDodge)
                 }
             )
             .clip(shape)
@@ -695,8 +695,8 @@ fun GlassSymbolButton(
     val tintColor = LiquidGlassColors.Button.Tinted.TintColor
 
     val nonTinted = LiquidGlassColors.Button.NonTinted
-    val grayTint = if (darkTheme) nonTinted.GrayTintDark else nonTinted.GrayTintLight
-    val fillLayer3 = if (darkTheme) nonTinted.FillLayer3Dark else nonTinted.FillLayer3Light
+    val subtleBackground = if (darkTheme) nonTinted.SubtleBackgroundDark else nonTinted.SubtleBackgroundLight
+    val highlightLayer = if (darkTheme) nonTinted.HighlightDark else nonTinted.HighlightLight
     val textColor = if (darkTheme) nonTinted.TextColorDark else nonTinted.TextColorLight
 
     val interactiveHighlight = remember(animationScope) {
@@ -742,8 +742,8 @@ fun GlassSymbolButton(
                         drawRect(tintColor, blendMode = BlendMode.Hue)
                         drawRect(tintColor.copy(alpha = 0.75f))
                     } else {
-                        drawRect(grayTint, blendMode = BlendMode.Hue)
-                        drawRect(fillLayer3)
+                        drawRect(subtleBackground)
+                        drawRect(highlightLayer, blendMode = BlendMode.ColorDodge)
                     }
                 }
             )
@@ -796,8 +796,8 @@ fun GlassSymbolIconButton(
     val tintColor = LiquidGlassColors.Button.Tinted.TintColor
 
     val nonTinted = LiquidGlassColors.Button.NonTinted
-    val grayTint = if (darkTheme) nonTinted.GrayTintDark else nonTinted.GrayTintLight
-    val fillLayer3 = if (darkTheme) nonTinted.FillLayer3Dark else nonTinted.FillLayer3Light
+    val subtleBackground = if (darkTheme) nonTinted.SubtleBackgroundDark else nonTinted.SubtleBackgroundLight
+    val highlightLayer = if (darkTheme) nonTinted.HighlightDark else nonTinted.HighlightLight
 
     val interactiveHighlight = remember(animationScope) {
         InteractiveHighlight(
@@ -846,8 +846,8 @@ fun GlassSymbolIconButton(
                             drawRect(tintColor, blendMode = BlendMode.Hue)
                             drawRect(tintColor.copy(alpha = 0.75f))
                         } else {
-                            drawRect(grayTint, blendMode = BlendMode.Hue)
-                            drawRect(fillLayer3)
+                            drawRect(subtleBackground)
+                            drawRect(highlightLayer, blendMode = BlendMode.ColorDodge)
                         }
                     }
                 )
