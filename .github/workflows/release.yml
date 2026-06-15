@@ -103,7 +103,30 @@ jobs:
         run: |
           CHANGELOG=""
           if [ -f Product-Spec-CHANGELOG.md ]; then
-            CHANGELOG=$(awk "/^## \\[${{ steps.version.outputs.version_name }}\\]/{flag=1;next}/^## \\[/{flag=0}flag" Product-Spec-CHANGELOG.md | sed '/^---$/d;/^$/d')
+            # 获取上一个 Release 的版本号
+            PREV_TAG=$(git tag --sort=-v:refname | head -2 | tail -1)
+            PREV_VERSION=""
+            if [ -n "$PREV_TAG" ]; then
+              PREV_VERSION=$(echo "$PREV_TAG" | sed 's/^v//')
+            fi
+
+            if [ -n "$PREV_VERSION" ]; then
+              echo "上一个版本: $PREV_VERSION, 当前版本: ${{ steps.version.outputs.version_name }}"
+              # 提取从上一个版本（不含）到当前版本（含）的所有变更
+              CHANGELOG=$(awk -v prev="\\[${PREV_VERSION}\\]" -v curr="\\[${{ steps.version.outputs.version_name }}\\]" '
+                /^## \[/ { 
+                  if (match($0, prev)) { flag=0; next }
+                  if (match($0, curr)) { flag=1; next }
+                  if (flag && /^## \[/) { flag=0; next }
+                }
+                flag { print }
+              ' Product-Spec-CHANGELOG.md | sed '/^---$/d;/^$/d')
+            fi
+
+            # 如果没有上一个版本或提取为空，只提取当前版本
+            if [ -z "$CHANGELOG" ]; then
+              CHANGELOG=$(awk "/^## \\[${{ steps.version.outputs.version_name }}\\]/{flag=1;next}/^## \\[/{flag=0}flag" Product-Spec-CHANGELOG.md | sed '/^---$/d;/^$/d')
+            fi
           fi
           if [ -z "$CHANGELOG" ]; then
             CHANGELOG="版本 ${{ steps.version.outputs.version_name }} 更新"
