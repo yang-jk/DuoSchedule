@@ -17,6 +17,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: 提取版本信息（用于通知）
+        id: version_early
+        run: |
+          VERSION_NAME=$(grep 'versionName' app/build.gradle.kts 2>/dev/null | head -1 | sed 's/.*versionName[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/' || echo "未知")
+          echo "version_name=${VERSION_NAME}" >> $GITHUB_OUTPUT
+
+      - name: 构建开始通知
+        env:
+          SERVERCHAN_URL: ${{ secrets.SERVERCHAN_URL }}
+          VERSION_NAME: ${{ steps.version_early.outputs.version_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          if [ -z "$SERVERCHAN_URL" ]; then exit 0; fi
+          python3 -c "
+          import json, os
+          data = {
+            'title': f'🚀 DuoSchedule v{os.environ[\"VERSION_NAME\"]} 开始构建',
+            'desp': f'版本: {os.environ[\"VERSION_NAME\"]}  \n提交: {os.environ[\"COMMIT_MSG\"]}  \n\n构建详情: {os.environ[\"RUN_URL\"]}'
+          }
+          with open('notify_start.json', 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False)
+          "
+          curl -s -X POST "${SERVERCHAN_URL}" -H "Content-Type: application/json" -d @notify_start.json > /dev/null 2>&1 || true
+
       - name: 检出代码
         uses: actions/checkout@v4
         with:
@@ -267,14 +292,23 @@ jobs:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
           GITEE_OWNER: su-zijie21
           GITEE_RELEASE_SUCCESS: ${{ steps.gitee_release.outputs.success }}
-        run: python3 scripts/update_repo.py
+        run: |
+          python3 scripts/update_repo.py 2>&1 | tee update_repo_output.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          if [ "$EXIT_CODE" != "0" ]; then
+            ERRORS=$(tail -20 update_repo_output.log)
+            echo "errors<<EOF" >> $GITHUB_OUTPUT
+            echo "$ERRORS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+          exit $EXIT_CODE
 
       - name: Server酱通知
         if: always()
         env:
           SERVERCHAN_URL: ${{ secrets.SERVERCHAN_URL }}
-          VERSION_NAME: ${{ steps.version.outputs.version_name }}
-          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          VERSION_NAME: ${{ steps.version.outputs.version_name || steps.version_early.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code || '未知' }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           RELEASE_OUTCOME: ${{ steps.release.outcome }}
           GITEE_RELEASE_OUTCOME: ${{ steps.gitee_release.outcome }}
@@ -282,7 +316,9 @@ jobs:
           GITEE_RELEASE_SUCCESS: ${{ steps.gitee_release.outputs.success }}
           BUILD_ERRORS: ${{ steps.build_errors.outputs.errors }}
           GITEE_ERROR: ${{ steps.gitee_release.outputs.gitee_error }}
+          UPDATE_REPO_ERRORS: ${{ steps.update_repo.outputs.errors }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          JOB_STATUS: ${{ job.status }}
         run: |
           if [ -z "$SERVERCHAN_URL" ]; then
             echo "SERVERCHAN_URL 未配置，跳过通知"
@@ -295,6 +331,8 @@ jobs:
               success) echo "✅ 成功" ;;
               failure) echo "❌ 失败" ;;
               skipped) echo "⏭️ 跳过" ;;
+              cancelled) echo "🚫 取消" ;;
+              '') echo "⏭️ 未执行" ;;
               *) echo "❓ $outcome" ;;
             esac
           }
@@ -303,15 +341,13 @@ jobs:
           RELEASE_STATUS=$(format_status "$RELEASE_OUTCOME")
           GITEE_RELEASE_STATUS=$(format_status "$GITEE_RELEASE_OUTCOME")
           UPDATE_REPO_STATUS=$(format_status "$UPDATE_REPO_OUTCOME")
-          export BUILD_STATUS
-          export RELEASE_STATUS
-          export GITEE_RELEASE_STATUS
-          export UPDATE_REPO_STATUS
 
-          if [ "$BUILD_OUTCOME" = "success" ] && [ "$RELEASE_OUTCOME" = "success" ] && [ "$UPDATE_REPO_OUTCOME" = "success" ] && [ "$GITEE_RELEASE_SUCCESS" != "false" ]; then
-            export TITLE="✅ DuoSchedule v${VERSION_NAME} 发布成功"
+          if [ "$JOB_STATUS" = "success" ] && [ "$GITEE_RELEASE_SUCCESS" != "false" ]; then
+            TITLE="✅ DuoSchedule v${VERSION_NAME} 发布成功"
+          elif [ "$JOB_STATUS" = "cancelled" ]; then
+            TITLE="🚫 DuoSchedule v${VERSION_NAME} 构建已取消"
           else
-            export TITLE="⚠️ DuoSchedule v${VERSION_NAME} 发布异常"
+            TITLE="❌ DuoSchedule v${VERSION_NAME} 构建失败"
           fi
 
           python3 -c "
@@ -325,16 +361,20 @@ jobs:
           gitee_release_success = os.environ.get('GITEE_RELEASE_SUCCESS', '')
           build_errors = os.environ.get('BUILD_ERRORS', '')
           gitee_error = os.environ.get('GITEE_ERROR', '')
+          update_repo_errors = os.environ.get('UPDATE_REPO_ERRORS', '')
           run_url = os.environ['RUN_URL']
           title = os.environ['TITLE']
+
           desp = f'版本: {version_name} ({version_code})  \nAPK 构建: {build_status}  \nGitHub Release: {release_status}  \nGitee Release: {gitee_release_status}  \n更新仓库: {update_repo_status}  '
           if gitee_release_success == 'false':
               desp += f'  \n⚠️ Gitee Release 失败，downloadUrl 已回退到 GitHub  '
           error_parts = []
           if build_errors:
-              error_parts.append(f'**构建错误:**  \n```\n{build_errors}\n```')
+              error_parts.append(f'**构建错误:**  \n\`\`\`\n{build_errors}\n\`\`\`')
           if gitee_error:
-              error_parts.append(f'**Gitee Release 错误:**  \n```\n{gitee_error}\n```')
+              error_parts.append(f'**Gitee Release 错误:**  \n\`\`\`\n{gitee_error}\n\`\`\`')
+          if update_repo_errors:
+              error_parts.append(f'**更新仓库错误:**  \n\`\`\`\n{update_repo_errors}\n\`\`\`')
           if error_parts:
               desp += f'  \n\n---  \n' + '  \n'.join(error_parts) + '  '
           desp += f' \n\n构建详情: {run_url}'
