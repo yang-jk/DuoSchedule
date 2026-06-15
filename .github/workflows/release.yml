@@ -335,24 +335,10 @@ jobs:
           SERVERCHAN_URL: ${{ secrets.SERVERCHAN_URL }}
           VERSION_NAME: ${{ steps.version.outputs.version_name || steps.version_early.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code || '未知' }}
-          # 所有步骤的 outcome
-          CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
-          SETUP_JDK_OUTCOME: ${{ steps.setup_jdk.outcome }}
-          SETUP_GRADLE_OUTCOME: ${{ steps.setup_gradle.outcome }}
-          GRADLE_WRAPPER_OUTCOME: ${{ steps.gradle_wrapper.outcome }}
-          GENERATE_CHANGELOG_OUTCOME: ${{ steps.generate_changelog.outcome }}
-          SWITCH_GRADLE_SOURCE_OUTCOME: ${{ steps.switch_gradle_source.outcome }}
-          REMOVE_ALIYUN_MIRROR_OUTCOME: ${{ steps.remove_aliyun_mirror.outcome }}
-          VERSION_OUTCOME: ${{ steps.version.outcome }}
-          CHANGELOG_OUTCOME: ${{ steps.changelog.outcome }}
-          DECODE_KEYSTORE_OUTCOME: ${{ steps.decode_keystore.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
-          APK_INFO_OUTCOME: ${{ steps.apk_info.outcome }}
-          CREATE_TAG_OUTCOME: ${{ steps.create_tag.outcome }}
           RELEASE_OUTCOME: ${{ steps.release.outcome }}
           GITEE_RELEASE_OUTCOME: ${{ steps.gitee_release.outcome }}
-          UPDATE_REPO_OUTCOME: ${{ steps.update_repo.outcome }}
-          # 错误详情
+          GITEE_RELEASE_SUCCESS: ${{ steps.gitee_release.outputs.success }}
           BUILD_ERRORS: ${{ steps.build_errors.outputs.errors }}
           GITEE_ERROR: ${{ steps.gitee_release.outputs.gitee_error }}
           UPDATE_REPO_ERRORS: ${{ steps.update_repo.outputs.errors }}
@@ -364,42 +350,11 @@ jobs:
             exit 0
           fi
 
-          format_status() {
-            local outcome="$1"
-            case "$outcome" in
-              success) echo "✅" ;;
-              failure) echo "❌" ;;
-              skipped) echo "⏭️" ;;
-              cancelled) echo "🚫" ;;
-              '') echo "⏭️" ;;
-              *) echo "❓" ;;
-            esac
-          }
-
-          # 构建步骤状态表
-          STEPS_TABLE=""
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $CHECKOUT_OUTCOME) 检出代码  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $SETUP_JDK_OUTCOME) 配置 JDK  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $SETUP_GRADLE_OUTCOME) 配置 Gradle  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $GRADLE_WRAPPER_OUTCOME) Gradle Wrapper  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $GENERATE_CHANGELOG_OUTCOME) 生成更新日志  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $SWITCH_GRADLE_SOURCE_OUTCOME) 切换下载源  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $REMOVE_ALIYUN_MIRROR_OUTCOME) 移除阿里云镜像  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $VERSION_OUTCOME) 版本校验  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $CHANGELOG_OUTCOME) 提取变更记录  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $DECODE_KEYSTORE_OUTCOME) 解码签名  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $BUILD_OUTCOME) APK 构建  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $APK_INFO_OUTCOME) APK 重命名  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $CREATE_TAG_OUTCOME) 创建标签  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $RELEASE_OUTCOME) GitHub Release  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $GITEE_RELEASE_OUTCOME) Gitee Release  \n"
-          STEPS_TABLE="${STEPS_TABLE}$(format_status $UPDATE_REPO_OUTCOME) 更新仓库  \n"
-
           # 找出失败的步骤
           FAILED_STEPS=""
-          for step_name_version in "版本校验:$VERSION_OUTCOME" "APK 构建:$BUILD_OUTCOME" "APK 重命名:$APK_INFO_OUTCOME" "创建标签:$CREATE_TAG_OUTCOME" "GitHub Release:$RELEASE_OUTCOME"; do
-            step_name="${step_name_version%%:*}"
-            step_outcome="${step_name_version##*:}"
+          for item in "版本校验:${{ steps.version.outcome }}" "APK 构建:$BUILD_OUTCOME" "APK 重命名:${{ steps.apk_info.outcome }}" "创建标签:${{ steps.create_tag.outcome }}" "GitHub Release:$RELEASE_OUTCOME" "Gitee Release:$GITEE_RELEASE_OUTCOME" "更新仓库:${{ steps.update_repo.outcome }}"; do
+            step_name="${item%%:*}"
+            step_outcome="${item##*:}"
             if [ "$step_outcome" = "failure" ]; then
               if [ -n "$FAILED_STEPS" ]; then FAILED_STEPS="${FAILED_STEPS}, "; fi
               FAILED_STEPS="${FAILED_STEPS}${step_name}"
@@ -416,13 +371,12 @@ jobs:
             TITLE="❌ DuoSchedule v${VERSION_NAME} 构建失败"
           fi
 
-          export STEPS_TABLE TITLE
+          export TITLE
 
           python3 -c "
           import json, os
           version_name = os.environ['VERSION_NAME']
           version_code = os.environ['VERSION_CODE']
-          steps_table = os.environ['STEPS_TABLE']
           title = os.environ['TITLE']
           gitee_release_success = os.environ.get('GITEE_RELEASE_SUCCESS', '')
           build_errors = os.environ.get('BUILD_ERRORS', '')
@@ -430,7 +384,7 @@ jobs:
           update_repo_errors = os.environ.get('UPDATE_REPO_ERRORS', '')
           run_url = os.environ['RUN_URL']
 
-          desp = f'版本: {version_name} ({version_code})  \n\n{steps_table}'
+          desp = f'版本: {version_name} ({version_code})  '
           if gitee_release_success == 'false':
               desp += f'  \n⚠️ Gitee Release 失败，downloadUrl 已回退到 GitHub  '
           error_parts = []
