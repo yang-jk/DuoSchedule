@@ -19,6 +19,7 @@ import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.Locale
 
 class ScheduleContentProvider : ContentProvider() {
 
@@ -137,7 +138,7 @@ class ScheduleContentProvider : ContentProvider() {
         val dayOfWeek = targetDate.dayOfWeek.value
         
         val currentTime = LocalDateTime.now()
-        val currentTimeStr = String.format("%02d:%02d", currentTime.hour, currentTime.minute)
+        val currentTimeStr = String.format(Locale.US, "%02d:%02d", currentTime.hour, currentTime.minute)
         
         val allCourses = database.courseDao().getCoursesForDaySync(dayOfWeek, PersonType.PERSON_A) +
                          database.courseDao().getCoursesForDaySync(dayOfWeek, PersonType.PERSON_B)
@@ -395,7 +396,7 @@ class ScheduleContentProvider : ContentProvider() {
                 val startMin = start % 60
                 val endHour = end / 60
                 val endMin = end % 60
-                freeSlots.add(String.format("%02d:%02d-%02d:%02d", startHour, startMin, endHour, endMin))
+                freeSlots.add(String.format(Locale.US, "%02d:%02d-%02d:%02d", startHour, startMin, endHour, endMin))
             }
         }
 

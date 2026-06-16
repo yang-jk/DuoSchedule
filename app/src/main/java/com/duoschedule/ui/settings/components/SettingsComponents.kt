@@ -55,8 +55,8 @@ object SettingsDefaults {
 
 @Composable
 fun SettingsSection(
-    title: String? = null,
     modifier: Modifier = Modifier,
+    title: String? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val appThemeMode = LocalAppThemeMode.current
@@ -155,8 +155,8 @@ fun SettingsRow(
     subtitle: String? = null,
     icon: ImageVector? = null,
     iconBackgroundColor: Color? = null,
-    trailing: @Composable (() -> Unit)? = null,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    trailing: @Composable (() -> Unit)? = null
 ) {
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()

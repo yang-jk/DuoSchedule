@@ -83,6 +83,7 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.window.WindowDialog
 import androidx.compose.foundation.shape.RoundedCornerShape
+import java.util.Locale
 
 private val MicroTween: TweenSpec<Float> = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing)
 
@@ -1331,8 +1332,8 @@ private fun getPeriodDisplayText(dayOfWeek: Int, startPeriod: Int, endPeriod: In
 private fun getCustomTimeDisplayText(dayOfWeek: Int, startHour: Int, startMinute: Int, endHour: Int, endMinute: Int): String {
     val days = listOf("周一", "周二", "周三", "周四", "周五", "周六", "周日")
     val dayText = days.getOrNull(dayOfWeek - 1) ?: "周一"
-    val startTime = String.format("%02d:%02d", startHour, startMinute)
-    val endTime = String.format("%02d:%02d", endHour, endMinute)
+    val startTime = String.format(Locale.US, "%02d:%02d", startHour, startMinute)
+    val endTime = String.format(Locale.US, "%02d:%02d", endHour, endMinute)
     return "$dayText $startTime-$endTime"
 }
 
@@ -1464,7 +1465,11 @@ fun CourseEditContent(
         drawContent()
     }
 
-    val editBlurEnabled = lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0
+    val editBlurEnabled by remember {
+        derivedStateOf {
+            lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0
+        }
+    }
 
     val sharedTransitionScope = LocalSharedTransitionScope.current
 

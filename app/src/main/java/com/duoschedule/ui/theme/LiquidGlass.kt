@@ -611,7 +611,7 @@ fun GlassIconButton(
     modifier: Modifier = Modifier,
     backdrop: Backdrop = LocalBackdrop.current ?: emptyBackdrop(),
     enabled: Boolean = true,
-    icon: @Composable () -> Unit
+    content: @Composable () -> Unit
 ) {
     val darkTheme = LocalDarkTheme.current
     val density = LocalDensity.current
@@ -667,7 +667,7 @@ fun GlassIconButton(
             .then(interactiveHighlight.gestureModifier),
         contentAlignment = Alignment.Center
     ) {
-        icon()
+        content()
     }
 }
 
@@ -785,7 +785,7 @@ fun GlassSymbolIconButton(
     style: GlassSymbolButtonStyle = GlassSymbolButtonStyle.NonTinted,
     buttonSize: Dp = ComponentSize.LiquidGlassButton.IconButtonSize,
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    icon: @Composable () -> Unit
+    content: @Composable () -> Unit
 ) {
     val darkTheme = LocalDarkTheme.current
     val density = LocalDensity.current
@@ -879,7 +879,7 @@ fun GlassSymbolIconButton(
             }
 
             CompositionLocalProvider(LocalContentColor provides iconColor) {
-                icon()
+                content()
             }
         }
     }

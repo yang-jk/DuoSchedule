@@ -4,6 +4,21 @@
 
 ---
 
+## [4.34.0] - 2026-06-16
+
+- [新增] 课表页面待办点击预览底部弹窗（TodoPreviewBottomSheet），支持查看和编辑待办详情
+- [新增] 主页时间线无时间待办显示"待办"标签
+- [修复] 长按菜单删除课程不再触发预览弹窗（新增courseToDelete变量独立管理删除流程）
+- [修复] String.format统一使用Locale.US，避免部分区域格式异常
+- [优化] 可见性修饰符收紧：多处public/internal改为private（TodoRepository、MainViewModel、CourseNotificationManager等）
+- [优化] OkHttp升级至5.4.0，Haze升级至2.0.0-alpha03
+- [优化] AndroidManifest添加lint抑制注解（USE_EXACT_ALARM、REQUEST_INSTALL_PACKAGES）
+- [优化] mutableStateOf改为mutableIntStateOf避免不必要的装箱
+- [优化] GlassIconButton/GlassSymbolIconButton参数名icon→content
+- [优化] BgEffectBackground使用LocalWindowInfo替代LocalConfiguration判断设备类型
+- [优化] BgEffectElement补充InspectorInfo
+- [优化] 参数顺序规范化（modifier前置）和import优化
+
 ## [4.33.0] - 2026-06-15
 
 - [优化] 设置及二级页面渐变模糊：BlurredBar实现从上到下的渐变模糊效果（参考iOS 27/HyperOS 4液态玻璃设计），模糊始终启用不再依赖滚动状态

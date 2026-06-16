@@ -47,7 +47,7 @@ object FilePickerUtils {
         }
     }
 
-    fun isMiuiDevice(): Boolean {
+    private fun isMiuiDevice(): Boolean {
         val version = getSystemProperty("ro.miui.ui.version.name")
         return !version.isNullOrBlank()
     }
@@ -68,7 +68,7 @@ object FilePickerUtils {
         return 0
     }
     
-    fun isHyperOS(): Boolean {
+    private fun isHyperOS(): Boolean {
         return getMiuiVersionCode() >= HYPEROS_VERSION_CODE
     }
     

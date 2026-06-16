@@ -16,10 +16,10 @@ import java.util.Locale
 object PromotedNotificationBuilder {
     private const val TAG = "PromotedNotification"
 
-    const val CHANNEL_ID_REMINDER = "course_reminder_channel"
-    const val CHANNEL_ID_ONGOING = "course_ongoing_channel"
-    const val CHANNEL_ID_LIVE = "course_live_channel"
-    const val CHANNEL_ID_TODO_REMINDER = "todo_reminder_channel"
+    private const val CHANNEL_ID_REMINDER = "course_reminder_channel"
+    private const val CHANNEL_ID_ONGOING = "course_ongoing_channel"
+    private const val CHANNEL_ID_LIVE = "course_live_channel"
+    private const val CHANNEL_ID_TODO_REMINDER = "todo_reminder_channel"
 
     fun createNotificationChannels(context: Context) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

@@ -1,6 +1,7 @@
 package com.duoschedule.ui.settings
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
@@ -49,6 +50,7 @@ import dev.chrisbanes.haze.rememberHazeState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
 
+@SuppressLint("BatteryLife")
 @Composable
 fun NotificationSettingsScreen(
     onNavigateBack: () -> Unit,

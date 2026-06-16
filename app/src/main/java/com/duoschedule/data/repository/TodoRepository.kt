@@ -179,7 +179,7 @@ class TodoRepository @Inject constructor(
      * @param endDate 结束日期（epoch day）
      * @return 生成的待办实例列表（不含基准待办本身）
      */
-    fun generateRepeatInstances(rule: RepeatRule, baseTodo: Todo, startDate: Long, endDate: Long): List<Todo> {
+    private fun generateRepeatInstances(rule: RepeatRule, baseTodo: Todo, startDate: Long, endDate: Long): List<Todo> {
         val instances = mutableListOf<Todo>()
         val baseDate = LocalDate.ofEpochDay(baseTodo.date)
         val rangeStart = LocalDate.ofEpochDay(startDate)

@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.theme
+package com.duoschedule.ui.theme
 
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -13,7 +13,7 @@ internal class BgEffectPainter(
     private val isOs3: Boolean = true,
 ) {
 
-    val runtimeShader by lazy {
+    private val runtimeShader by lazy {
         val shaderCode = OS3_BG_FRAG
         RuntimeShader(shaderCode).also {
             initStaticUniforms(it)

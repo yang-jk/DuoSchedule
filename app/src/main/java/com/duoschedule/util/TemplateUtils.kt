@@ -10,9 +10,9 @@ import java.io.InputStreamReader
 
 object TemplateUtils {
     
-    const val TEMPLATE_FILE_NAME = "course_template.csv"
+    private const val TEMPLATE_FILE_NAME = "course_template.csv"
     
-    suspend fun getTemplateContent(context: Context): String = withContext(Dispatchers.IO) {
+    private suspend fun getTemplateContent(context: Context): String = withContext(Dispatchers.IO) {
         context.assets.open(TEMPLATE_FILE_NAME).use { inputStream ->
             BufferedReader(InputStreamReader(inputStream, "UTF-8")).use { reader ->
                 reader.readText()

@@ -72,7 +72,7 @@ class SettingsViewModel @Inject constructor(
         repository.getSemesterStartDate(personType)
             .stateIn(viewModelScope, SharingStarted.Lazily, LocalDate.now())
 
-    fun getTotalWeeks(personType: PersonType): StateFlow<Int> = 
+    private fun getTotalWeeks(personType: PersonType): StateFlow<Int> =
         repository.getTotalWeeks(personType)
             .stateIn(viewModelScope, SharingStarted.Lazily, 16)
 

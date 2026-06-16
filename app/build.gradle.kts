@@ -35,8 +35,8 @@ android {
         applicationId = "com.duoschedule"
         minSdk = 26
         targetSdk = 37
-        versionCode = 43300
-        versionName = "4.33.0"
+        versionCode = 43400
+        versionName = "4.34.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -124,7 +124,7 @@ dependencies {
     
     implementation("androidx.datastore:datastore-preferences:1.1.4")
     
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp:5.4.0")
     implementation("org.jsoup:jsoup:1.18.3")
     
     implementation("androidx.core:core-splashscreen:1.0.1")
@@ -133,9 +133,9 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:0.9.0")
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:0.9.0")
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:0.9.0")
-    implementation("dev.chrisbanes.haze:haze:2.0.0-alpha02")
-    implementation("dev.chrisbanes.haze:haze-blur:2.0.0-alpha02")
-    implementation("dev.chrisbanes.haze:haze-blur-materials:2.0.0-alpha02")
+    implementation("dev.chrisbanes.haze:haze:2.0.0-alpha03")
+    implementation("dev.chrisbanes.haze:haze-blur:2.0.0-alpha03")
+    implementation("dev.chrisbanes.haze:haze-blur-materials:2.0.0-alpha03")
     implementation("io.github.kyant0:shapes:1.2.0")
     implementation("io.github.kyant0:capsule:2.1.3")
     

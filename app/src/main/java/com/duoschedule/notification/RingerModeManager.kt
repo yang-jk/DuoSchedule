@@ -44,7 +44,7 @@ class RingerModeManager @Inject constructor(
         return audioManager.ringerMode
     }
 
-    fun saveCurrentRingerMode() {
+    private fun saveCurrentRingerMode() {
         if (isAutoSilentActive()) return
 
         val currentMode = audioManager.ringerMode

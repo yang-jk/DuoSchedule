@@ -77,6 +77,7 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 internal val MicroTween: TweenSpec<Float> = tween(100, easing = FastOutSlowInEasing)
 
@@ -453,7 +454,7 @@ internal fun TimeRow(
 
         if (hasTime) {
             Text(
-                text = String.format("%02d:%02d", hour, minute),
+                text = String.format(Locale.US, "%02d:%02d", hour, minute),
                 style = MaterialTheme.typography.bodyMedium,
                 color = labelsSecondary
             )

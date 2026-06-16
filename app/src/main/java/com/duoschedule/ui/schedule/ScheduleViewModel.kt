@@ -171,6 +171,12 @@ class ScheduleViewModel @Inject constructor(
         }
     }
 
+    fun deleteTodo(todoId: Long) {
+        viewModelScope.launch {
+            todoRepository.deleteTodoById(todoId)
+        }
+    }
+
     suspend fun pasteCourse(
         dayOfWeek: Int,
         period: Int,
@@ -282,7 +288,7 @@ class ScheduleViewModel @Inject constructor(
         return repository.checkTimeConflict(newCourse)
     }
 
-    suspend fun forcePasteCourse(
+    private suspend fun forcePasteCourse(
         dayOfWeek: Int,
         period: Int,
         periodTimes: List<String>,

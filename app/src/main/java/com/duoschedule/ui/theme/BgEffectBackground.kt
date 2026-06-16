@@ -12,6 +12,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -41,7 +43,8 @@ fun BgEffectBackground(
     ) {
         val surface = MiuixTheme.colorScheme.surface
         val configuration = LocalConfiguration.current
-        val deviceType = if (configuration.screenWidthDp >= 840) DeviceType.PAD else DeviceType.PHONE
+        val containerSize = LocalWindowInfo.current.containerSize
+        val deviceType = if (with(LocalDensity.current) { containerSize.width.toDp() } >= 840.dp) DeviceType.PAD else DeviceType.PHONE
         val isDarkTheme = LocalDarkTheme.current
         val painter = remember(isOs3Effect) { BgEffectPainter(isOs3Effect) }
 

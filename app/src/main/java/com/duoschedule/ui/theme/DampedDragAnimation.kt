@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.theme
+package com.duoschedule.ui.theme
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
@@ -81,7 +81,7 @@ class DampedDragAnimation(
         }
     }
 
-    fun press() {
+    private fun press() {
         velocityTracker.resetTracking()
         animationScope.launch {
             launch { pressProgressAnimation.animateTo(1f, pressProgressAnimationSpec) }
@@ -90,7 +90,7 @@ class DampedDragAnimation(
         }
     }
 
-    fun release() {
+    private fun release() {
         animationScope.launch {
             awaitFrame()
             if (value != targetValue) {

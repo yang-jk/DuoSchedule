@@ -323,7 +323,7 @@ fun BlurredBar(
 }
 
 class AppSnackbarHostState(
-    val snackbarHostState: SnackbarHostState
+    private val snackbarHostState: SnackbarHostState
 ) {
     suspend fun showAppSnackbar(message: String) {
         snackbarHostState.showSnackbar(message)

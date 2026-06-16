@@ -105,11 +105,11 @@ private fun getPriorityColor(priority: Priority): Color {
  */
 @Composable
 private fun DisplayModeSelector(
+    modifier: Modifier = Modifier,
     displayMode: TodayCourseDisplayMode,
     onDisplayModeChange: (TodayCourseDisplayMode) -> Unit,
     personAName: String = "我",
-    personBName: String = "Ta",
-    modifier: Modifier = Modifier
+    personBName: String = "Ta"
 ) {
     val appThemeMode = LocalAppThemeMode.current
     val nameA = personAName.ifEmpty { "我" }
@@ -785,7 +785,7 @@ private fun TimelineTodoCard(
                                 }
                         )
 
-                        // 时间文本
+                        // 时间文本或待办标签
                         val timeText = formatTimelineTodoTime(todo)
                         if (timeText.isNotEmpty()) {
                             top.yukonga.miuix.kmp.basic.Text(
@@ -794,6 +794,24 @@ private fun TimelineTodoCard(
                                 maxLines = 1,
                                 modifier = Modifier.graphicsLayer { alpha = contentAlpha }
                             )
+                        } else if (!todo.hasStartTime() && !todo.hasEndTime()) {
+                            // 无时间待办显示"待办"标签
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        personColor.copy(alpha = if (isCompleted) 0.1f else 0.15f),
+                                        RoundedCornerShape(4.dp)
+                                    )
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .graphicsLayer { alpha = contentAlpha }
+                            ) {
+                                top.yukonga.miuix.kmp.basic.Text(
+                                    text = "待办",
+                                    color = personColor.copy(alpha = if (isCompleted) 0.5f else 1f),
+                                    style = MiuixTheme.textStyles.body2,
+                                    maxLines = 1
+                                )
+                            }
                         }
                     }
 
@@ -957,7 +975,7 @@ private fun TimelineTodoCard(
                             }
                     )
 
-                    // 时间文本
+                    // 时间文本或待办标签
                     val timeText = formatTimelineTodoTime(todo)
                     if (timeText.isNotEmpty()) {
                         Text(
@@ -969,6 +987,26 @@ private fun TimelineTodoCard(
                             maxLines = 1,
                             modifier = Modifier.graphicsLayer { alpha = contentAlpha }
                         )
+                    } else if (!todo.hasStartTime() && !todo.hasEndTime()) {
+                        // 无时间待办显示"待办"标签
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    personColor.copy(alpha = if (isCompleted) 0.1f else 0.15f),
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .graphicsLayer { alpha = contentAlpha }
+                        ) {
+                            Text(
+                                text = "待办",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                color = personColor.copy(alpha = if (isCompleted) 0.5f else 1f),
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
 

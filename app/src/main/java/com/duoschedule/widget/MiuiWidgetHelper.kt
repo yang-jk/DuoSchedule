@@ -15,8 +15,8 @@ object MiuiWidgetHelper {
     private const val KEY_MIUI_WIDGET_SUPPORTED = "isMiuiWidgetSupported"
     private const val KEY_MIUI_WIDGET_DETAIL_SUPPORTED = "isMiuiWidgetDetailPageSupported"
     
-    const val KEY_MIUI_WIDGET_EVENT_CODE = "miuiWidgetEventCode"
-    const val KEY_MIUI_WIDGET_TIMESTAMP = "miuiWidgetTimestamp"
+    private const val KEY_MIUI_WIDGET_EVENT_CODE = "miuiWidgetEventCode"
+    private const val KEY_MIUI_WIDGET_TIMESTAMP = "miuiWidgetTimestamp"
     
     const val EVENT_CODE_COURSE_INFO = "info1"
     const val EVENT_CODE_FREE_TIME = "state1"

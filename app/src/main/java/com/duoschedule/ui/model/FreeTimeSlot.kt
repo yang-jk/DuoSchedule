@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.model
+package com.duoschedule.ui.model
 
 import androidx.compose.runtime.Immutable
 import java.util.Locale
@@ -10,13 +10,13 @@ data class FreeTimeSlot(
     val endHour: Int,
     val endMinute: Int
 ) {
-    fun getStartTimeString(): String = String.format(Locale.ROOT, "%02d:%02d", startHour, startMinute)
+    private fun getStartTimeString(): String = String.format(Locale.ROOT, "%02d:%02d", startHour, startMinute)
     
     fun getEndTimeString(): String = String.format(Locale.ROOT, "%02d:%02d", endHour, endMinute)
     
     fun getTimeString(): String = "${getStartTimeString()}-${getEndTimeString()}"
     
-    val durationMinutes: Int
+    private val durationMinutes: Int
         get() {
             val startMinutes = startHour * 60 + startMinute
             val endMinutes = endHour * 60 + endMinute

@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
+import java.util.Locale
 
 class FreeTimeWidgetReceiver : AppWidgetProvider() {
 
@@ -161,7 +162,7 @@ class FreeTimeWidgetReceiver : AppWidgetProvider() {
                 val startMin = start % 60
                 val endHour = end / 60
                 val endMin = end % 60
-                freeSlots.add(String.format("%02d:%02d-%02d:%02d", startHour, startMin, endHour, endMin))
+                freeSlots.add(String.format(Locale.US, "%02d:%02d-%02d:%02d", startHour, startMin, endHour, endMin))
             }
         }
         

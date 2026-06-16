@@ -52,7 +52,7 @@ class TodoAlarmScheduler @Inject constructor(
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     /** 计算待办的提醒时间戳（毫秒），返回 null 表示不需要提醒 */
-    fun calculateReminderTime(todo: Todo): Long? {
+    private fun calculateReminderTime(todo: Todo): Long? {
         // 已完成的不提醒
         if (todo.status == TodoStatus.COMPLETED) return null
 

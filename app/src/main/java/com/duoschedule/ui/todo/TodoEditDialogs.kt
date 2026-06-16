@@ -30,6 +30,7 @@ import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -103,9 +104,9 @@ internal fun MiuixDatePickerBottomSheet(
     onDateSelected: (Long) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var currentYear by remember { mutableStateOf(initialDate.year) }
-    var currentMonth by remember { mutableStateOf(initialDate.monthValue) }
-    var currentDay by remember { mutableStateOf(initialDate.dayOfMonth) }
+    var currentYear by remember { mutableIntStateOf(initialDate.year) }
+    var currentMonth by remember { mutableIntStateOf(initialDate.monthValue) }
+    var currentDay by remember { mutableIntStateOf(initialDate.dayOfMonth) }
     val maxDayInMonth = remember(currentYear, currentMonth) {
         LocalDate.of(currentYear, currentMonth, 1).lengthOfMonth()
     }
@@ -135,8 +136,8 @@ internal fun MiuixTimePickerBottomSheet(
     onTimeSelected: (Int, Int) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var hour by remember { mutableStateOf(initialHour) }
-    var minute by remember { mutableStateOf(initialMinute) }
+    var hour by remember { mutableIntStateOf(initialHour) }
+    var minute by remember { mutableIntStateOf(initialMinute) }
     WindowBottomSheet(show = true, title = title, cornerRadius = getRoundedCorner(), onDismissRequest = onDismiss, allowDismiss = false) {
         Row(modifier = Modifier.fillMaxWidth().height(225.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             NumberPicker(value = hour, onValueChange = { hour = it }, range = 0..23, label = { it.toString().padStart(2, '0') }, wrapAround = true, modifier = Modifier.weight(1f))
@@ -171,10 +172,10 @@ internal fun RepeatRuleDialog(
     var selectedFrequency by remember { mutableStateOf(initialFrequencyOption) }
 
     // 每天间隔
-    var dailyInterval by remember { mutableStateOf(currentRule?.takeIf { it.frequency == RepeatFrequency.DAILY }?.interval ?: 1) }
+    var dailyInterval by remember { mutableIntStateOf(currentRule?.takeIf { it.frequency == RepeatFrequency.DAILY }?.interval ?: 1) }
 
     // 每周间隔
-    var weeklyInterval by remember { mutableStateOf(currentRule?.takeIf { it.frequency == RepeatFrequency.WEEKLY }?.interval ?: 1) }
+    var weeklyInterval by remember { mutableIntStateOf(currentRule?.takeIf { it.frequency == RepeatFrequency.WEEKLY }?.interval ?: 1) }
 
     // 选中的周几
     val initialDaysOfWeek = currentRule?.takeIf { it.frequency == RepeatFrequency.WEEKLY }?.daysOfWeek

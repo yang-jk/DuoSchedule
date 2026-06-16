@@ -62,6 +62,7 @@ import com.duoschedule.data.model.Course
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.Todo
 import com.duoschedule.ui.edit.CoursePreviewBottomSheet
+import com.duoschedule.ui.edit.TodoPreviewBottomSheet
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.theme.LocalBackdrop
 import com.duoschedule.ui.settings.components.GlassConfirmDialog
@@ -185,6 +186,12 @@ fun ScheduleScreen(
     val previewSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showPreview by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var courseToDelete by remember { mutableStateOf<Course?>(null) }
+
+    val todoPreviewSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showTodoPreview by remember { mutableStateOf(false) }
+    var selectedTodo by remember { mutableStateOf<Todo?>(null) }
+    var showTodoDeleteConfirm by remember { mutableStateOf(false) }
     
     var showAddMenu by remember { mutableStateOf(false) }
 
@@ -204,6 +211,12 @@ fun ScheduleScreen(
     LaunchedEffect(selectedCourse) {
         if (selectedCourse != null) {
             showPreview = true
+        }
+    }
+
+    LaunchedEffect(selectedTodo) {
+        if (selectedTodo != null) {
+            showTodoPreview = true
         }
     }
 
@@ -378,7 +391,7 @@ fun ScheduleScreen(
                                 .padding(4.dp)
                         ) {
                             Column(modifier = Modifier.width(IntrinsicSize.Max)) {
-                                iOSMenuItem(
+                                IOSMenuItem(
                                     text = "添加课程",
                                     darkTheme = darkTheme,
                                     onClick = {
@@ -393,7 +406,7 @@ fun ScheduleScreen(
                                         .padding(horizontal = 8.dp)
                                         .background(separatorColor)
                                 )
-                                iOSMenuItem(
+                                IOSMenuItem(
                                     text = "添加待办",
                                     darkTheme = darkTheme,
                                     onClick = {
@@ -521,7 +534,7 @@ fun ScheduleScreen(
                                     onNavigateToEdit(course.id, null, null, personType)
                                 },
                                 ContextMenuItem(label = "删除", isDestructive = true) {
-                                    selectedCourse = course
+                                    courseToDelete = course
                                     showDeleteConfirm = true
                                 }
                             )
@@ -597,7 +610,7 @@ fun ScheduleScreen(
                             showContextMenu = true
                         },
                         onTodoClick = { todo ->
-                            onNavigateToTodoEdit(todo.id, null, null, -1, -1, -1, -1)
+                            selectedTodo = todo
                         },
                         editingCourseId = null,
                         animatedVisibilityScope = null,
@@ -644,15 +657,19 @@ fun ScheduleScreen(
         )
     }
 
-    if (showDeleteConfirm && selectedCourse != null) {
+    val deletingCourse = courseToDelete ?: selectedCourse
+    if (showDeleteConfirm && deletingCourse != null) {
         if (appThemeMode == AppThemeMode.MIUIX) {
             WindowDialog(
                 show = true,
                 title = "删除课程",
-                onDismissRequest = { showDeleteConfirm = false }
+                onDismissRequest = {
+                    showDeleteConfirm = false
+                    courseToDelete = null
+                }
             ) {
                 top.yukonga.miuix.kmp.basic.Text(
-                    text = "确定要删除「${selectedCourse?.name}」吗？",
+                    text = "确定要删除「${deletingCourse.name}」吗？",
                     color = MiuixTheme.colorScheme.onBackgroundVariant
                 )
                 Spacer(modifier = Modifier.height(Spacing.lg))
@@ -661,7 +678,10 @@ fun ScheduleScreen(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.md)
                 ) {
                     Button(
-                        onClick = { showDeleteConfirm = false },
+                        onClick = {
+                            showDeleteConfirm = false
+                            courseToDelete = null
+                        },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors()
                     ) {
@@ -669,10 +689,14 @@ fun ScheduleScreen(
                     }
                     Button(
                         onClick = {
-                            viewModel.deleteCourse(selectedCourse!!.id)
+                            viewModel.deleteCourse(deletingCourse.id)
                             showDeleteConfirm = false
-                            showPreview = false
-                            selectedCourse = null
+                            val fromContextMenu = courseToDelete != null
+                            courseToDelete = null
+                            if (!fromContextMenu) {
+                                showPreview = false
+                                selectedCourse = null
+                            }
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColorsPrimary()
@@ -685,20 +709,106 @@ fun ScheduleScreen(
         GlassConfirmDialog(
             backdrop = LocalBackdrop.current ?: emptyBackdrop(),
             title = "删除课程",
-            message = "确定要删除「${selectedCourse?.name}」吗？",
+            message = "确定要删除「${deletingCourse.name}」吗？",
             confirmText = "删除",
             dismissText = "取消",
             onConfirm = {
-                viewModel.deleteCourse(selectedCourse!!.id)
+                viewModel.deleteCourse(deletingCourse.id)
                 showDeleteConfirm = false
-                showPreview = false
-                selectedCourse = null
+                val fromContextMenu = courseToDelete != null
+                courseToDelete = null
+                if (!fromContextMenu) {
+                    showPreview = false
+                    selectedCourse = null
+                }
             },
-            onDismiss = { showDeleteConfirm = false }
+            onDismiss = {
+                showDeleteConfirm = false
+                courseToDelete = null
+            }
         )
         }
     }
-    
+
+    if (showTodoPreview && selectedTodo != null) {
+        TodoPreviewBottomSheet(
+            todo = selectedTodo!!,
+            onDismiss = {
+                showTodoPreview = false
+                selectedTodo = null
+            },
+            onEdit = {
+                showTodoPreview = false
+                val todo = selectedTodo
+                selectedTodo = null
+                todo?.let {
+                    onNavigateToTodoEdit(it.id, null, null, -1, -1, -1, -1)
+                }
+            },
+            onDelete = {
+                showTodoDeleteConfirm = true
+            },
+            sheetState = todoPreviewSheetState
+        )
+    }
+
+    if (showTodoDeleteConfirm && selectedTodo != null) {
+        if (appThemeMode == AppThemeMode.MIUIX) {
+            WindowDialog(
+                show = true,
+                title = "删除待办",
+                onDismissRequest = {
+                    showTodoDeleteConfirm = false
+                }
+            ) {
+                top.yukonga.miuix.kmp.basic.Text(
+                    text = "确定要删除「${selectedTodo?.title}」吗？",
+                    color = MiuixTheme.colorScheme.onBackgroundVariant
+                )
+                Spacer(modifier = Modifier.height(Spacing.lg))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    Button(
+                        onClick = { showTodoDeleteConfirm = false },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("取消")
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.deleteTodo(selectedTodo!!.id)
+                            showTodoDeleteConfirm = false
+                            showTodoPreview = false
+                            selectedTodo = null
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColorsPrimary()
+                    ) {
+                        top.yukonga.miuix.kmp.basic.Text("删除")
+                    }
+                }
+            }
+        } else {
+            GlassConfirmDialog(
+                backdrop = LocalBackdrop.current ?: emptyBackdrop(),
+                title = "删除待办",
+                message = "确定要删除「${selectedTodo?.title}」吗？",
+                confirmText = "删除",
+                dismissText = "取消",
+                onConfirm = {
+                    viewModel.deleteTodo(selectedTodo!!.id)
+                    showTodoDeleteConfirm = false
+                    showTodoPreview = false
+                    selectedTodo = null
+                },
+                onDismiss = { showTodoDeleteConfirm = false }
+            )
+        }
+    }
+
     if (showPasteConflictDialog && pendingPasteNewCourse != null && pendingPasteConflictCourse != null && pendingPasteSlot != null) {
         if (appThemeMode == AppThemeMode.MIUIX) {
             WindowDialog(
@@ -1055,10 +1165,11 @@ private fun TodoOverlayCard(
                 textAlign = TextAlign.Center
             )
             
-            if (span >= 1.5f) {
+            val shouldShowTime = span >= 1.5f || todo.isDeadlineOnly()
+            if (shouldShowTime) {
                 Spacer(modifier = Modifier.height(1.dp))
                 Text(
-                    text = todo.getTimeString(),
+                    text = if (todo.isDeadlineOnly()) "${todo.getEndTimeString()}前" else todo.getTimeString(),
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                     maxLines = 1,
                     color = todoTimeColor,
@@ -1070,40 +1181,195 @@ private fun TodoOverlayCard(
     }
 }
 
-/** 截止日期类型的待办标记，显示在日期列顶部 */
+/** 无时间待办的浮动卡片，放在空位中 */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun DeadlineMarker(
+private fun UntimedTodoOverlayCard(
+    todo: Todo,
+    dayIndex: Int,
+    period: Int,
+    columnWidth: Int,
+    cellHeight: Dp,
+    cellSpacing: Int,
+    timeColumnWidth: Int,
+    onTodoClick: (Todo) -> Unit
+) {
+    val darkTheme = LocalDarkTheme.current
+    val appThemeMode = LocalAppThemeMode.current
+    val shape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(BorderRadius.lg) else ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
+
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val cellPaddingPx = with(density) { ScheduleDimensions.CellPadding.toPx().toInt() }
+
+    val cardWidth = (columnWidth - cellPaddingPx * 2).coerceAtLeast(1)
+    val singleCellHeightPx = with(density) { cellHeight.toPx().toInt() }
+    val totalHeightPx = singleCellHeightPx  // span = 1
+
+    val offsetX = timeColumnWidth + dayIndex * columnWidth + cellPaddingPx
+    val offsetY = (period - 1) * (singleCellHeightPx + cellSpacing) + cellPaddingPx
+
+    val personColor = if (todo.personType == PersonType.PERSON_A) getPersonAColor() else getPersonBColor()
+    val todoBackgroundColor = personColor.copy(alpha = 0.12f)
+    val todoBorderColor = personColor.copy(alpha = 0.45f)
+    val todoTextColor = if (darkTheme) Color.White.copy(alpha = 0.9f) else Color.Black.copy(alpha = 0.8f)
+
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(stiffness = 600f, dampingRatio = 0.7f),
+        label = "untimed_todo_card_scale"
+    )
+    val alpha by animateFloatAsState(
+        targetValue = if (isPressed) 0.85f else 1f,
+        animationSpec = spring(stiffness = 600f),
+        label = "untimed_todo_card_alpha"
+    )
+
+    Box(
+        modifier = Modifier
+            .offset { IntOffset(offsetX, offsetY) }
+            .width(with(density) { cardWidth.toDp() })
+            .height(with(density) { totalHeightPx.toDp() })
+            .scale(scale)
+            .alpha(alpha)
+            .clip(shape)
+            .graphicsLayer {
+                shadowElevation = 16.dp.toPx()
+                this.shape = shape
+                clip = true
+                ambientShadowColor = Color.Transparent
+                spotShadowColor = Color.Transparent  // No visible shadow for todos
+            }
+            .background(todoBackgroundColor)
+            .drawBehind {
+                val pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
+                val outline = shape.createOutline(size, layoutDirection, this)
+                val borderPath = Path().apply { addOutline(outline) }
+                drawPath(
+                    path = borderPath,
+                    color = todoBorderColor,
+                    style = Stroke(width = 1.5.dp.toPx(), pathEffect = pathEffect)
+                )
+            }
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = { onTodoClick(todo) }
+            )
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // 右上角复选框图标
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(14.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "待办",
+                tint = personColor.copy(alpha = 0.5f),
+                modifier = Modifier.size(14.dp)
+            )
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Text(
+                text = todo.title,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                color = todoTextColor,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+/** 无时间待办的底部药丸，当天列无空位时在底部堆叠 */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun UntimedTodoBottomPill(
     todo: Todo,
     dayIndex: Int,
     columnWidth: Int,
-    timeColumnWidth: Int
+    timeColumnWidth: Int,
+    offsetY: Int,
+    onTodoClick: (Todo) -> Unit
 ) {
     val darkTheme = LocalDarkTheme.current
+    val appThemeMode = LocalAppThemeMode.current
+    val shape = if (appThemeMode == AppThemeMode.MIUIX) RoundedCornerShape(BorderRadius.lg) else ContinuousRoundedRectangle(BorderRadius.iOS26.medium)
+
     val density = androidx.compose.ui.platform.LocalDensity.current
     val cellPaddingPx = with(density) { ScheduleDimensions.CellPadding.toPx().toInt() }
-    
-    val personColor = if (todo.personType == PersonType.PERSON_A) getPersonAColor() else getPersonBColor()
-    val markerColor = personColor.copy(alpha = 0.7f)
-    
+
+    val pillWidth = (columnWidth - cellPaddingPx * 2).coerceAtLeast(1)
     val offsetX = timeColumnWidth + dayIndex * columnWidth + cellPaddingPx
-    val markerWidth = (columnWidth - cellPaddingPx * 2).coerceAtLeast(1)
-    
-    Box(
+
+    val personColor = if (todo.personType == PersonType.PERSON_A) getPersonAColor() else getPersonBColor()
+    val pillBackgroundColor = personColor.copy(alpha = 0.10f)
+    val pillTextColor = if (darkTheme) Color.White.copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.75f)
+
+    // 优先级颜色
+    val priorityColor = when (todo.priority) {
+        com.duoschedule.data.model.Priority.HIGH -> Color(0xFFFF3B30)
+        com.duoschedule.data.model.Priority.MEDIUM -> Color(0xFFFF9500)
+        com.duoschedule.data.model.Priority.LOW -> Color(0xFF34C759)
+    }
+
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(stiffness = 600f, dampingRatio = 0.7f),
+        label = "untimed_pill_scale"
+    )
+
+    Row(
         modifier = Modifier
-            .offset { IntOffset(offsetX, 0) }
-            .width(with(density) { markerWidth.toDp() })
-            .height(18.dp)
-            .clip(RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp))
-            .background(markerColor.copy(alpha = 0.12f))
-            .padding(horizontal = 4.dp),
-        contentAlignment = Alignment.CenterStart
+            .offset { IntOffset(offsetX, offsetY) }
+            .width(with(density) { pillWidth.toDp() })
+            .height(20.dp)
+            .scale(scale)
+            .clip(shape)
+            .graphicsLayer {
+                shadowElevation = 16.dp.toPx()
+                this.shape = shape
+                clip = true
+                ambientShadowColor = Color.Transparent
+                spotShadowColor = Color.Transparent
+            }
+            .background(pillBackgroundColor)
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = { onTodoClick(todo) }
+            )
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        // 优先级圆点
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(priorityColor)
+        )
         Text(
-            text = "⏰ ${todo.title}",
+            text = todo.title,
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            color = markerColor
+            color = pillTextColor
         )
     }
 }
@@ -1254,11 +1520,12 @@ private data class TodoLayoutInfo(
     val span: Float
 )
 
-/** 截止日期类型的待办标记信息 */
+/** 无时间待办的布局信息 */
 @Immutable
-private data class DeadlineTodoInfo(
+private data class UntimedTodoLayoutInfo(
     val todo: Todo,
-    val dayIndex: Int
+    val dayIndex: Int,
+    val slotPeriod: Int,  // 放入的课时位置，-1 表示底部堆叠
 )
 
 @Composable
@@ -1362,17 +1629,53 @@ fun WeeklyScheduleGrid(
         }
     }
     
-    // 计算截止日期类型待办的标记信息
-    val deadlineTodos = remember(todos, weekDates) {
+    // 计算截止日期类型待办的布局信息（放在截止时间位置，占1课时）
+    val deadlineTodos = remember(todos, parsedPeriodTimes, totalPeriods, weekDates) {
         todos.filter { it.isDeadlineOnly() }.mapNotNull { todo ->
             val dayIndex = weekDates.indexOf(LocalDate.ofEpochDay(todo.date))
             if (dayIndex < 0) return@mapNotNull null
-            DeadlineTodoInfo(todo = todo, dayIndex = dayIndex)
+            // Use end time to calculate position, span = 1
+            val (fractionalStart, _) = calculateCustomTimePosition(
+                todo.endHour, todo.endMinute,
+                todo.endHour, todo.endMinute,
+                parsedPeriodTimes,
+                totalPeriods
+            )
+            TodoLayoutInfo(
+                todo = todo,
+                dayIndex = dayIndex,
+                startPeriod = fractionalStart,
+                span = 1f
+            )
+        }
+    }
+
+    // 计算无时间待办的布局信息
+    val untimedTodos = remember(todos, courseSlotMap, weekDates) {
+        todos.filter { !it.hasStartTime() && !it.hasEndTime() }.mapNotNull { todo ->
+            val dayIndex = weekDates.indexOf(LocalDate.ofEpochDay(todo.date))
+            if (dayIndex < 0) return@mapNotNull null
+
+            // 在该天列中寻找第一个空位
+            var emptySlotPeriod = -1
+            for (period in 1..totalPeriods) {
+                val key = Pair(dayIndex + 1, period)  // dayOfWeek is 1-based
+                if (!courseSlotMap.containsKey(key)) {
+                    emptySlotPeriod = period
+                    break
+                }
+            }
+
+            UntimedTodoLayoutInfo(
+                todo = todo,
+                dayIndex = dayIndex,
+                slotPeriod = emptySlotPeriod  // -1 means no empty slot, stack at bottom
+            )
         }
     }
     
-    var columnWidth by remember { mutableStateOf(0) }
-    var gridOffsetY by remember { mutableStateOf(0) }
+    var columnWidth by remember { mutableIntStateOf(0) }
+    var gridOffsetY by remember { mutableIntStateOf(0) }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val bottomBarHeight = LiquidBottomTabsSpec.Height + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -1538,19 +1841,71 @@ fun WeeklyScheduleGrid(
                     }
                 }
                 
-                // 渲染截止日期标记
-                deadlineTodos.forEach { deadlineInfo ->
-                    key("deadline_${deadlineInfo.todo.id}") {
-                        val dayIndex = deadlineInfo.dayIndex
+                // 渲染截止日期类型待办（放在截止时间位置）
+                deadlineTodos.forEach { layoutInfo ->
+                    key("deadline_${layoutInfo.todo.id}") {
+                        val dayIndex = layoutInfo.dayIndex
                         if (dayIndex >= 0 && dayIndex < dayOfWeekIndices.size) {
-                            DeadlineMarker(
-                                todo = deadlineInfo.todo,
+                            TodoOverlayCard(
+                                todo = layoutInfo.todo,
                                 dayIndex = dayIndex,
+                                startPeriod = layoutInfo.startPeriod,
+                                span = layoutInfo.span,
                                 columnWidth = columnWidth,
+                                cellHeight = cellHeight,
+                                cellSpacing = cellSpacingPx,
                                 timeColumnWidth = with(androidx.compose.ui.platform.LocalDensity.current) {
                                     ScheduleDimensions.TimeColumnWidth.toPx().toInt()
-                                }
+                                },
+                                onTodoClick = onTodoClick
                             )
+                        }
+                    }
+                }
+
+                // 渲染无时间待办（空位浮动）
+                untimedTodos.filter { it.slotPeriod > 0 }.forEach { layoutInfo ->
+                    key("untimed_todo_${layoutInfo.todo.id}") {
+                        val dayIndex = layoutInfo.dayIndex
+                        if (dayIndex >= 0 && dayIndex < dayOfWeekIndices.size) {
+                            UntimedTodoOverlayCard(
+                                todo = layoutInfo.todo,
+                                dayIndex = dayIndex,
+                                period = layoutInfo.slotPeriod,
+                                columnWidth = columnWidth,
+                                cellHeight = cellHeight,
+                                cellSpacing = cellSpacingPx,
+                                timeColumnWidth = with(androidx.compose.ui.platform.LocalDensity.current) {
+                                    ScheduleDimensions.TimeColumnWidth.toPx().toInt()
+                                },
+                                onTodoClick = onTodoClick
+                            )
+                        }
+                    }
+                }
+
+                // 渲染无时间待办（底部堆叠）
+                val bottomUntimedTodos = untimedTodos.filter { it.slotPeriod < 0 }.groupBy { it.dayIndex }
+                bottomUntimedTodos.forEach { (dayIndex, todosForDay) ->
+                    todosForDay.forEachIndexed { index, layoutInfo ->
+                        key("untimed_bottom_${layoutInfo.todo.id}") {
+                            if (dayIndex >= 0 && dayIndex < dayOfWeekIndices.size) {
+                                val gridBottomOffset = with(androidx.compose.ui.platform.LocalDensity.current) {
+                                    totalGridHeight.toPx().toInt()
+                                }
+                                UntimedTodoBottomPill(
+                                    todo = layoutInfo.todo,
+                                    dayIndex = dayIndex,
+                                    columnWidth = columnWidth,
+                                    timeColumnWidth = with(androidx.compose.ui.platform.LocalDensity.current) {
+                                        ScheduleDimensions.TimeColumnWidth.toPx().toInt()
+                                    },
+                                    offsetY = gridBottomOffset + with(androidx.compose.ui.platform.LocalDensity.current) {
+                                        (index * 22).dp.toPx().toInt()
+                                    },
+                                    onTodoClick = onTodoClick
+                                )
+                            }
                         }
                     }
                 }
@@ -1950,7 +2305,7 @@ private fun CourseOverlayCard(
 }
 
 @Composable
-private fun iOSMenuItem(
+private fun IOSMenuItem(
     text: String,
     darkTheme: Boolean,
     onClick: () -> Unit

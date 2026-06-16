@@ -48,7 +48,7 @@ class NotificationRescheduleWorker @AssistedInject constructor(
 
     companion object {
         private const val TAG = "NotificationRescheduleWorker"
-        const val WORK_NAME = "notification_reschedule_work"
+        private const val WORK_NAME = "notification_reschedule_work"
 
         fun schedule(context: Context) {
             Log.d(TAG, "调度定期通知重新调度任务")

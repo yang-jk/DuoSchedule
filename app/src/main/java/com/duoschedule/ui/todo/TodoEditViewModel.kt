@@ -82,7 +82,7 @@ class TodoEditViewModel @Inject constructor(
         }
     }
 
-    fun loadTodo(todoId: Long) {
+    private fun loadTodo(todoId: Long) {
         viewModelScope.launch {
             val todo = todoRepository.getTodoById(todoId) ?: return@launch
             // 如果有待办有重复规则，加载规则

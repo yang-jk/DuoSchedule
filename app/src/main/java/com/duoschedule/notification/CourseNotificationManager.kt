@@ -59,13 +59,13 @@ class CourseNotificationManager @Inject constructor(
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val activeReminderNotificationIds = mutableSetOf<Int>()
 
-    fun canPostPromotedNotifications(): Boolean {
+    private fun canPostPromotedNotifications(): Boolean {
         return PromotedNotificationBuilder.canPostPromotedNotifications(context)
     }
 
-    fun canScheduleExactAlarms(): Boolean = alarmScheduler.canScheduleExactAlarms()
+    private fun canScheduleExactAlarms(): Boolean = alarmScheduler.canScheduleExactAlarms()
 
-    fun hasNotificationPermission(): Boolean {
+    private fun hasNotificationPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
                 context,

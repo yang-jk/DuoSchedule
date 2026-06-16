@@ -14,7 +14,7 @@ enum class LogLevel(val label: String, val emoji: String) {
 }
 
 data class AppLogEntry(
-    val timestamp: Long = System.currentTimeMillis(),
+    private val timestamp: Long = System.currentTimeMillis(),
     val level: LogLevel,
     val tag: String,
     val message: String,
@@ -23,7 +23,7 @@ data class AppLogEntry(
     val formattedTime: String
         get() = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(timestamp))
 
-    val formattedDate: String
+    private val formattedDate: String
         get() = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date(timestamp))
 
     val formattedDetails: String

@@ -58,10 +58,10 @@ class MainViewModel @Inject constructor(
     val todayCourseDisplayMode: StateFlow<TodayCourseDisplayMode> = repository.getTodayCourseDisplayMode()
         .stateIn(viewModelScope, SharingStarted.Eagerly, TodayCourseDisplayMode.BOTH)
 
-    val personAPeriodTimes: StateFlow<List<String>> = repository.getPeriodTimes(PersonType.PERSON_A)
+    private val personAPeriodTimes: StateFlow<List<String>> = repository.getPeriodTimes(PersonType.PERSON_A)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val personBPeriodTimes: StateFlow<List<String>> = repository.getPeriodTimes(PersonType.PERSON_B)
+    private val personBPeriodTimes: StateFlow<List<String>> = repository.getPeriodTimes(PersonType.PERSON_B)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val singleModeEnabled: StateFlow<Boolean> = repository.getSingleModeEnabled()
@@ -70,7 +70,7 @@ class MainViewModel @Inject constructor(
     private val currentDayOfWeek: StateFlow<Int> = kotlinx.coroutines.flow.MutableStateFlow(getCurrentDayOfWeek())
         .stateIn(viewModelScope, SharingStarted.Eagerly, getCurrentDayOfWeek())
 
-    fun refreshCurrentDay() {
+    private fun refreshCurrentDay() {
         (currentDayOfWeek as? kotlinx.coroutines.flow.MutableStateFlow)?.value = getCurrentDayOfWeek()
     }
 
@@ -78,14 +78,14 @@ class MainViewModel @Inject constructor(
         .flatMapLatest { day -> repository.getCoursesByDay(day) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val personATodayCourses: StateFlow<List<Course>> = todayCourses
+    private val personATodayCourses: StateFlow<List<Course>> = todayCourses
         .combine(personACurrentWeek) { courses, week ->
             courses.filter { it.personType == PersonType.PERSON_A && it.isInWeek(week) }
                 .sortedBy { it.startHour * 60 + it.startMinute }
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val personBTodayCourses: StateFlow<List<Course>> = todayCourses
+    private val personBTodayCourses: StateFlow<List<Course>> = todayCourses
         .combine(personBCurrentWeek) { courses, week ->
             courses.filter { it.personType == PersonType.PERSON_B && it.isInWeek(week) }
                 .sortedBy { it.startHour * 60 + it.startMinute }
@@ -196,7 +196,7 @@ class MainViewModel @Inject constructor(
     }.distinctUntilChanged().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** 今日待办列表，按时间排序：有开始时间 > 仅有截止时间 > 无时间 */
-    val todayTodos: StateFlow<List<Todo>> = todoRepository.getTodosByDate(LocalDate.now().toEpochDay())
+    private val todayTodos: StateFlow<List<Todo>> = todoRepository.getTodosByDate(LocalDate.now().toEpochDay())
         .combine(singleModeEnabled) { todos, singleMode ->
             val filtered = if (singleMode) {
                 todos.filter { it.personType == PersonType.PERSON_A }
@@ -265,7 +265,7 @@ class MainViewModel @Inject constructor(
 
     private var lastDate: LocalDate = LocalDate.now()
 
-    fun updateTime() {
+    private fun updateTime() {
         val now = LocalTime.now()
         _currentHour.value = now.hour
         _currentMinute.value = now.minute

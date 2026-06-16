@@ -309,11 +309,11 @@ private fun DayOfWeekPicker(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PeriodPicker(
+    modifier: Modifier = Modifier,
     selectedPeriod: Int,
     totalPeriods: Int,
     minPeriod: Int = 1,
-    onPeriodSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    onPeriodSelected: (Int) -> Unit
 ) {
     val itemHeight = 52.dp
     val visibleItems = 3

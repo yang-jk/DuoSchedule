@@ -248,12 +248,12 @@ fun GlassBottomBar(
 @Deprecated("Use LiquidBottomTabs instead for proper glass effects with drawBackdrop", ReplaceWith("LiquidBottomTabs"))
 @Composable
 fun RowScope.GlassBottomBarItem(
+    modifier: Modifier = Modifier,
     selected: Boolean,
     onClick: () -> Unit,
     icon: ImageVector,
     label: String,
-    onSizeChanged: (Int, Int) -> Unit = { _, _ -> },
-    modifier: Modifier = Modifier
+    onSizeChanged: (Int, Int) -> Unit = { _, _ -> }
 ) {
     val darkTheme = LocalDarkTheme.current
     val hapticFeedback = LocalHapticFeedback.current
