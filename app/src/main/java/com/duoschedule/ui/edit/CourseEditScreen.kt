@@ -1,5 +1,6 @@
 package com.duoschedule.ui.edit
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -52,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.data.model.WeekType
+import com.duoschedule.AddButtonReveal
 import com.duoschedule.ui.settings.components.SettingsDefaults
 import com.duoschedule.ui.settings.components.SettingsSection
 import com.duoschedule.ui.theme.Separator
@@ -84,7 +86,6 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.window.WindowDialog
 import androidx.compose.foundation.shape.RoundedCornerShape
 import java.util.Locale
-
 private val MicroTween: TweenSpec<Float> = tween(AnimationDuration.Micro, easing = FastOutSlowInEasing)
 
 @Composable
@@ -136,16 +137,32 @@ fun CourseEditScreen(
         }
     }
 
+    // 一镜到底返回：若从添加按钮进入则反向收缩回按钮位置，否则直接返回
+    val enteredViaReveal = remember { AddButtonReveal.shouldReveal }
+    val handleBack: () -> Unit = {
+        if (enteredViaReveal && AddButtonReveal.sourceBounds != androidx.compose.ui.geometry.Rect.Zero) {
+            AddButtonReveal.startConceal(AddButtonReveal.sourceBounds) {
+                onNavigateBack()
+            }
+        } else {
+            onNavigateBack()
+        }
+    }
+
+    BackHandler {
+        handleBack()
+    }
+
     LaunchedEffect(state.saved, state.deleted) {
         if (state.saved) {
             isSaving = false
             appSnackbarHostState?.showAppSnackbar("课程已保存")
-            onNavigateBack()
             viewModel.resetNavigationState()
+            handleBack()
         } else if (state.deleted) {
             appSnackbarHostState?.showAppSnackbar("课程已删除")
-            onNavigateBack()
             viewModel.resetNavigationState()
+            handleBack()
         }
     }
 
@@ -163,23 +180,26 @@ fun CourseEditScreen(
         drawContent()
     }
 
-    Scaffold(
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Scaffold(
         topBar = {
             val appThemeMode = LocalAppThemeMode.current
             BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
                 SmallTopAppBar(
-                    title = "编辑课程",
+                    title = if (courseId == null) "新增课程" else "编辑课程",
                     scrollBehavior = MiuixScrollBehavior(),
                     color = Color.Transparent,
                     titleColor = MiuixTheme.colorScheme.onSurface,
                     defaultWindowInsetsPadding = false,
                     navigationIcon = {
                         if (appThemeMode == AppThemeMode.MIUIX) {
-                            top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
+                            top.yukonga.miuix.kmp.basic.IconButton(onClick = handleBack) {
                                 Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
                             }
                         } else {
-                            GlassSymbolIconButton(onClick = onNavigateBack, style = GlassSymbolButtonStyle.NonTinted) {
+                            GlassSymbolIconButton(onClick = handleBack, style = GlassSymbolButtonStyle.NonTinted) {
                                 Icon(Icons.Default.ChevronLeft, contentDescription = "返回")
                             }
                         }
@@ -435,6 +455,7 @@ fun CourseEditScreen(
         }
     }
     }
+}
 }
 
 /**
@@ -1438,16 +1459,32 @@ fun CourseEditContent(
         }
     }
 
+    // 一镜到底返回：若从添加按钮进入则反向收缩回按钮位置，否则直接返回
+    val enteredViaReveal = remember { AddButtonReveal.shouldReveal }
+    val handleBack: () -> Unit = {
+        if (enteredViaReveal && AddButtonReveal.sourceBounds != androidx.compose.ui.geometry.Rect.Zero) {
+            AddButtonReveal.startConceal(AddButtonReveal.sourceBounds) {
+                onNavigateBack()
+            }
+        } else {
+            onNavigateBack()
+        }
+    }
+
+    BackHandler {
+        handleBack()
+    }
+
     LaunchedEffect(state.saved, state.deleted) {
         if (state.saved) {
             isSaving = false
             appSnackbarHostState?.showAppSnackbar("课程已保存")
-            onNavigateBack()
             viewModel.resetNavigationState()
+            handleBack()
         } else if (state.deleted) {
             appSnackbarHostState?.showAppSnackbar("课程已删除")
-            onNavigateBack()
             viewModel.resetNavigationState()
+            handleBack()
         }
     }
 

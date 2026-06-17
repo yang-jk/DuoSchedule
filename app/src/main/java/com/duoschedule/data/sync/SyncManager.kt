@@ -92,8 +92,12 @@ class SyncManager @Inject constructor(
                     return@withContext Result.failure(metaResult.exceptionOrNull() ?: Exception("Upload metadata failed"))
                 }
 
-                val localCourses = courseDao.getAllCoursesSync().map { it.toCloudCourse(mapping.myProfileId) }
-                val localTodos = todoDao.getAllTodosSync().map { it.toCloudTodo(mapping.myProfileId) }
+                val localCourses = courseDao.getAllCoursesSync()
+                    .filter { mapping.profileIdFor(it.personType) == mapping.myProfileId }
+                    .map { it.toCloudCourse(mapping.myProfileId) }
+                val localTodos = todoDao.getAllTodosSync()
+                    .filter { mapping.profileIdFor(it.personType) == mapping.myProfileId }
+                    .map { it.toCloudTodo(mapping.myProfileId) }
                 val initialData = buildCloudDataJson(config, localCourses, localTodos, null, mapping)
                 val dataResult = webDavClient.uploadJson(config, webDavClient.getDataPath(config.roomId), initialData)
                 if (dataResult.isFailure) {
@@ -188,16 +192,18 @@ class SyncManager @Inject constructor(
                 val mergedCourses = if (existingCloudData != null) {
                     smartMergeForFirstSync(localCourses, existingCloudData, mapping)
                 } else {
-                    localCourses.mapNotNull { course ->
-                        mapping.profileIdFor(course.personType)?.let { course.toCloudCourse(it) }
-                    }
+                    // 无云端数据时只上传 PERSON_A（自己）的课程
+                    localCourses
+                        .filter { mapping.profileIdFor(it.personType) == mapping.myProfileId }
+                        .map { course -> course.toCloudCourse(mapping.myProfileId) }
                 }
                 val mergedTodos = if (existingCloudData != null) {
                     smartMergeTodosForFirstSync(localTodos, existingCloudData, mapping)
                 } else {
-                    localTodos.mapNotNull { todo ->
-                        mapping.profileIdFor(todo.personType)?.let { todo.toCloudTodo(it) }
-                    }
+                    // 无云端数据时只上传 PERSON_A（自己）的待办
+                    localTodos
+                        .filter { mapping.profileIdFor(it.personType) == mapping.myProfileId }
+                        .map { todo -> todo.toCloudTodo(mapping.myProfileId) }
                 }
 
                 val profiles = mergeProfiles(
@@ -468,31 +474,34 @@ class SyncManager @Inject constructor(
                 val mapping = ensureProfileMapping(config, metaJson, cloudData)
 
                 // ===== 课程冲突解决 =====
+                // 只处理 PERSON_A（自己）的课程，对方课程以云端为准
                 val localCourses = courseDao.getAllCoursesSync()
                 val cloudCourseMap = cloudData.courses.associateBy { it.syncId }
                 val localCourseMap = localCourses.associateBy { it.syncId }
                 val mergedCourses = linkedMapOf<String, CloudCourse>()
 
+                // 1. 保留云端所有非冲突课程（包括对方课程）
                 for (course in cloudData.courses) {
                     if (!resolution.resolutions.containsKey(course.syncId)) {
                         mergedCourses[course.syncId] = course
                     }
                 }
 
+                // 2. 只添加本地 PERSON_A 的非冲突课程（对方课程已在步骤1从云端保留）
                 for (course in localCourses) {
+                    if (mapping.profileIdFor(course.personType) != mapping.myProfileId) continue
                     if (!resolution.resolutions.containsKey(course.syncId) && !mergedCourses.containsKey(course.syncId)) {
-                        mapping.profileIdFor(course.personType)?.let { ownerProfileId ->
-                            mergedCourses[course.syncId] = course.toCloudCourse(ownerProfileId)
-                        }
+                        mergedCourses[course.syncId] = course.toCloudCourse(mapping.myProfileId)
                     }
                 }
 
+                // 3. 处理冲突解决（只有 PERSON_A 的冲突）
                 for ((courseKey, choice) in resolution.resolutions) {
                     when (choice) {
                         ConflictChoice.KEEP_LOCAL -> {
                             localCourseMap[courseKey]?.let { course ->
-                                mapping.profileIdFor(course.personType)?.let { ownerProfileId ->
-                                    mergedCourses[course.syncId] = course.toCloudCourse(ownerProfileId)
+                                if (mapping.profileIdFor(course.personType) == mapping.myProfileId) {
+                                    mergedCourses[course.syncId] = course.toCloudCourse(mapping.myProfileId)
                                 }
                             }
                         }
@@ -503,8 +512,8 @@ class SyncManager @Inject constructor(
 
                         ConflictChoice.KEEP_BOTH -> {
                             localCourseMap[courseKey]?.let { course ->
-                                mapping.profileIdFor(course.personType)?.let { ownerProfileId ->
-                                    mergedCourses[course.syncId] = course.toCloudCourse(ownerProfileId)
+                                if (mapping.profileIdFor(course.personType) == mapping.myProfileId) {
+                                    mergedCourses[course.syncId] = course.toCloudCourse(mapping.myProfileId)
                                 }
                             }
                             cloudCourseMap[courseKey]?.let { cloud ->
@@ -516,31 +525,34 @@ class SyncManager @Inject constructor(
                 }
 
                 // ===== Todo 冲突解决 =====
+                // 只处理 PERSON_A（自己）的待办，对方待办以云端为准
                 val localTodos = todoDao.getAllTodosSync()
                 val cloudTodoMap = cloudData.todos.associateBy { it.syncId }
                 val localTodoMap = localTodos.associateBy { it.syncId }
                 val mergedTodos = linkedMapOf<String, CloudTodo>()
 
+                // 1. 保留云端所有非冲突待办（包括对方待办）
                 for (todo in cloudData.todos) {
                     if (!resolution.resolutions.containsKey(todo.syncId)) {
                         mergedTodos[todo.syncId] = todo
                     }
                 }
 
+                // 2. 只添加本地 PERSON_A 的非冲突待办
                 for (todo in localTodos) {
+                    if (mapping.profileIdFor(todo.personType) != mapping.myProfileId) continue
                     if (!resolution.resolutions.containsKey(todo.syncId) && !mergedTodos.containsKey(todo.syncId)) {
-                        mapping.profileIdFor(todo.personType)?.let { ownerProfileId ->
-                            mergedTodos[todo.syncId] = todo.toCloudTodo(ownerProfileId)
-                        }
+                        mergedTodos[todo.syncId] = todo.toCloudTodo(mapping.myProfileId)
                     }
                 }
 
+                // 3. 处理冲突解决（只有 PERSON_A 的冲突）
                 for ((todoKey, choice) in resolution.resolutions) {
                     when (choice) {
                         ConflictChoice.KEEP_LOCAL -> {
                             localTodoMap[todoKey]?.let { todo ->
-                                mapping.profileIdFor(todo.personType)?.let { ownerProfileId ->
-                                    mergedTodos[todo.syncId] = todo.toCloudTodo(ownerProfileId)
+                                if (mapping.profileIdFor(todo.personType) == mapping.myProfileId) {
+                                    mergedTodos[todo.syncId] = todo.toCloudTodo(mapping.myProfileId)
                                 }
                             }
                         }
@@ -551,8 +563,8 @@ class SyncManager @Inject constructor(
 
                         ConflictChoice.KEEP_BOTH -> {
                             localTodoMap[todoKey]?.let { todo ->
-                                mapping.profileIdFor(todo.personType)?.let { ownerProfileId ->
-                                    mergedTodos[todo.syncId] = todo.toCloudTodo(ownerProfileId)
+                                if (mapping.profileIdFor(todo.personType) == mapping.myProfileId) {
+                                    mergedTodos[todo.syncId] = todo.toCloudTodo(mapping.myProfileId)
                                 }
                             }
                             cloudTodoMap[todoKey]?.let { cloud ->
@@ -787,15 +799,15 @@ class SyncManager @Inject constructor(
         cloudData: CloudData,
         mapping: ProfileMapping
     ): Boolean {
-        val selectedCloudTodos = cloudData.todos.mapNotNull { cloudTodo ->
-            mapping.personTypeFor(cloudTodo.ownerProfileId)?.let { personType -> cloudTodo to personType }
-        }
-        if (localTodos.size != selectedCloudTodos.size) return true
+        // 只比较 PERSON_A（自己）的待办，对方待办以云端为准不需要比较
+        val localMyTodos = localTodos.filter { mapping.profileIdFor(it.personType) == mapping.myProfileId }
+        val cloudMyTodos = cloudData.todos.filter { it.ownerProfileId == mapping.myProfileId }
+        if (localMyTodos.size != cloudMyTodos.size) return true
 
-        val cloudTodoMap = selectedCloudTodos.associateBy { it.first.syncId }
-        for (local in localTodos) {
+        val cloudTodoMap = cloudMyTodos.associateBy { it.syncId }
+        for (local in localMyTodos) {
             val cloud = cloudTodoMap[local.syncId] ?: return true
-            if (!todoContentEquals(local, cloud.first, cloud.second)) return true
+            if (!todoContentEquals(local, cloud, PersonType.PERSON_A)) return true
         }
         return false
     }
@@ -810,14 +822,13 @@ class SyncManager @Inject constructor(
     ): List<ConflictItem> {
         val localTodos = todoDao.getAllTodosSync()
         val localMap = localTodos.associateBy { it.syncId }
-        val selectedCloudTodos = cloudData.todos.mapNotNull { cloudTodo ->
-            mapping.personTypeFor(cloudTodo.ownerProfileId)?.let { personType -> cloudTodo to personType }
-        }
+        // 只检测 PERSON_A（自己）的待办冲突，对方待办以云端为准
+        val myCloudTodos = cloudData.todos.filter { it.ownerProfileId == mapping.myProfileId }
         val conflicts = mutableListOf<ConflictItem>()
 
-        for ((cloud, personType) in selectedCloudTodos) {
+        for (cloud in myCloudTodos) {
             val local = localMap[cloud.syncId]
-            if (local != null && !todoContentEquals(local, cloud, personType)) {
+            if (local != null && !todoContentEquals(local, cloud, PersonType.PERSON_A)) {
                 conflicts.add(
                     ConflictItem(
                         courseName = local.title,
@@ -835,24 +846,28 @@ class SyncManager @Inject constructor(
     }
 
     /**
-     * 合并 Todo：以云端为基础，用本地 Todo 覆盖同 syncId 的云端 Todo，添加本地独有的 Todo
-     * 与课程 mergeCourses 逻辑一致
+     * 合并 Todo：只推送本地 PERSON_A 待办，保留云端对方待办
+     * 与 pushLocalTodosToCloud 逻辑一致，避免本地 PERSON_B 副本覆盖云端对方最新数据
      */
     private fun mergeTodos(
         localTodos: List<Todo>,
         cloudData: CloudData,
         mapping: ProfileMapping
     ): List<CloudTodo> {
-        val merged = linkedMapOf<String, CloudTodo>()
-        for (todo in cloudData.todos) {
-            merged[todo.syncId] = todo
+        // 只推送本地 PERSON_A 待办（自己的待办），保留云端对方待办
+        // 与 pushLocalTodosToCloud 逻辑一致，避免本地 PERSON_B 副本覆盖云端对方最新数据
+        val myProfileCloudTodos = localTodos
+            .filter { mapping.profileIdFor(it.personType) == mapping.myProfileId }
+            .map { todo -> todo.toCloudTodo(mapping.myProfileId) }
+
+        val partnerProfileCloudTodos = cloudData.todos
+            .filter { it.ownerProfileId == mapping.partnerProfileId }
+
+        val preservedCloudTodos = cloudData.todos.filter { todo ->
+            mapping.personTypeFor(todo.ownerProfileId) == null
         }
-        for (todo in localTodos) {
-            mapping.profileIdFor(todo.personType)?.let { ownerProfileId ->
-                merged[todo.syncId] = todo.toCloudTodo(ownerProfileId)
-            }
-        }
-        return merged.values.toList()
+
+        return preservedCloudTodos + partnerProfileCloudTodos + myProfileCloudTodos
     }
 
     /**
@@ -1009,15 +1024,15 @@ class SyncManager @Inject constructor(
         cloudData: CloudData,
         mapping: ProfileMapping
     ): Boolean {
-        val selectedCloudCourses = cloudData.courses.mapNotNull { cloudCourse ->
-            mapping.personTypeFor(cloudCourse.ownerProfileId)?.let { personType -> cloudCourse to personType }
-        }
-        if (localCourses.size != selectedCloudCourses.size) return true
+        // 只比较 PERSON_A（自己）的课程，对方课程以云端为准不需要比较
+        val localMyCourses = localCourses.filter { mapping.profileIdFor(it.personType) == mapping.myProfileId }
+        val cloudMyCourses = cloudData.courses.filter { it.ownerProfileId == mapping.myProfileId }
+        if (localMyCourses.size != cloudMyCourses.size) return true
 
-        val cloudCourseMap = selectedCloudCourses.associateBy { it.first.syncId }
-        for (local in localCourses) {
+        val cloudCourseMap = cloudMyCourses.associateBy { it.syncId }
+        for (local in localMyCourses) {
             val cloud = cloudCourseMap[local.syncId] ?: return true
-            if (!courseContentEquals(local, cloud.first, cloud.second)) return true
+            if (!courseContentEquals(local, cloud, PersonType.PERSON_A)) return true
         }
         return false
     }
@@ -1027,29 +1042,32 @@ class SyncManager @Inject constructor(
         cloudData: CloudData,
         mapping: ProfileMapping
     ): List<CloudCourse> {
-        val merged = linkedMapOf<String, CloudCourse>()
-        for (course in cloudData.courses) {
-            merged[course.syncId] = course
+        // 只推送本地 PERSON_A 课程（自己的课程），保留云端对方课程
+        // 与 pushLocalToCloud 逻辑一致，避免本地 PERSON_B 副本覆盖云端对方最新数据
+        val myProfileCloudCourses = localCourses
+            .filter { mapping.profileIdFor(it.personType) == mapping.myProfileId }
+            .mapNotNull { course -> course.toCloudCourse(mapping.myProfileId) }
+
+        val partnerProfileCloudCourses = cloudData.courses
+            .filter { it.ownerProfileId == mapping.partnerProfileId }
+
+        val preservedCloudCourses = cloudData.courses.filter { course ->
+            mapping.personTypeFor(course.ownerProfileId) == null
         }
-        for (course in localCourses) {
-            mapping.profileIdFor(course.personType)?.let { ownerProfileId ->
-                merged[course.syncId] = course.toCloudCourse(ownerProfileId)
-            }
-        }
-        return merged.values.toList()
+
+        return preservedCloudCourses + partnerProfileCloudCourses + myProfileCloudCourses
     }
 
     private suspend fun detectConflicts(cloudData: CloudData, mapping: ProfileMapping): List<ConflictItem> {
         val localCourses = courseDao.getAllCoursesSync()
         val localMap = localCourses.associateBy { it.syncId }
-        val selectedCloudCourses = cloudData.courses.mapNotNull { cloudCourse ->
-            mapping.personTypeFor(cloudCourse.ownerProfileId)?.let { personType -> cloudCourse to personType }
-        }
+        // 只检测 PERSON_A（自己）的冲突，对方课程以云端为准
+        val myCloudCourses = cloudData.courses.filter { it.ownerProfileId == mapping.myProfileId }
         val conflicts = mutableListOf<ConflictItem>()
 
-        for ((cloud, personType) in selectedCloudCourses) {
+        for (cloud in myCloudCourses) {
             val local = localMap[cloud.syncId]
-            if (local != null && !courseContentEquals(local, cloud, personType)) {
+            if (local != null && !courseContentEquals(local, cloud, PersonType.PERSON_A)) {
                 conflicts.add(
                     ConflictItem(
                         courseName = local.name,

@@ -1,4 +1,4 @@
-﻿package com.duoschedule.ui.theme
+package com.duoschedule.ui.theme
 
 import android.graphics.RuntimeShader
 import android.os.Build

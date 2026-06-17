@@ -1,5 +1,6 @@
 package com.duoschedule.ui.todo
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -46,17 +47,20 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.model.PersonType
+import com.duoschedule.AddButtonReveal
 import com.duoschedule.ui.theme.BlurredBar
 import com.duoschedule.ui.theme.GlassAlert
-import com.duoschedule.ui.theme.GlassSymbolIconButton
 import com.duoschedule.ui.theme.GlassSymbolButtonStyle
+import com.duoschedule.ui.theme.GlassSymbolIconButton
 import com.duoschedule.ui.theme.LocalAppSnackbarHostState
 import com.duoschedule.ui.theme.LocalAppThemeMode
+import com.duoschedule.ui.theme.LocalSharedTransitionScope
 import com.duoschedule.ui.theme.Spacing
 import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as kyantRememberLayerBackdrop
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -111,17 +115,33 @@ fun TodoEditScreen(
         )
     }
 
+    // 一镜到底返回：若从添加按钮进入则反向收缩回按钮位置，否则直接返回
+    val enteredViaReveal = remember { AddButtonReveal.shouldReveal }
+    val handleBack: () -> Unit = {
+        if (enteredViaReveal && AddButtonReveal.sourceBounds != androidx.compose.ui.geometry.Rect.Zero) {
+            AddButtonReveal.startConceal(AddButtonReveal.sourceBounds) {
+                onNavigateBack()
+            }
+        } else {
+            onNavigateBack()
+        }
+    }
+
+    BackHandler {
+        handleBack()
+    }
+
     LaunchedEffect(state.isSaved) {
         if (state.isSaved) {
             appSnackbarHostState?.showAppSnackbar("待办已保存")
-            onNavigateBack()
+            handleBack()
         }
     }
 
     LaunchedEffect(state.isDeleted) {
         if (state.isDeleted) {
             appSnackbarHostState?.showAppSnackbar("待办已删除")
-            onNavigateBack()
+            handleBack()
         }
     }
 
@@ -131,215 +151,219 @@ fun TodoEditScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TodoEditTopBar(
-                isEditing = state.isEditing,
-                isSaving = state.isSaving,
-                onNavigateBack = onNavigateBack,
-                onDeleteClick = { currentDialog = TodoEditDialog.DeleteConfirm },
-                onSaveClick = { if (!state.isSaving) viewModel.saveTodo() },
-                hazeState = hazeState,
-                contentBackdrop = contentBackdrop,
-                miuixBackdrop = miuixBackdrop
-            )
-        },
-    ) { innerPadding ->
-        Box(modifier = Modifier.hazeSource(hazeState).kyantLayerBackdrop(contentBackdrop).layerBackdrop(miuixBackdrop)) {
-            LazyColumn(
-                state = lazyListState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    top = innerPadding.calculateTopPadding() + Spacing.md,
-                    bottom = Spacing.iOS26.groupSpacing + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                ),
-                verticalArrangement = Arrangement.spacedBy(Spacing.lg)
-            ) {
-                item {
-                    AnimatedVisibility(
-                        visible = state.errorMessage != null,
-                        enter = fadeIn() + expandVertically(),
-                        exit = fadeOut() + shrinkVertically()
-                    ) {
-                        ErrorMessageCard(
-                            message = state.errorMessage ?: "",
-                            modifier = Modifier.padding(horizontal = Spacing.lg)
-                        )
-                    }
-                }
-
-                item {
-                    BasicInfoSection(
-                        title = state.title,
-                        onTitleChange = viewModel::setTitle,
-                        personType = state.personType,
-                        onPersonTypeChange = viewModel::setPersonType,
-                        description = state.description,
-                        onDescriptionChange = viewModel::setDescription
-                    )
-                }
-
-                item {
-                    DateTimeSection(
-                        date = state.date,
-                        onDateClick = { currentDialog = TodoEditDialog.DatePicker },
-                        startHour = state.startHour,
-                        startMinute = state.startMinute,
-                        endHour = state.endHour,
-                        endMinute = state.endMinute,
-                        onStartTimeClick = { currentDialog = TodoEditDialog.StartTimePicker },
-                        onEndTimeClick = { currentDialog = TodoEditDialog.EndTimePicker },
-                        onClearStartTime = viewModel::clearStartTime,
-                        onClearEndTime = viewModel::clearEndTime
-                    )
-                }
-
-                item {
-                    CategorySection(
-                        priority = state.priority,
-                        onPriorityChange = viewModel::setPriority,
-                        allTags = allTags,
-                        selectedTagIds = state.selectedTagIds,
-                        onTagToggle = viewModel::toggleTag,
-                        onAddTag = { currentDialog = TodoEditDialog.AddTag }
-                    )
-                }
-
-                item {
-                    AdvancedSection(
-                        linkedCourseSyncId = state.linkedCourseSyncId,
-                        courses = courses,
-                        onCourseClick = { currentDialog = TodoEditDialog.CoursePicker },
-                        repeatRule = state.repeatRule,
-                        onRepeatRuleClick = { currentDialog = TodoEditDialog.RepeatRule }
-                    )
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(Spacing.xxl))
-                }
-            }
-        }
-
-        when (val dialog = currentDialog) {
-            is TodoEditDialog.DatePicker -> TodoDatePickerDialog(
-                currentDate = state.date,
-                onDateSelected = { epochDay ->
-                    viewModel.setDate(epochDay)
-                    currentDialog = null
-                },
-                onDismiss = { currentDialog = null }
-            )
-
-            is TodoEditDialog.StartTimePicker -> TodoTimePickerDialog(
-                currentHour = if (state.startHour >= 0) state.startHour else 9,
-                currentMinute = if (state.startMinute >= 0) state.startMinute else 0,
-                title = "开始时间",
-                onTimeSelected = { hour, minute ->
-                    viewModel.setStartTime(hour, minute)
-                    currentDialog = null
-                },
-                onDismiss = { currentDialog = null }
-            )
-
-            is TodoEditDialog.EndTimePicker -> TodoTimePickerDialog(
-                currentHour = if (state.endHour >= 0) state.endHour else 10,
-                currentMinute = if (state.endMinute >= 0) state.endMinute else 0,
-                title = "结束时间",
-                onTimeSelected = { hour, minute ->
-                    viewModel.setEndTime(hour, minute)
-                    currentDialog = null
-                },
-                onDismiss = { currentDialog = null }
-            )
-
-            is TodoEditDialog.DeleteConfirm -> {
-                val appThemeMode = LocalAppThemeMode.current
-                if (appThemeMode == AppThemeMode.MIUIX) {
-                    WindowDialog(
-                        show = true,
-                        title = "删除待办",
-                        onDismissRequest = { currentDialog = null }
-                    ) {
-                        top.yukonga.miuix.kmp.basic.Text(
-                            text = "确定要删除这条待办吗？此操作不可撤销。",
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            modifier = Modifier.padding(bottom = Spacing.md)
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Scaffold(
+            topBar = {
+                TodoEditTopBar(
+                    isEditing = state.isEditing,
+                    isSaving = state.isSaving,
+                    onNavigateBack = handleBack,
+                    onDeleteClick = { currentDialog = TodoEditDialog.DeleteConfirm },
+                    onSaveClick = { if (!state.isSaving) viewModel.saveTodo() },
+                    hazeState = hazeState,
+                    contentBackdrop = contentBackdrop,
+                    miuixBackdrop = miuixBackdrop
+                )
+            },
+        ) { innerPadding ->
+            Box(modifier = Modifier.hazeSource(hazeState).kyantLayerBackdrop(contentBackdrop).layerBackdrop(miuixBackdrop)) {
+                LazyColumn(
+                    state = lazyListState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        top = innerPadding.calculateTopPadding() + Spacing.md,
+                        bottom = Spacing.iOS26.groupSpacing + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.lg)
+                ) {
+                    item {
+                        AnimatedVisibility(
+                            visible = state.errorMessage != null,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
                         ) {
-                            Button(
-                                onClick = { currentDialog = null },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors()
-                            ) {
-                                top.yukonga.miuix.kmp.basic.Text("取消")
-                            }
-                            Button(
-                                onClick = {
-                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    viewModel.deleteTodo()
-                                    currentDialog = null
-                                },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors()
-                            ) {
-                                top.yukonga.miuix.kmp.basic.Text("删除")
-                            }
+                            ErrorMessageCard(
+                                message = state.errorMessage ?: "",
+                                modifier = Modifier.padding(horizontal = Spacing.lg)
+                            )
                         }
                     }
-                } else {
-                    GlassAlert(
-                        onDismissRequest = { currentDialog = null },
-                        onConfirm = {
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                            viewModel.deleteTodo()
-                            currentDialog = null
-                        },
-                        title = "删除待办",
-                        text = "确定要删除这条待办吗？此操作不可撤销。",
-                        confirmText = "删除",
-                        dismissText = "取消"
-                    )
+
+                    item {
+                        BasicInfoSection(
+                            title = state.title,
+                            onTitleChange = viewModel::setTitle,
+                            personType = state.personType,
+                            onPersonTypeChange = viewModel::setPersonType,
+                            description = state.description,
+                            onDescriptionChange = viewModel::setDescription
+                        )
+                    }
+
+                    item {
+                        DateTimeSection(
+                            date = state.date,
+                            onDateClick = { currentDialog = TodoEditDialog.DatePicker },
+                            startHour = state.startHour,
+                            startMinute = state.startMinute,
+                            endHour = state.endHour,
+                            endMinute = state.endMinute,
+                            onStartTimeClick = { currentDialog = TodoEditDialog.StartTimePicker },
+                            onEndTimeClick = { currentDialog = TodoEditDialog.EndTimePicker },
+                            onClearStartTime = viewModel::clearStartTime,
+                            onClearEndTime = viewModel::clearEndTime
+                        )
+                    }
+
+                    item {
+                        CategorySection(
+                            priority = state.priority,
+                            onPriorityChange = viewModel::setPriority,
+                            allTags = allTags,
+                            selectedTagIds = state.selectedTagIds,
+                            onTagToggle = viewModel::toggleTag,
+                            onAddTag = { currentDialog = TodoEditDialog.AddTag }
+                        )
+                    }
+
+                    item {
+                        AdvancedSection(
+                            linkedCourseSyncId = state.linkedCourseSyncId,
+                            courses = courses,
+                            onCourseClick = { currentDialog = TodoEditDialog.CoursePicker },
+                            repeatRule = state.repeatRule,
+                            onRepeatRuleClick = { currentDialog = TodoEditDialog.RepeatRule }
+                        )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(Spacing.xxl))
+                    }
                 }
             }
 
-            is TodoEditDialog.CoursePicker -> CoursePickerDialog(
-                courses = courses,
-                currentLinkedSyncId = state.linkedCourseSyncId,
-                onCourseSelected = { syncId ->
-                    viewModel.setLinkedCourse(syncId)
-                    currentDialog = null
-                },
-                onClear = {
-                    viewModel.setLinkedCourse(null)
-                    currentDialog = null
-                },
-                onDismiss = { currentDialog = null }
-            )
-
-            is TodoEditDialog.AddTag -> AddTagDialog(
-                onConfirm = { name ->
-                    if (name.isNotBlank()) {
-                        viewModel.toggleTag(name)
+            when (val dialog = currentDialog) {
+                is TodoEditDialog.DatePicker -> TodoDatePickerDialog(
+                    currentDate = state.date,
+                    onDateSelected = { epochDay ->
+                        viewModel.setDate(epochDay)
                         currentDialog = null
+                    },
+                    onDismiss = { currentDialog = null }
+                )
+
+                is TodoEditDialog.StartTimePicker -> TodoTimePickerDialog(
+                    currentHour = if (state.startHour >= 0) state.startHour else 9,
+                    currentMinute = if (state.startMinute >= 0) state.startMinute else 0,
+                    title = "开始时间",
+                    onTimeSelected = { hour, minute ->
+                        viewModel.setStartTime(hour, minute)
+                        currentDialog = null
+                    },
+                    onDismiss = { currentDialog = null }
+                )
+
+                is TodoEditDialog.EndTimePicker -> TodoTimePickerDialog(
+                    currentHour = if (state.endHour >= 0) state.endHour else 10,
+                    currentMinute = if (state.endMinute >= 0) state.endMinute else 0,
+                    title = "结束时间",
+                    onTimeSelected = { hour, minute ->
+                        viewModel.setEndTime(hour, minute)
+                        currentDialog = null
+                    },
+                    onDismiss = { currentDialog = null }
+                )
+
+                is TodoEditDialog.DeleteConfirm -> {
+                    val appThemeMode = LocalAppThemeMode.current
+                    if (appThemeMode == AppThemeMode.MIUIX) {
+                        WindowDialog(
+                            show = true,
+                            title = "删除待办",
+                            onDismissRequest = { currentDialog = null }
+                        ) {
+                            top.yukonga.miuix.kmp.basic.Text(
+                                text = "确定要删除这条待办吗？此操作不可撤销。",
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                modifier = Modifier.padding(bottom = Spacing.md)
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                            ) {
+                                Button(
+                                    onClick = { currentDialog = null },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors()
+                                ) {
+                                    top.yukonga.miuix.kmp.basic.Text("取消")
+                                }
+                                Button(
+                                    onClick = {
+                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        viewModel.deleteTodo()
+                                        currentDialog = null
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors()
+                                ) {
+                                    top.yukonga.miuix.kmp.basic.Text("删除")
+                                }
+                            }
+                        }
+                    } else {
+                        GlassAlert(
+                            onDismissRequest = { currentDialog = null },
+                            onConfirm = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.deleteTodo()
+                                currentDialog = null
+                            },
+                            title = "删除待办",
+                            text = "确定要删除这条待办吗？此操作不可撤销。",
+                            confirmText = "删除",
+                            dismissText = "取消"
+                        )
                     }
-                },
-                onDismiss = { currentDialog = null }
-            )
+                }
 
-            is TodoEditDialog.RepeatRule -> RepeatRuleDialog(
-                currentRule = state.repeatRule,
-                onConfirm = { rule ->
-                    viewModel.setRepeatRule(rule)
-                    currentDialog = null
-                },
-                onDismiss = { currentDialog = null }
-            )
+                is TodoEditDialog.CoursePicker -> CoursePickerDialog(
+                    courses = courses,
+                    currentLinkedSyncId = state.linkedCourseSyncId,
+                    onCourseSelected = { syncId ->
+                        viewModel.setLinkedCourse(syncId)
+                        currentDialog = null
+                    },
+                    onClear = {
+                        viewModel.setLinkedCourse(null)
+                        currentDialog = null
+                    },
+                    onDismiss = { currentDialog = null }
+                )
 
-            null -> {}
+                is TodoEditDialog.AddTag -> AddTagDialog(
+                    onConfirm = { name ->
+                        if (name.isNotBlank()) {
+                            viewModel.toggleTag(name)
+                            currentDialog = null
+                        }
+                    },
+                    onDismiss = { currentDialog = null }
+                )
+
+                is TodoEditDialog.RepeatRule -> RepeatRuleDialog(
+                    currentRule = state.repeatRule,
+                    onConfirm = { rule ->
+                        viewModel.setRepeatRule(rule)
+                        currentDialog = null
+                    },
+                    onDismiss = { currentDialog = null }
+                )
+
+                null -> {}
+            }
         }
     }
 }

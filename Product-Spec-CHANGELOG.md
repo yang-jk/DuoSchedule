@@ -4,6 +4,50 @@
 
 ---
 
+## [4.38.0] - 2026-06-18
+
+- [新增] 添加菜单一镜到底放大成编辑页转场方案定稿：支持正向放大（菜单→页面）与反向收缩（页面→菜单）双向动画，BackHandler 拦截系统返回键触发反向收缩动画，保存/删除后自动调用反向收缩回到按钮位置
+- [优化] `AddButtonReveal` 重构为双向动画 API（`startReveal`/`startConceal`/`onConcealComplete`），`AddButtonRevealOverlay` 通过 `revealTarget` 状态统一管理正向与反向动画，移除 `revealInProgress`/`onRevealStart` 旧参数
+- [优化] `CourseEditScreen`/`TodoEditScreen` 进入时通过 `remember { AddButtonReveal.shouldReveal }` 捕获入场意图，避免动画期间状态被重置导致返回路径错误
+- [优化] `ScheduleScreen` 移除旧的 `WindowListPopup` 添加菜单及关联导入，添加按钮统一由 `MainActivity` 的 `AddButtonRevealOverlay` 渲染
+- [修复] `SyncManager` 同步逻辑修复：首次上传与冲突解决时只处理 PERSON_A（自己）的课程/待办，对方课程以云端为准，避免本地缓存的对方数据覆盖云端
+
+## [4.37.3] - 2026-06-17
+
+- [修复] 修复添加按钮→编辑页转场导致的 RenderThread SIGSEGV 崩溃：移除 `SharedTransitionLayout`/`sharedBounds` 共享元素转场，改为纯 Compose 手动揭示覆盖层，按钮背景色胶囊从按钮位置直接放大至全屏后淡出，避免 GPU 快照/模糊效果与共享元素动画冲突
+- [修复] 修复添加按钮在有底部导航的页面（主页、设置）错误显示的问题：将 `isOnSchedulePage` 与 `personType` 从 `MainActivity` 顶层统一计算后传入 `AddButtonRevealOverlay`，确保加号只在 `schedule_a`/`schedule_b` 两个课表页显示
+
+## [4.37.2] - 2026-06-17
+
+- [修复] 修复添加按钮→编辑页共享元素转场中按钮先消失再放大问题：转场期间保持 `AddButtonRevealOverlay` 可见，使 `sharedBounds` 源元素与目标元素全程参与动画，实现按钮从当前位置直接放大为编辑页面
+
+## [4.37.1] - 2026-06-17
+
+- [修复] 添加按钮→编辑页一镜到底动画改为按钮真正放大成页面：将添加按钮渲染在 `SharedTransitionLayout` 内部，与 `CourseEditScreen`/`TodoEditScreen` 通过 `sharedBounds` 共享元素转场，按钮本身直接放大变形为编辑页面；返回时反向变形回按钮
+- [修复] 底栏保留 LiquidBottomTabs，原右侧添加按钮区域改为等宽占位 Spacer，真实按钮由 `AddButtonRevealOverlay` 在 `SharedTransitionLayout` 内统一渲染并参与共享元素转场
+- [修复] NavHost 进入/退出编辑页（`edit`/`todo_edit`）时统一使用 `EnterTransition.None`/`ExitTransition.None`，避免旧页面滑走干扰转场
+- [修复] `AddButtonReveal.shouldReveal` 改在 `SideEffect` 中重置，避免在丢弃的 composition 中被提前置为 false
+
+## [4.37.0] - 2026-06-17
+
+- [新增] 待办编辑页和课程编辑页从添加按钮进入时 clip-reveal 动画（按钮位置扩展为全页，返回时收缩回按钮位置）
+
+## [4.36.1] - 2026-06-17
+
+- [修复] 简化添加按钮区域：移除自定义展开/收缩动画，改为菜单按钮记录位置并立即导航
+
+## [4.36.0] - 2026-06-17
+
+- [新增] 课程编辑页从添加按钮进入时 clip-reveal 动画（按钮位置扩展为全页，返回时收缩回按钮位置）
+
+## [4.35.1] - 2026-06-17
+
+- [修复] 添加按钮点击菜单项后立即导航，移除半透明展开动画，改为记录按钮位置供目标页clip-reveal动画使用
+
+## [4.35.0] - 2026-06-17
+
+- [新增] 底栏右侧"+"添加按钮，一镜到底变形动画展开菜单，支持添加课程和添加待办（仅在课表页面显示）
+
 ## [4.34.0] - 2026-06-16
 
 - [新增] 课表页面待办点击预览底部弹窗（TodoPreviewBottomSheet），支持查看和编辑待办详情

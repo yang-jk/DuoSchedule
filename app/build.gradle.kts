@@ -35,8 +35,8 @@ android {
         applicationId = "com.duoschedule"
         minSdk = 26
         targetSdk = 37
-        versionCode = 43400
-        versionName = "4.34.0"
+        versionCode = 43800
+        versionName = "4.38.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

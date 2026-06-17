@@ -8,6 +8,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -82,6 +86,10 @@ fun DuoScheduleNavGraph(
         }
     }
     
+    fun isRevealRoute(route: String?): Boolean {
+        return route?.startsWith("edit") == true || route?.startsWith("todo_edit") == true
+    }
+
     NavHost(
         navController = navController,
         startDestination = startDestination,
@@ -91,7 +99,9 @@ fun DuoScheduleNavGraph(
             val toRoute = this.targetState.destination.route
             val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
 
-            if (isBottomNavTransition) {
+            if (isRevealRoute(toRoute)) {
+                EnterTransition.None
+            } else if (isBottomNavTransition) {
                 if (isMiuix) miuixTabSwitchEnter(determineTabDirection(fromRoute, toRoute))
                 else tabSwitchEnter(determineTabDirection(fromRoute, toRoute))
             } else {
@@ -104,7 +114,9 @@ fun DuoScheduleNavGraph(
             val toRoute = this.targetState.destination.route
             val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
 
-            if (isBottomNavTransition) {
+            if (isRevealRoute(toRoute)) {
+                ExitTransition.None
+            } else if (isBottomNavTransition) {
                 if (isMiuix) miuixTabSwitchExit(determineTabDirection(fromRoute, toRoute))
                 else tabSwitchExit(determineTabDirection(fromRoute, toRoute))
             } else {
@@ -117,7 +129,9 @@ fun DuoScheduleNavGraph(
             val toRoute = this.targetState.destination.route
             val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
 
-            if (isBottomNavTransition) {
+            if (isRevealRoute(fromRoute)) {
+                EnterTransition.None
+            } else if (isBottomNavTransition) {
                 if (isMiuix) miuixTabSwitchEnter(determineTabDirection(fromRoute, toRoute))
                 else tabSwitchEnter(determineTabDirection(fromRoute, toRoute))
             } else {
@@ -130,7 +144,9 @@ fun DuoScheduleNavGraph(
             val toRoute = this.targetState.destination.route
             val isBottomNavTransition = isBottomNavRoute(fromRoute) && isBottomNavRoute(toRoute)
 
-            if (isBottomNavTransition) {
+            if (isRevealRoute(fromRoute)) {
+                ExitTransition.None
+            } else if (isBottomNavTransition) {
                 if (isMiuix) miuixTabSwitchExit(determineTabDirection(fromRoute, toRoute))
                 else tabSwitchExit(determineTabDirection(fromRoute, toRoute))
             } else {
@@ -369,7 +385,11 @@ fun DuoScheduleNavGraph(
                     nullable = true
                     defaultValue = ""
                 }
-            )
+            ),
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None }
         ) { backStackEntry ->
             val courseIdStr = backStackEntry.arguments?.getString("courseId")
             val courseId = courseIdStr?.takeIf { it.isNotEmpty() }?.toLongOrNull()
@@ -422,7 +442,11 @@ fun DuoScheduleNavGraph(
                     nullable = true
                     defaultValue = ""
                 }
-            )
+            ),
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None }
         ) { backStackEntry ->
             val todoIdStr = backStackEntry.arguments?.getString("todoId")
             val todoId = todoIdStr?.takeIf { it.isNotEmpty() }?.toLongOrNull()
