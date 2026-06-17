@@ -19,6 +19,28 @@ GITHUB_TOKEN = os.environ.get('UPDATE_REPO_TOKEN', '')
 GITEE_TOKEN = os.environ.get('GITEE_TOKEN', '')
 GITEE_RELEASE_SUCCESS = os.environ.get('GITEE_RELEASE_SUCCESS', 'true').lower() == 'true'
 
+def fetch_file_sha(api_url, headers, max_retries=3):
+    """获取文件 SHA，支持重试"""
+    for attempt in range(1, max_retries + 1):
+        try:
+            req = urllib.request.Request(api_url)
+            for key, value in headers.items():
+                req.add_header(key, value)
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                existing = json.loads(resp.read().decode('utf-8'))
+                sha = existing.get('sha', '')
+                return sha
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                return ''  # 文件不存在，返回空 SHA
+            print(f"  获取 SHA 失败 (尝试 {attempt}/{max_retries}): HTTP {e.code}")
+        except Exception as e:
+            print(f"  获取 SHA 失败 (尝试 {attempt}/{max_retries}): {e}")
+        if attempt < max_retries:
+            import time
+            time.sleep(2)
+    return ''
+
 def update_github(api_url, token, download_url):
     update_data = {
         "latestVersion": VERSION_NAME,
@@ -36,17 +58,11 @@ def update_github(api_url, token, download_url):
 
     content_b64 = base64.b64encode(content_json.encode('utf-8')).decode('ascii')
 
-    try:
-        req = urllib.request.Request(api_url)
-        req.add_header('Authorization', f'token {token}')
-        req.add_header('Content-Type', 'application/json')
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            existing = json.loads(resp.read().decode('utf-8'))
-            sha = existing.get('sha', '')
-            print(f"[GitHub] Current file SHA: {sha}")
-    except Exception as e:
-        print(f"[GitHub] Could not fetch existing file: {e}")
-        sha = ""
+    sha = fetch_file_sha(api_url, {'Authorization': f'token {token}'})
+    if sha:
+        print(f"[GitHub] Current file SHA: {sha}")
+    else:
+        print("[GitHub] No existing file found, will create new file")
 
     payload = {
         "message": f"Update to {VERSION_NAME} ({VERSION_CODE})",
@@ -68,6 +84,24 @@ def update_github(api_url, token, download_url):
             return True
     except urllib.error.HTTPError as e:
         body = e.read().decode('utf-8')
+        # SHA 不匹配时重试：重新获取 SHA 再 PUT
+        if e.code == 409 or e.code == 422:
+            print(f"[GitHub] SHA conflict (HTTP {e.code}), retrying with fresh SHA...")
+            new_sha = fetch_file_sha(api_url, {'Authorization': f'token {token}'})
+            if new_sha:
+                payload["sha"] = new_sha
+                payload_json = json.dumps(payload)
+                req2 = urllib.request.Request(api_url, data=payload_json.encode('utf-8'), method='PUT')
+                req2.add_header('Authorization', f'token {token}')
+                req2.add_header('Content-Type', 'application/json')
+                try:
+                    with urllib.request.urlopen(req2, timeout=30) as resp2:
+                        result2 = json.loads(resp2.read().decode('utf-8'))
+                        print(f"[GitHub] Retry success! Commit: {result2.get('commit', {}).get('sha', 'unknown')}")
+                        return True
+                except Exception as e2:
+                    print(f"[GitHub] Retry failed: {e2}")
+                    return False
         print(f"[GitHub] HTTP Error {e.code}: {body}")
         return False
     except Exception as e:
@@ -91,17 +125,11 @@ def update_gitee(api_url, token, download_url):
 
     content_b64 = base64.b64encode(content_json.encode('utf-8')).decode('ascii')
 
-    try:
-        fetch_url = f"{api_url}?access_token={token}"
-        req = urllib.request.Request(fetch_url)
-        req.add_header('Content-Type', 'application/json')
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            existing = json.loads(resp.read().decode('utf-8'))
-            sha = existing.get('sha', '')
-            print(f"[Gitee] Current file SHA: {sha}")
-    except Exception as e:
-        print(f"[Gitee] Could not fetch existing file: {e}")
-        sha = ""
+    sha = fetch_file_sha(f"{api_url}?access_token={token}", {'Content-Type': 'application/json'})
+    if sha:
+        print(f"[Gitee] Current file SHA: {sha}")
+    else:
+        print("[Gitee] No existing file found, will create new file")
 
     payload = {
         "access_token": token,
@@ -123,6 +151,23 @@ def update_gitee(api_url, token, download_url):
             return True
     except urllib.error.HTTPError as e:
         body = e.read().decode('utf-8')
+        # SHA 缺失或不匹配时重试：重新获取 SHA 再 PUT
+        if e.code == 400 or e.code == 409 or e.code == 422:
+            print(f"[Gitee] SHA issue (HTTP {e.code}), retrying with fresh SHA...")
+            new_sha = fetch_file_sha(f"{api_url}?access_token={token}", {'Content-Type': 'application/json'})
+            if new_sha:
+                payload["sha"] = new_sha
+                payload_json = json.dumps(payload)
+                req2 = urllib.request.Request(api_url, data=payload_json.encode('utf-8'), method='PUT')
+                req2.add_header('Content-Type', 'application/json')
+                try:
+                    with urllib.request.urlopen(req2, timeout=30) as resp2:
+                        result2 = json.loads(resp2.read().decode('utf-8'))
+                        print(f"[Gitee] Retry success! Commit: {result2.get('commit', {}).get('sha', 'unknown')}")
+                        return True
+                except Exception as e2:
+                    print(f"[Gitee] Retry failed: {e2}")
+                    return False
         print(f"[Gitee] HTTP Error {e.code}: {body}")
         return False
     except Exception as e:
