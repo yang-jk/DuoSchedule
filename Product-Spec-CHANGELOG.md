@@ -4,6 +4,15 @@
 
 ---
 
+## [4.40.0] - 2026-06-18
+
+- [优化] 字重层次增强：headlineLarge/Medium 使用 Bold，headlineSmall/titleLarge 使用 SemiBold，与 body Normal 形成清晰层级对比
+- [优化] bodyLarge letterSpacing 从 0.5sp 调整为 0.25sp，提升正文阅读舒适度
+- [优化] 暗色模式纯黑背景 #000000 改为 off-black #0A0A0A，避免 OLED 过曝并增加层次感
+- [优化] 课程调色板降饱和：16色饱和度从约90%降至70-80%，减少视觉刺眼感
+- [新增] pressFeedback Modifier：基于 pointerInput+graphicsLayer 的按压缩放反馈，可叠加在已有 clickable 上
+- [优化] 圆角体系精简：删除冗余 full（与 pill 重复），liquidGlass 改为 xxl 语义别名，添加规则注释
+
 ## [4.39.0] - 2026-06-18
 
 - [优化] 升级 Miuix 依赖从 0.9.0 到 0.9.2（miuix-blur-android、miuix-ui-android、miuix-preference-android）

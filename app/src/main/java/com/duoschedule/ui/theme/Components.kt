@@ -1,11 +1,18 @@
 package com.duoschedule.ui.theme
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.EaseOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -14,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -28,6 +37,38 @@ import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import com.duoschedule.data.model.AppThemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+/**
+ * 按压反馈 Modifier：按下时缩小至 [PressFeedback.ScaleDown]，松开恢复。
+ * 用于替代默认 ripple，提供物理按压感。不消费触摸事件，可叠加在已有 clickable 上。
+ */
+@Composable
+fun Modifier.pressFeedback(
+    scaleDown: Float = PressFeedback.ScaleDown,
+    durationMs: Int = PressFeedback.DurationMs,
+): Modifier {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) scaleDown else 1f,
+        animationSpec = tween(durationMillis = durationMs, easing = EaseOut),
+        label = "pressFeedback"
+    )
+    return this
+        .pointerInput(Unit) {
+            awaitPointerEventScope {
+                while (true) {
+                    awaitFirstDown(requireUnconsumed = false)
+                    isPressed = true
+                    waitForUpOrCancellation()
+                    isPressed = false
+                }
+            }
+        }
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+}
 
 @Composable
 fun Separator(

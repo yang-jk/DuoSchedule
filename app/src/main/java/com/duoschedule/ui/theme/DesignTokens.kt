@@ -38,7 +38,7 @@ object GraysLight {
 }
 
 object GraysDark {
-    val Black = Color(0xFF000000)
+    val Black = Color(0xFF0A0A0A)
     val Gray = Color(0xFF8E8E93)
     val Gray2 = Color(0xFF636366)
     val Gray5 = Color(0xFF2C2C2E)
@@ -53,7 +53,7 @@ object BackgroundsLight {
 }
 
 object BackgroundsDark {
-    val Primary = Color(0xFF000000)
+    val Primary = Color(0xFF0A0A0A)
     val Secondary = Color(0xFF1C1C1E)
     val Tertiary = Color(0xFF2C2C2E)
     val PrimaryElevated = Color(0xFF1C1C1E)
@@ -263,19 +263,21 @@ object Spacing {
 }
 
 object BorderRadius {
+    // 基础圆角体系：none → xs → sm → md → lg → xl → xxl → xxxl
     val none = 0.dp
-    val xs = 4.dp
-    val sm = 8.dp
-    val md = 12.dp
-    val lg = 16.dp
-    val xl = 24.dp
-    val xxl = 32.dp
-    val xxxl = 40.dp
-    val liquidGlass = 32.dp
-    val navBar = 34.dp
-    val full = 999.dp
-    val pill = 1000.dp
-    
+    val xs = 4.dp       // 小型元素：badge、chip 内部
+    val sm = 8.dp       // 输入框、小型卡片
+    val md = 12.dp      // 中型卡片、弹窗内元素
+    val lg = 16.dp      // 标准卡片、底部弹窗（Miuix固定值）
+    val xl = 24.dp      // 大型容器
+    val xxl = 32.dp     // 全宽卡片、LiquidGlass 容器
+    val xxxl = 40.dp    // 特大容器
+    val navBar = 34.dp  // 导航栏
+    val pill = 1000.dp  // 胶囊形（全圆角）
+
+    // 语义别名
+    val liquidGlass get() = xxl  // LiquidGlass 容器圆角 = xxl
+
     object iOS26 {
         val small = 8.dp
         val medium = 12.dp
@@ -313,6 +315,11 @@ object AnimationDuration {
     const val Breathing = 2000
 }
 
+object PressFeedback {
+    const val ScaleDown = 0.98f
+    const val DurationMs = 120
+}
+
 object ComponentSize {
     val ButtonHeight = 50.dp
     val CompactButtonHeight = 40.dp
@@ -341,41 +348,41 @@ object ComponentSize {
 }
 
 val CourseColorPaletteLight = listOf(
-    Color(0xFF4A9AF5),
-    Color(0xFF4DB870),
-    Color(0xFFEF5350),
-    Color(0xFF9C7CE8),
-    Color(0xFFF09638),
-    Color(0xFF2EB8A8),
-    Color(0xFFEC5F92),
-    Color(0xFF7CB342),
-    Color(0xFFF07050),
-    Color(0xFF5C7CFA),
-    Color(0xFFE8B830),
+    Color(0xFF5A9FE8),
+    Color(0xFF5DB878),
+    Color(0xFFD96060),
+    Color(0xFF9880D8),
+    Color(0xFFD89048),
+    Color(0xFF48A8A0),
+    Color(0xFFD86888),
+    Color(0xFF7CA858),
+    Color(0xFFD07858),
+    Color(0xFF6880D8),
+    Color(0xFFD0A838),
     Color(0xFF8D7B6B),
-    Color(0xFF22B8CF),
-    Color(0xFFC85888),
-    Color(0xFF40A850),
-    Color(0xFFE07838)
+    Color(0xFF38A0B0),
+    Color(0xFFB86880),
+    Color(0xFF589860),
+    Color(0xFFC87040)
 )
 
 val CourseColorPaletteDark = listOf(
-    Color(0xFF64B5F6),
-    Color(0xFF81C784),
-    Color(0xFFEF5350),
-    Color(0xFFBA68C8),
-    Color(0xFFFFB74D),
-    Color(0xFF4DB6AC),
-    Color(0xFFF06292),
-    Color(0xFFAED581),
-    Color(0xFFFF8A65),
-    Color(0xFF5C6BC0),
-    Color(0xFFFFD54F),
+    Color(0xFF74B0E8),
+    Color(0xFF78C088),
+    Color(0xFFD96060),
+    Color(0xFFA878C8),
+    Color(0xFFD8A060),
+    Color(0xFF58B0A8),
+    Color(0xFFD87898),
+    Color(0xFF90C070),
+    Color(0xFFD89070),
+    Color(0xFF7888C0),
+    Color(0xFFD8B860),
     Color(0xFFA1887F),
-    Color(0xFF4DD0E1),
-    Color(0xFFF48FB1),
-    Color(0xFF81C784),
-    Color(0xFFFFB74D)
+    Color(0xFF58B8C8),
+    Color(0xFFC888A0),
+    Color(0xFF78C088),
+    Color(0xFFD8A060)
 )
 
 fun getCourseColor(courseName: String, darkTheme: Boolean): Color {
