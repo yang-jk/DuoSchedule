@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.duoschedule.data.model.AppThemeMode
@@ -38,6 +37,7 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
@@ -107,13 +107,25 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
-                SmallTopAppBar(
-                    title = "",
-                    scrollBehavior = MiuixScrollBehavior(),
-                    color = Color.Transparent,
-                    titleColor = MiuixTheme.colorScheme.onSurface,
-                    defaultWindowInsetsPadding = false,
-                )
+                if (appThemeMode == AppThemeMode.MIUIX) {
+                    TopAppBar(
+                        title = "设置",
+                        largeTitle = "设置",
+                        scrollBehavior = MiuixScrollBehavior(),
+                        color = Color.Transparent,
+                        titleColor = MiuixTheme.colorScheme.onSurface,
+                        largeTitleColor = MiuixTheme.colorScheme.onSurface,
+                        defaultWindowInsetsPadding = false,
+                    )
+                } else {
+                    SmallTopAppBar(
+                        title = "",
+                        scrollBehavior = MiuixScrollBehavior(),
+                        color = Color.Transparent,
+                        titleColor = MiuixTheme.colorScheme.onSurface,
+                        defaultWindowInsetsPadding = false,
+                    )
+                }
             }
         },
     ) { innerPadding ->
@@ -127,17 +139,7 @@ fun SettingsScreen(
                     if (appThemeMode == AppThemeMode.MIUIX) Spacing.lg else Spacing.iOS26.groupSpacing
                 )
             ) {
-            if (appThemeMode == AppThemeMode.MIUIX) {
-                top.yukonga.miuix.kmp.basic.Text(
-                    text = "设置",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp,
-                    color = MiuixTheme.colorScheme.onBackground,
-                    modifier = Modifier
-                        .padding(horizontal = Spacing.lg)
-                        .padding(top = Spacing.sm)
-                )
-            } else {
+            if (appThemeMode != AppThemeMode.MIUIX) {
                 Text(
                     text = "设置",
                     style = MaterialTheme.typography.headlineLarge.copy(

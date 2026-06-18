@@ -186,7 +186,7 @@ fun SettingsRow(
             .padding(vertical = SettingsDefaults.ItemVerticalPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (icon != null && iconBackgroundColor != null) {
+        if (icon != null && iconBackgroundColor != null && appThemeMode != AppThemeMode.MIUIX) {
             Box(
                 modifier = Modifier
                     .size(SettingsDefaults.IconBackgroundSize)

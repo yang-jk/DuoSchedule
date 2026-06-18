@@ -35,8 +35,8 @@ android {
         applicationId = "com.duoschedule"
         minSdk = 26
         targetSdk = 37
-        versionCode = 43800
-        versionName = "4.38.0"
+        versionCode = 43900
+        versionName = "4.39.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -109,6 +109,7 @@ dependencies {
     
     implementation("com.google.dagger:hilt-android:2.59.2")
     ksp("com.google.dagger:hilt-compiler:2.59.2")
+    ksp("org.jetbrains.kotlin:kotlin-metadata-jvm:2.4.0")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     implementation("androidx.hilt:hilt-work:1.2.0")
     ksp("androidx.hilt:hilt-compiler:1.2.0")
@@ -130,9 +131,9 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
     
     implementation("io.github.kyant0:backdrop:2.0.0")
-    implementation("top.yukonga.miuix.kmp:miuix-blur-android:0.9.0")
-    implementation("top.yukonga.miuix.kmp:miuix-ui-android:0.9.0")
-    implementation("top.yukonga.miuix.kmp:miuix-preference-android:0.9.0")
+    implementation("top.yukonga.miuix.kmp:miuix-blur-android:0.9.2")
+    implementation("top.yukonga.miuix.kmp:miuix-ui-android:0.9.2")
+    implementation("top.yukonga.miuix.kmp:miuix-preference-android:0.9.2")
     implementation("dev.chrisbanes.haze:haze:2.0.0-alpha03")
     implementation("dev.chrisbanes.haze:haze-blur:2.0.0-alpha03")
     implementation("dev.chrisbanes.haze:haze-blur-materials:2.0.0-alpha03")
