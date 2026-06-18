@@ -29,6 +29,7 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.basic.TextFieldDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator as MiuixCircularProgressIndicator
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.kyant.backdrop.Backdrop
@@ -170,7 +171,7 @@ fun NumberInputAlert(
                     label = label,
                     useLabelAsPlaceholder = true,
                     singleLine = true,
-                    borderColor = if (isError) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.outline,
+                    colors = TextFieldDefaults.textFieldColors(borderColor = if (isError) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.outline),
                     modifier = Modifier.fillMaxWidth()
                 )
                 if (isError) {
