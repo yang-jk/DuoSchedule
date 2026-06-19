@@ -34,7 +34,6 @@ import top.yukonga.miuix.kmp.blur.BlurBlendMode
 import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.blur.textureBlur
 import com.duoschedule.data.model.AppThemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -306,7 +305,6 @@ fun BlurredBar(
     contentBackdrop: com.kyant.backdrop.backdrops.LayerBackdrop? = null,
     content: @Composable () -> Unit,
 ) {
-    val appThemeMode = LocalAppThemeMode.current
     val darkTheme = LocalDarkTheme.current
     val topColor = if (darkTheme) {
         Color(0x80121212)
@@ -321,43 +319,23 @@ fun BlurredBar(
         )
     )
 
-    if (appThemeMode == AppThemeMode.MIUIX) {
-        val blurColors = BlurDefaults.blurColors(saturation = 1.3f)
-        Box(
-            modifier = Modifier
-                .zIndex(1f)
-                .then(
-                    if (backdrop != null) {
-                        Modifier.textureBlur(
-                            backdrop = backdrop,
-                            shape = RoundedCornerShape(0.dp),
-                            blurRadiusX = 80f,
-                            blurRadiusY = 25f,
-                            noiseCoefficient = 0f,
-                            colors = blurColors,
-                        )
-                    } else {
-                        Modifier
-                    }
+    // MIUI 和 iOS 统一使用分层渐变模糊
+    CompositionLocalProvider(LocalBackdrop provides contentBackdrop) {
+        Box(modifier = Modifier.zIndex(1f)) {
+            if (backdrop != null) {
+                LayeredGradientBlur(
+                    layers = 5,
+                    baseBlur = 120f,
+                    endAt = 1.0f,
+                    flip = false,
+                    backdrop = backdrop,
                 )
-        ) {
+            }
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .background(gradientBrush)
             )
-            content()
-        }
-        return
-    }
-
-    // iOS 模式：使用渐变背景色，通过 contentBackdrop 提供折射源
-    CompositionLocalProvider(LocalBackdrop provides contentBackdrop) {
-        Box(
-            modifier = Modifier
-                .zIndex(1f)
-                .background(gradientBrush)
-        ) {
             content()
         }
     }

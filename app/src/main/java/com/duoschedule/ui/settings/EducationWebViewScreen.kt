@@ -30,10 +30,17 @@ import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.data.model.PersonType
 import com.duoschedule.ui.settings.components.*
 import com.duoschedule.ui.theme.*
+import com.duoschedule.ui.theme.BlurredBar
+import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop as kyantRememberLayerBackdrop
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -48,6 +55,14 @@ fun EducationWebViewScreen(
     val scope = rememberCoroutineScope()
     val appThemeMode = LocalAppThemeMode.current
     val labelsPrimary = getLabelsVibrantPrimary()
+
+    val hazeState = rememberHazeState()
+    val contentBackdrop = kyantRememberLayerBackdrop()
+    val backgroundColor = MaterialTheme.colorScheme.surface
+    val miuixBackdrop = rememberLayerBackdrop {
+        drawRect(backgroundColor)
+        drawContent()
+    }
 
     val adapter = remember(schoolId) {
         SupportedSchools.register(com.duoschedule.data.importexport.ZhengfangSchoolAdapter())
@@ -114,9 +129,9 @@ fun EducationWebViewScreen(
 
     if (schoolInfo == null) {
         // School not found
-        if (appThemeMode == AppThemeMode.MIUIX) {
-            Scaffold(
-                topBar = {
+        Scaffold(
+            topBar = {
+                BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
                     SmallTopAppBar(
                         title = "从教务系统导入",
                         scrollBehavior = MiuixScrollBehavior(),
@@ -124,44 +139,37 @@ fun EducationWebViewScreen(
                         titleColor = MiuixTheme.colorScheme.onSurface,
                         defaultWindowInsetsPadding = false,
                         navigationIcon = {
-                            top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
-                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                            if (appThemeMode == AppThemeMode.MIUIX) {
+                                top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
+                                    Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                                }
+                            } else {
+                                GlassSymbolIconButton(
+                                    onClick = onNavigateBack,
+                                    style = GlassSymbolButtonStyle.NonTinted,
+                                    buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
+                                    contentPadding = PaddingValues(start = Spacing.sm)
+                                ) {
+                                    Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = labelsPrimary)
+                                }
                             }
                         }
                     )
                 }
-            ) { paddingValues ->
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    top.yukonga.miuix.kmp.basic.Text("未找到学校信息", color = MiuixTheme.colorScheme.onSurface)
-                }
             }
-        } else {
-            Scaffold(
-                topBar = {
-                    TopAppBar(
-                        title = { Text("从教务系统导入") },
-                        navigationIcon = {
-                            GlassSymbolIconButton(
-                                onClick = onNavigateBack,
-                                style = GlassSymbolButtonStyle.NonTinted,
-                                buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
-                                contentPadding = PaddingValues(start = Spacing.sm)
-                            ) {
-                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = labelsPrimary)
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
-                    )
-                },
-                containerColor = MaterialTheme.colorScheme.background
-            ) { paddingValues ->
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .hazeSource(hazeState)
+                    .kyantLayerBackdrop(contentBackdrop)
+                    .layerBackdrop(miuixBackdrop)
+                    .padding(top = innerPadding.calculateTopPadding()),
+                contentAlignment = Alignment.Center
+            ) {
+                if (appThemeMode == AppThemeMode.MIUIX) {
+                    top.yukonga.miuix.kmp.basic.Text("未找到学校信息", color = MiuixTheme.colorScheme.onSurface)
+                } else {
                     Text("未找到学校信息")
                 }
             }
@@ -399,9 +407,9 @@ fun EducationWebViewScreen(
         }
     }
 
-    if (appThemeMode == AppThemeMode.MIUIX) {
-        Scaffold(
-            topBar = {
+    Scaffold(
+        topBar = {
+            BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
                 Column {
                     SmallTopAppBar(
                         title = schoolInfo.name,
@@ -410,51 +418,32 @@ fun EducationWebViewScreen(
                         titleColor = MiuixTheme.colorScheme.onSurface,
                         defaultWindowInsetsPadding = false,
                         navigationIcon = {
-                            top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
-                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                            if (appThemeMode == AppThemeMode.MIUIX) {
+                                top.yukonga.miuix.kmp.basic.IconButton(onClick = onNavigateBack) {
+                                    Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                                }
+                            } else {
+                                GlassSymbolIconButton(
+                                    onClick = onNavigateBack,
+                                    style = GlassSymbolButtonStyle.NonTinted,
+                                    buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
+                                    contentPadding = PaddingValues(start = Spacing.sm)
+                                ) {
+                                    Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = labelsPrimary)
+                                }
                             }
                         }
                     )
                     addressBar()
                 }
             }
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = paddingValues.calculateTopPadding())
-            ) {
-                webViewAndBottomBar()
-            }
         }
-    } else {
-        Scaffold(
-            contentWindowInsets = WindowInsets(0),
-            topBar = {
-                Column {
-                    TopAppBar(
-                        title = { Text(schoolInfo.name) },
-                        navigationIcon = {
-                            GlassSymbolIconButton(
-                                onClick = onNavigateBack,
-                                style = GlassSymbolButtonStyle.NonTinted,
-                                buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
-                                contentPadding = PaddingValues(start = Spacing.sm)
-                            ) {
-                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = labelsPrimary)
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
-                    )
-                    addressBar()
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.background
-        ) { paddingValues ->
+    ) { innerPadding ->
+        Box(modifier = Modifier.hazeSource(hazeState).kyantLayerBackdrop(contentBackdrop).layerBackdrop(miuixBackdrop)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = paddingValues.calculateTopPadding())
+                    .padding(top = innerPadding.calculateTopPadding())
             ) {
                 webViewAndBottomBar()
             }

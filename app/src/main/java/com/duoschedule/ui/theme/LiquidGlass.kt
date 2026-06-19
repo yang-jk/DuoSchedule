@@ -485,7 +485,6 @@ fun GlassAlert(
     dismissText: String = "取消"
 ) {
     val darkTheme = LocalDarkTheme.current
-    val density = LocalDensity.current
     val backdrop = LocalBackdrop.current ?: emptyBackdrop()
 
     val contentColor = if (darkTheme) Color.White else Color.Black
@@ -504,7 +503,12 @@ fun GlassAlert(
                     backdrop = backdrop,
                     shape = { RoundedRectangle(48f.dp) },
                     effects = {
-                        glassCardEffects(darkTheme, density)
+                        colorControls(
+                            brightness = if (darkTheme) 0f else 0.2f,
+                            saturation = 1.5f
+                        )
+                        blur(if (darkTheme) 8f.dp.toPx() else 16f.dp.toPx())
+                        lens(24f.dp.toPx(), 48f.dp.toPx(), depthEffect = true)
                     },
                     highlight = { Highlight.Plain },
                     onDrawSurface = { drawRect(containerColor) }
@@ -516,7 +520,7 @@ fun GlassAlert(
                     title,
                     Modifier.padding(28f.dp, 24f.dp, 28f.dp, 12f.dp),
                     style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Medium
                     ),
                     color = contentColor
                 )
@@ -543,62 +547,18 @@ fun GlassAlert(
                     horizontalArrangement = Arrangement.spacedBy(16f.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        Modifier
-                            .drawBackdrop(
-                                backdrop = backdrop,
-                                shape = { Capsule() },
-                                effects = {
-                                    glassButtonEffects(density)
-                                },
-                                onDrawSurface = {
-                                    drawRect(containerColor.copy(alpha = 0.4f))
-                                }
-                            )
-                            .clickable { onDismissRequest() }
-                            .height(48f.dp)
-                            .weight(1f)
-                            .padding(horizontal = 16f.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4f.dp, Alignment.CenterHorizontally),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            dismissText,
-                            color = contentColor.copy(0.68f),
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
-                    }
-                    Row(
-                        Modifier
-                            .drawBackdrop(
-                                backdrop = backdrop,
-                                shape = { Capsule() },
-                                effects = {
-                                    glassButtonEffects(density)
-                                },
-                                onDrawSurface = {
-                                    val tintColor = if (darkTheme) IOS26Colors.TintBlue else IOSColors.Blue
-                                    drawRect(tintColor, blendMode = BlendMode.Hue)
-                                    drawRect(tintColor.copy(alpha = 0.75f))
-                                }
-                            )
-                            .clickable { onConfirm() }
-                            .height(48f.dp)
-                            .weight(1f)
-                            .padding(horizontal = 16f.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4f.dp, Alignment.CenterHorizontally),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            confirmText,
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        )
-                    }
+                    LiquidDialogButton(
+                        text = dismissText,
+                        onClick = onDismissRequest,
+                        style = LiquidDialogButtonStyle.NonTinted,
+                        modifier = Modifier.weight(1f)
+                    )
+                    LiquidDialogButton(
+                        text = confirmText,
+                        onClick = onConfirm,
+                        style = LiquidDialogButtonStyle.Tinted,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
@@ -882,5 +842,53 @@ fun GlassSymbolIconButton(
                 content()
             }
         }
+    }
+}
+
+enum class LiquidDialogButtonStyle {
+    Tinted,
+    NonTinted
+}
+
+@Composable
+fun LiquidDialogButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    style: LiquidDialogButtonStyle = LiquidDialogButtonStyle.Tinted,
+    enabled: Boolean = true,
+) {
+    val darkTheme = LocalDarkTheme.current
+    val isTinted = style == LiquidDialogButtonStyle.Tinted
+
+    val accentColor = if (darkTheme) Color(0xFF0091FF) else Color(0xFF0088FF)
+    val containerColor = if (darkTheme) Color(0xFF121212).copy(0.4f) else Color(0xFFFAFAFA).copy(0.6f)
+    val contentColor = if (darkTheme) Color.White else Color.Black
+
+    val backgroundColor = if (isTinted) accentColor else containerColor.copy(alpha = 0.2f)
+    val textColor = if (isTinted) Color.White else contentColor
+
+    Row(
+        modifier
+            .clip(Capsule())
+            .background(backgroundColor)
+            .clickable(
+                interactionSource = null,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick
+            )
+            .height(48f.dp)
+            .padding(horizontal = 16f.dp),
+        horizontalArrangement = Arrangement.spacedBy(4f.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = if (isTinted) FontWeight.SemiBold else FontWeight.Normal
+            ),
+            color = if (enabled) textColor else textColor.copy(alpha = 0.5f)
+        )
     }
 }

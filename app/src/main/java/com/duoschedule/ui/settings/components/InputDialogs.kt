@@ -13,13 +13,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.unit.sp
 import com.duoschedule.data.model.AppThemeMode
 import com.duoschedule.ui.theme.*
 import com.duoschedule.ui.theme.LocalAppThemeMode
@@ -38,11 +38,13 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.colorControls
 import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
+import com.kyant.shapes.RoundedRectangle
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 private val LocalDialogBackdrop = compositionLocalOf<Backdrop?> { null }
 
@@ -115,9 +117,9 @@ fun TextInputAlert(
                 ),
                 color = labelsPrimary
             )
-            
+
             Spacer(modifier = Modifier.height(Spacing.md))
-            
+
             IOSTextField(
                 value = value,
                 onValueChange = { value = it },
@@ -126,10 +128,10 @@ fun TextInputAlert(
                 singleLine = singleLine,
                 modifier = Modifier.fillMaxWidth()
             )
-            
+
             Spacer(modifier = Modifier.height(Spacing.lg))
-            
-            IOSDialogButtons(
+
+            DialogButtons(
                 onDismiss = onDismiss,
                 onConfirm = { onConfirm(value) },
                 confirmEnabled = value.isNotBlank()
@@ -224,9 +226,9 @@ fun NumberInputAlert(
                 ),
                 color = labelsPrimary
             )
-            
+
             Spacer(modifier = Modifier.height(Spacing.md))
-            
+
             IOSTextField(
                 value = value,
                 onValueChange = {
@@ -245,7 +247,7 @@ fun NumberInputAlert(
             
             Spacer(modifier = Modifier.height(Spacing.lg))
             
-            IOSDialogButtons(
+            DialogButtons(
                 onDismiss = onDismiss,
                 onConfirm = {
                     val num = value.toIntOrNull()
@@ -430,7 +432,7 @@ fun TimeRangeAlert(
                 
                 Spacer(modifier = Modifier.height(Spacing.lg))
                 
-                IOSDialogButtons(
+                DialogButtons(
                     onDismiss = onDismiss,
                     onConfirm = { onConfirm(timeRange) },
                     confirmEnabled = isValid
@@ -459,7 +461,7 @@ fun GlassDialogContainer(
             .width(300.dp)
             .drawBackdrop(
                 backdrop = backdrop,
-                shape = { ContinuousRoundedRectangle(24.dp) },
+                shape = { RoundedRectangle(48f.dp) },
                 effects = {
                     colorControls(
                         brightness = if (darkTheme) 0f else 0.2f,
@@ -486,26 +488,6 @@ fun GlassDialogContainer(
 }
 
 @Composable
-private fun IOSAlertDialogContainer(
-    content: @Composable ColumnScope.() -> Unit
-) {
-    val dialogBackground = getDialogBackgroundColor()
-
-    Box(
-        modifier = Modifier
-            .width(300.dp)
-            .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.container))
-            .background(dialogBackground)
-    ) {
-        Column(
-            modifier = Modifier.padding(Spacing.lg),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            content = content
-        )
-    }
-}
-
-@Composable
 fun GlassTimePickerDialogContainer(
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
@@ -524,7 +506,7 @@ fun GlassTimePickerDialogContainer(
             .fillMaxWidth(0.92f)
             .drawBackdrop(
                 backdrop = backdrop,
-                shape = { ContinuousRoundedRectangle(24.dp) },
+                shape = { RoundedRectangle(48f.dp) },
                 effects = {
                     colorControls(
                         brightness = if (darkTheme) 0f else 0.2f,
@@ -544,23 +526,6 @@ fun GlassTimePickerDialogContainer(
         ) {
             content()
         }
-    }
-}
-
-@Composable
-private fun TimePickerDialogContainer(
-    content: @Composable () -> Unit
-) {
-    val dialogBackground = getDialogBackgroundColor()
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth(0.92f)
-            .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.container))
-            .background(dialogBackground)
-            .padding(vertical = Spacing.lg, horizontal = Spacing.lg)
-    ) {
-        content()
     }
 }
 
@@ -638,7 +603,7 @@ private fun IOSTextField(
 }
 
 @Composable
-private fun IOSDialogButtons(
+private fun DialogButtons(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
     confirmEnabled: Boolean = true,
@@ -649,17 +614,17 @@ private fun IOSDialogButtons(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.md)
     ) {
-        LiquidGlassButton(
+        LiquidDialogButton(
             onClick = onDismiss,
             text = dismissText,
-            style = LiquidGlassButtonStyle.NonTinted,
+            style = LiquidDialogButtonStyle.NonTinted,
             modifier = Modifier.weight(1f)
         )
         
-        LiquidGlassButton(
+        LiquidDialogButton(
             onClick = onConfirm,
             text = confirmText,
-            style = LiquidGlassButtonStyle.Tinted,
+            style = LiquidDialogButtonStyle.Tinted,
             enabled = confirmEnabled,
             modifier = Modifier.weight(1f)
         )
@@ -717,7 +682,7 @@ fun GlassAlertDialog(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val dialogBackdrop = rememberLayerBackdrop()
-    
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -731,7 +696,7 @@ fun GlassAlertDialog(
                 .width(width)
                 .drawBackdrop(
                     backdrop = backdrop,
-                    shape = { ContinuousRoundedRectangle(24.dp) },
+                    shape = { RoundedRectangle(48f.dp) },
                     effects = {
                         colorControls(
                             brightness = if (darkTheme) 0f else 0.2f,
@@ -748,142 +713,54 @@ fun GlassAlertDialog(
             CompositionLocalProvider(
                 LocalDialogBackdrop provides dialogBackdrop
             ) {
-                Column(
-                    modifier = Modifier.padding(Spacing.lg),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+                Column {
                     if (icon != null) {
-                        icon()
-                        Spacer(modifier = Modifier.height(Spacing.md))
+                        Box(
+                            modifier = Modifier.padding(28f.dp, 24f.dp, 28f.dp, 0f.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            icon()
+                        }
+                        Spacer(modifier = Modifier.height(12f.dp))
                     }
-                    
+
                     Text(
                         text = title,
+                        Modifier.padding(28f.dp, 24f.dp, 28f.dp, 12f.dp),
                         style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 24.sp
                         ),
                         color = labelsPrimary
                     )
-                    
+
                     if (message != null) {
-                        Spacer(modifier = Modifier.height(Spacing.sm))
                         Text(
                             text = message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = labelsSecondary,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            Modifier
+                                .then(
+                                    if (darkTheme) {
+                                        Modifier.graphicsLayer(blendMode = BlendMode.Plus)
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                                .padding(24f.dp, 12f.dp, 24f.dp, 12f.dp),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
+                            color = labelsPrimary.copy(0.68f),
                         )
                     }
-                    
-                    Spacer(modifier = Modifier.height(Spacing.lg))
-                    
+
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                        Modifier
+                            .padding(24f.dp, 12f.dp, 24f.dp, 24f.dp)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16f.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         dismissButton?.invoke()
                         confirmButton()
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun IOSAlertDialog(
-    title: String,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-    message: String? = null,
-    icon: @Composable (() -> Unit)? = null,
-    confirmButton: @Composable () -> Unit,
-    dismissButton: @Composable (() -> Unit)? = null,
-    width: Dp = 300.dp
-) {
-    val appThemeMode = LocalAppThemeMode.current
-
-    if (appThemeMode == AppThemeMode.MIUIX) {
-        WindowDialog(
-            show = true,
-            title = title,
-            onDismissRequest = onDismiss
-        ) {
-            Column {
-                if (icon != null) {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { icon() }
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                }
-                if (message != null) {
-                    top.yukonga.miuix.kmp.basic.Text(
-                        text = message,
-                        color = MiuixTheme.colorScheme.onBackgroundVariant,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(Spacing.lg))
-                }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                    dismissButton?.invoke()
-                    confirmButton()
-                }
-            }
-        }
-        return
-    }
-
-    val dialogBackground = getDialogBackgroundColor()
-    val labelsPrimary = getLabelsVibrantPrimary()
-    val labelsSecondary = getLabelsVibrantSecondary()
-    
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true,
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Box(
-            modifier = modifier
-                .width(width)
-                .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.container))
-                .background(dialogBackground)
-        ) {
-            Column(
-                modifier = Modifier.padding(Spacing.lg),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                if (icon != null) {
-                    icon()
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                }
-                
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = labelsPrimary
-                )
-                
-                if (message != null) {
-                    Spacer(modifier = Modifier.height(Spacing.sm))
-                    Text(
-                        text = message,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = labelsSecondary,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(Spacing.lg))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
-                ) {
-                    dismissButton?.invoke()
-                    confirmButton()
                 }
             }
         }
@@ -927,7 +804,7 @@ fun GlassLoadingDialog(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val dialogBackdrop = rememberLayerBackdrop()
-    
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -941,7 +818,7 @@ fun GlassLoadingDialog(
                 .width(280.dp)
                 .drawBackdrop(
                     backdrop = backdrop,
-                    shape = { ContinuousRoundedRectangle(24.dp) },
+                    shape = { RoundedRectangle(48f.dp) },
                     effects = {
                         colorControls(
                             brightness = if (darkTheme) 0f else 0.2f,
@@ -959,9 +836,9 @@ fun GlassLoadingDialog(
                 LocalDialogBackdrop provides dialogBackdrop
             ) {
                 Row(
-                    modifier = Modifier.padding(Spacing.lg),
+                    modifier = Modifier.padding(28f.dp, 24f.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                    horizontalArrangement = Arrangement.spacedBy(12f.dp)
                 ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
@@ -971,78 +848,12 @@ fun GlassLoadingDialog(
                     Text(
                         text = message,
                         style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 15.sp
                         ),
                         color = labelsPrimary
                     )
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun IOSLoadingDialog(
-    message: String,
-    onDismiss: () -> Unit
-) {
-    val appThemeMode = LocalAppThemeMode.current
-
-    if (appThemeMode == AppThemeMode.MIUIX) {
-        WindowDialog(
-            show = true,
-            title = null,
-            onDismissRequest = onDismiss
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.md)
-            ) {
-                MiuixCircularProgressIndicator(modifier = Modifier.size(24.dp))
-                top.yukonga.miuix.kmp.basic.Text(
-                    text = message,
-                    color = MiuixTheme.colorScheme.onBackground
-                )
-            }
-        }
-        return
-    }
-
-    val dialogBackground = getDialogBackgroundColor()
-    val labelsPrimary = getLabelsVibrantPrimary()
-    val labelsSecondary = getLabelsVibrantSecondary()
-    
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = false,
-            dismissOnClickOutside = false,
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .width(280.dp)
-                .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.container))
-                .background(dialogBackground)
-        ) {
-            Row(
-                modifier = Modifier.padding(Spacing.lg),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.md)
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.5.dp,
-                    color = BrandColors.Primary
-                )
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
-                    color = labelsPrimary
-                )
             }
         }
     }
@@ -1108,7 +919,7 @@ fun GlassConfirmDialog(
     val labelsPrimary = getLabelsVibrantPrimary()
     val labelsSecondary = getLabelsVibrantSecondary()
     val dialogBackdrop = rememberLayerBackdrop()
-    
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -1122,7 +933,7 @@ fun GlassConfirmDialog(
                 .width(300.dp)
                 .drawBackdrop(
                     backdrop = backdrop,
-                    shape = { ContinuousRoundedRectangle(24.dp) },
+                    shape = { RoundedRectangle(48f.dp) },
                     effects = {
                         colorControls(
                             brightness = if (darkTheme) 0f else 0.2f,
@@ -1139,178 +950,63 @@ fun GlassConfirmDialog(
             CompositionLocalProvider(
                 LocalDialogBackdrop provides dialogBackdrop
             ) {
-                Column(
-                    modifier = Modifier.padding(Spacing.lg)
-                ) {
+                Column {
                     Text(
                         text = title,
+                        Modifier.padding(28f.dp, 24f.dp, 28f.dp, 12f.dp),
                         style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 24.sp
                         ),
                         color = labelsPrimary
                     )
-                    
+
                     if (message != null) {
-                        Spacer(modifier = Modifier.height(Spacing.sm))
                         Text(
                             text = message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = labelsSecondary
+                            Modifier
+                                .then(
+                                    if (darkTheme) {
+                                        Modifier.graphicsLayer(blendMode = BlendMode.Plus)
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                                .padding(24f.dp, 12f.dp, 24f.dp, 12f.dp),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
+                            color = labelsPrimary.copy(0.68f),
                         )
                     }
-                    
+
                     if (content != null) {
-                        Spacer(modifier = Modifier.height(Spacing.md))
                         Column(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.padding(horizontal = 24f.dp),
                             content = content
                         )
                     }
-                    
-                    Spacer(modifier = Modifier.height(Spacing.lg))
-                    
+
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                        Modifier
+                            .padding(24f.dp, 12f.dp, 24f.dp, 24f.dp)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16f.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        LiquidGlassButton(
+                        LiquidDialogButton(
                             onClick = onDismiss,
                             text = dismissText,
-                            style = LiquidGlassButtonStyle.NonTinted,
+                            style = LiquidDialogButtonStyle.NonTinted,
                             modifier = Modifier.weight(1f)
                         )
-                        
-                        LiquidGlassButton(
+
+                        LiquidDialogButton(
                             onClick = onConfirm,
                             text = confirmText,
-                            style = LiquidGlassButtonStyle.Tinted,
+                            style = LiquidDialogButtonStyle.Tinted,
                             enabled = confirmEnabled,
                             modifier = Modifier.weight(1f)
                         )
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun IOSConfirmDialog(
-    title: String,
-    message: String? = null,
-    confirmText: String = "确定",
-    dismissText: String = "取消",
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-    confirmEnabled: Boolean = true,
-    isDestructive: Boolean = false,
-    content: @Composable (ColumnScope.() -> Unit)? = null
-) {
-    val appThemeMode = LocalAppThemeMode.current
-
-    if (appThemeMode == AppThemeMode.MIUIX) {
-        WindowDialog(
-            show = true,
-            title = title,
-            onDismissRequest = onDismiss
-        ) {
-            Column {
-                if (message != null) {
-                    top.yukonga.miuix.kmp.basic.Text(
-                        text = message,
-                        color = MiuixTheme.colorScheme.onBackgroundVariant
-                    )
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                }
-                if (content != null) {
-                    Column(modifier = Modifier.fillMaxWidth(), content = content)
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                    Button(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors()) {
-                        top.yukonga.miuix.kmp.basic.Text(dismissText)
-                    }
-                    Button(
-                        onClick = onConfirm,
-                        modifier = Modifier.weight(1f),
-                        enabled = confirmEnabled,
-                        colors = ButtonDefaults.buttonColorsPrimary()
-                    ) {
-                        top.yukonga.miuix.kmp.basic.Text(confirmText)
-                    }
-                }
-            }
-        }
-        return
-    }
-
-    val dialogBackground = getDialogBackgroundColor()
-    val labelsPrimary = getLabelsVibrantPrimary()
-    val labelsSecondary = getLabelsVibrantSecondary()
-    val darkTheme = LocalDarkTheme.current
-    
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true,
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .width(300.dp)
-                .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.container))
-                .background(dialogBackground)
-        ) {
-            Column(
-                modifier = Modifier.padding(Spacing.lg)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = labelsPrimary
-                )
-                
-                if (message != null) {
-                    Spacer(modifier = Modifier.height(Spacing.sm))
-                    Text(
-                        text = message,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = labelsSecondary
-                    )
-                }
-                
-                if (content != null) {
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        content = content
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(Spacing.lg))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.md)
-                ) {
-                    LiquidGlassButton(
-                        onClick = onDismiss,
-                        text = dismissText,
-                        style = LiquidGlassButtonStyle.NonTinted,
-                        modifier = Modifier.weight(1f)
-                    )
-                    
-                    LiquidGlassButton(
-                        onClick = onConfirm,
-                        text = confirmText,
-                        style = LiquidGlassButtonStyle.Tinted,
-                        enabled = confirmEnabled,
-                        modifier = Modifier.weight(1f)
-                    )
                 }
             }
         }
@@ -1378,7 +1074,7 @@ fun GlassSuccessDialog(
     val labelsSecondary = getLabelsVibrantSecondary()
     val successColor = if (darkTheme) IOS26Colors.TintGreen else IOSColors.Green
     val dialogBackdrop = rememberLayerBackdrop()
-    
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -1392,7 +1088,7 @@ fun GlassSuccessDialog(
                 .width(300.dp)
                 .drawBackdrop(
                     backdrop = backdrop,
-                    shape = { ContinuousRoundedRectangle(24.dp) },
+                    shape = { RoundedRectangle(48f.dp) },
                     effects = {
                         colorControls(
                             brightness = if (darkTheme) 0f else 0.2f,
@@ -1409,198 +1105,77 @@ fun GlassSuccessDialog(
             CompositionLocalProvider(
                 LocalDialogBackdrop provides dialogBackdrop
             ) {
-                Column(
-                    modifier = Modifier.padding(Spacing.lg),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = successColor,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                    
+                Column {
+                    Box(
+                        modifier = Modifier.padding(28f.dp, 24f.dp, 28f.dp, 0f.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = successColor,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
+
                     Text(
                         text = title,
+                        Modifier.padding(28f.dp, 12f.dp, 28f.dp, 12f.dp),
                         style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 24.sp
                         ),
                         color = labelsPrimary
                     )
-                    
-                    Spacer(modifier = Modifier.height(Spacing.sm))
-                    
+
                     Text(
                         text = message,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = labelsSecondary,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        Modifier
+                            .then(
+                                if (darkTheme) {
+                                    Modifier.graphicsLayer(blendMode = BlendMode.Plus)
+                                } else {
+                                    Modifier
+                                }
+                            )
+                            .padding(24f.dp, 0f.dp, 24f.dp, 12f.dp),
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
+                        color = labelsPrimary.copy(0.68f),
+                        textAlign = TextAlign.Center
                     )
-                    
-                    Spacer(modifier = Modifier.height(Spacing.lg))
-                    
+
                     if (onAction != null) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                            Modifier
+                                .padding(24f.dp, 12f.dp, 24f.dp, 24f.dp)
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16f.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            LiquidGlassButton(
+                            LiquidDialogButton(
                                 onClick = onDismiss,
                                 text = dismissText,
-                                style = LiquidGlassButtonStyle.NonTinted,
+                                style = LiquidDialogButtonStyle.NonTinted,
                                 modifier = Modifier.weight(1f)
                             )
-                            
-                            LiquidGlassButton(
+
+                            LiquidDialogButton(
                                 onClick = onAction,
                                 text = actionText,
-                                style = LiquidGlassButtonStyle.Tinted,
+                                style = LiquidDialogButtonStyle.Tinted,
                                 modifier = Modifier.weight(1f)
                             )
                         }
                     } else {
-                        LiquidGlassButton(
+                        LiquidDialogButton(
                             onClick = onDismiss,
                             text = dismissText,
-                            style = LiquidGlassButtonStyle.Tinted,
-                            modifier = Modifier.fillMaxWidth()
+                            style = LiquidDialogButtonStyle.Tinted,
+                            modifier = Modifier
+                                .padding(24f.dp, 12f.dp, 24f.dp, 24f.dp)
+                                .fillMaxWidth()
                         )
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun IOSSuccessDialog(
-    title: String,
-    message: String,
-    onDismiss: () -> Unit,
-    onAction: (() -> Unit)? = null,
-    actionText: String = "查看",
-    dismissText: String = "返回"
-) {
-    val appThemeMode = LocalAppThemeMode.current
-
-    if (appThemeMode == AppThemeMode.MIUIX) {
-        WindowDialog(
-            show = true,
-            title = title,
-            onDismissRequest = onDismiss
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = MiuixTheme.colorScheme.primary,
-                    modifier = Modifier.size(48.dp)
-                )
-                Spacer(modifier = Modifier.height(Spacing.md))
-                top.yukonga.miuix.kmp.basic.Text(
-                    text = message,
-                    color = MiuixTheme.colorScheme.onBackgroundVariant,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(Spacing.lg))
-                if (onAction != null) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        Button(onClick = onDismiss, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors()) {
-                            top.yukonga.miuix.kmp.basic.Text(dismissText)
-                        }
-                        Button(onClick = onAction, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColorsPrimary()) {
-                            top.yukonga.miuix.kmp.basic.Text(actionText)
-                        }
-                    }
-                } else {
-                    Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColorsPrimary()) {
-                        top.yukonga.miuix.kmp.basic.Text(dismissText)
-                    }
-                }
-            }
-        }
-        return
-    }
-
-    val dialogBackground = getDialogBackgroundColor()
-    val labelsPrimary = getLabelsVibrantPrimary()
-    val labelsSecondary = getLabelsVibrantSecondary()
-    val successColor = if (LocalDarkTheme.current) IOS26Colors.TintGreen else IOSColors.Green
-    
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true,
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .width(300.dp)
-                .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.container))
-                .background(dialogBackground)
-        ) {
-            Column(
-                modifier = Modifier.padding(Spacing.lg),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = successColor,
-                    modifier = Modifier.size(48.dp)
-                )
-                
-                Spacer(modifier = Modifier.height(Spacing.md))
-                
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = labelsPrimary
-                )
-                
-                Spacer(modifier = Modifier.height(Spacing.sm))
-                
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = labelsSecondary,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                
-                Spacer(modifier = Modifier.height(Spacing.lg))
-                
-                if (onAction != null) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.md)
-                    ) {
-                        LiquidGlassButton(
-                            onClick = onDismiss,
-                            text = dismissText,
-                            style = LiquidGlassButtonStyle.NonTinted,
-                            modifier = Modifier.weight(1f)
-                        )
-                        
-                        LiquidGlassButton(
-                            onClick = onAction,
-                            text = actionText,
-                            style = LiquidGlassButtonStyle.Tinted,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                } else {
-                    LiquidGlassButton(
-                        onClick = onDismiss,
-                        text = dismissText,
-                        style = LiquidGlassButtonStyle.Tinted,
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
             }
         }
@@ -1676,7 +1251,7 @@ fun GlassErrorDialog(
     val labelsSecondary = getLabelsVibrantSecondary()
     val errorColor = if (darkTheme) SemanticColors.ErrorDark else SemanticColors.ErrorLight
     val dialogBackdrop = rememberLayerBackdrop()
-    
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -1690,7 +1265,7 @@ fun GlassErrorDialog(
                 .width(300.dp)
                 .drawBackdrop(
                     backdrop = backdrop,
-                    shape = { ContinuousRoundedRectangle(24.dp) },
+                    shape = { RoundedRectangle(48f.dp) },
                     effects = {
                         colorControls(
                             brightness = if (darkTheme) 0f else 0.2f,
@@ -1707,12 +1282,11 @@ fun GlassErrorDialog(
             CompositionLocalProvider(
                 LocalDialogBackdrop provides dialogBackdrop
             ) {
-                Column(
-                    modifier = Modifier.padding(Spacing.lg)
-                ) {
+                Column {
                     Row(
+                        Modifier.padding(28f.dp, 24f.dp, 28f.dp, 12f.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+                        horizontalArrangement = Arrangement.spacedBy(8f.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Error,
@@ -1723,32 +1297,40 @@ fun GlassErrorDialog(
                         Text(
                             text = title,
                             style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 24.sp
                             ),
                             color = labelsPrimary
                         )
                     }
-                    
+
                     if (message != null) {
-                        Spacer(modifier = Modifier.height(Spacing.sm))
                         Text(
                             text = message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = labelsSecondary
+                            Modifier
+                                .then(
+                                    if (darkTheme) {
+                                        Modifier.graphicsLayer(blendMode = BlendMode.Plus)
+                                    } else {
+                                        Modifier
+                                    }
+                                )
+                                .padding(24f.dp, 12f.dp, 24f.dp, 12f.dp),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
+                            color = labelsPrimary.copy(0.68f),
                         )
                     }
-                    
+
                     if (errors.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(Spacing.md))
-                        
-                        val optionBackground = if (LocalDarkTheme.current) {
+                        val optionBackground = if (darkTheme) {
                             Color(0x29EBEBF5)
                         } else {
                             Color(0x29787880)
                         }
-                        
+
                         Column(
                             modifier = Modifier
+                                .padding(horizontal = 24f.dp)
                                 .fillMaxWidth()
                                 .heightIn(max = 150.dp)
                                 .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.container))
@@ -1767,179 +1349,22 @@ fun GlassErrorDialog(
                                 Text(
                                     text = "还有 ${errors.size - 5} 条错误...",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = labelsSecondary,
+                                    color = labelsPrimary.copy(0.68f),
                                     modifier = Modifier.padding(top = Spacing.xs)
                                 )
                             }
                         }
                     }
-                    
-                    Spacer(modifier = Modifier.height(Spacing.lg))
-                    
-                    LiquidGlassButton(
+
+                    LiquidDialogButton(
                         onClick = onDismiss,
                         text = dismissText,
-                        style = LiquidGlassButtonStyle.Tinted,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun IOSErrorDialog(
-    title: String = "导入失败",
-    message: String? = null,
-    errors: List<String> = emptyList(),
-    onDismiss: () -> Unit,
-    dismissText: String = "确定"
-) {
-    val appThemeMode = LocalAppThemeMode.current
-
-    if (appThemeMode == AppThemeMode.MIUIX) {
-        WindowDialog(
-            show = true,
-            title = title,
-            onDismissRequest = onDismiss
-        ) {
-            Column {
-                if (message != null) {
-                    top.yukonga.miuix.kmp.basic.Text(
-                        text = message,
-                        color = MiuixTheme.colorScheme.onBackgroundVariant
-                    )
-                    Spacer(modifier = Modifier.height(Spacing.sm))
-                }
-                if (errors.isNotEmpty()) {
-                    Surface(
-                        color = MiuixTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(BorderRadius.lg)
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp).padding(Spacing.sm)
-                        ) {
-                            errors.take(5).forEach { error ->
-                                top.yukonga.miuix.kmp.basic.Text(
-                                    text = "• $error",
-                                    color = MiuixTheme.colorScheme.error,
-                                    modifier = Modifier.padding(vertical = 2.dp)
-                                )
-                            }
-                            if (errors.size > 5) {
-                                top.yukonga.miuix.kmp.basic.Text(
-                                    text = "还有 ${errors.size - 5} 条错误...",
-                                    color = MiuixTheme.colorScheme.onBackgroundVariant,
-                                    modifier = Modifier.padding(top = Spacing.xs)
-                                )
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                }
-                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColorsPrimary()) {
-                    top.yukonga.miuix.kmp.basic.Text(dismissText)
-                }
-            }
-        }
-        return
-    }
-
-    val dialogBackground = getDialogBackgroundColor()
-    val labelsPrimary = getLabelsVibrantPrimary()
-    val labelsSecondary = getLabelsVibrantSecondary()
-    val errorColor = if (LocalDarkTheme.current) SemanticColors.ErrorDark else SemanticColors.ErrorLight
-    
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true,
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .width(300.dp)
-                .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.container))
-                .background(dialogBackground)
-        ) {
-            Column(
-                modifier = Modifier.padding(Spacing.lg)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Error,
-                        contentDescription = null,
-                        tint = errorColor,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = labelsPrimary
-                    )
-                }
-                
-                if (message != null) {
-                    Spacer(modifier = Modifier.height(Spacing.sm))
-                    Text(
-                        text = message,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = labelsSecondary
-                    )
-                }
-                
-                if (errors.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(Spacing.md))
-                    
-                    val optionBackground = if (LocalDarkTheme.current) {
-                        Color(0x29EBEBF5)
-                    } else {
-                        Color(0x29787880)
-                    }
-                    
-                    Column(
+                        style = LiquidDialogButtonStyle.Tinted,
                         modifier = Modifier
+                            .padding(24f.dp, 12f.dp, 24f.dp, 24f.dp)
                             .fillMaxWidth()
-                            .heightIn(max = 150.dp)
-                            .clip(ContinuousRoundedRectangle(BorderRadius.iOS26.container))
-                            .background(optionBackground)
-                            .padding(Spacing.sm)
-                    ) {
-                        errors.take(5).forEach { error ->
-                            Text(
-                                text = "• $error",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = errorColor,
-                                modifier = Modifier.padding(vertical = 2.dp)
-                            )
-                        }
-                        if (errors.size > 5) {
-                            Text(
-                                text = "还有 ${errors.size - 5} 条错误...",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = labelsSecondary,
-                                modifier = Modifier.padding(top = Spacing.xs)
-                            )
-                        }
-                    }
+                    )
                 }
-                
-                Spacer(modifier = Modifier.height(Spacing.lg))
-                
-                LiquidGlassButton(
-                    onClick = onDismiss,
-                    text = dismissText,
-                    style = LiquidGlassButtonStyle.Tinted,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
         }
     }

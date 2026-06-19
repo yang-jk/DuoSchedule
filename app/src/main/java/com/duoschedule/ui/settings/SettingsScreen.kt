@@ -107,25 +107,13 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
-                if (appThemeMode == AppThemeMode.MIUIX) {
-                    TopAppBar(
-                        title = "设置",
-                        largeTitle = "设置",
-                        scrollBehavior = MiuixScrollBehavior(),
-                        color = Color.Transparent,
-                        titleColor = MiuixTheme.colorScheme.onSurface,
-                        largeTitleColor = MiuixTheme.colorScheme.onSurface,
-                        defaultWindowInsetsPadding = false,
-                    )
-                } else {
-                    SmallTopAppBar(
-                        title = "",
-                        scrollBehavior = MiuixScrollBehavior(),
-                        color = Color.Transparent,
-                        titleColor = MiuixTheme.colorScheme.onSurface,
-                        defaultWindowInsetsPadding = false,
-                    )
-                }
+                SmallTopAppBar(
+                    title = "",
+                    scrollBehavior = MiuixScrollBehavior(),
+                    color = Color.Transparent,
+                    titleColor = MiuixTheme.colorScheme.onSurface,
+                    defaultWindowInsetsPadding = false,
+                )
             }
         },
     ) { innerPadding ->
@@ -139,17 +127,21 @@ fun SettingsScreen(
                     if (appThemeMode == AppThemeMode.MIUIX) Spacing.lg else Spacing.iOS26.groupSpacing
                 )
             ) {
-            if (appThemeMode != AppThemeMode.MIUIX) {
-                Text(
-                    text = "设置",
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = labelsPrimary,
-                    modifier = Modifier
-                        .padding(horizontal = Spacing.lg)
-                )
-            }
+            Text(
+                text = "设置",
+                style = if (appThemeMode == AppThemeMode.MIUIX) {
+                    MiuixTheme.textStyles.title1.copy(fontWeight = FontWeight.Bold)
+                } else {
+                    MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold)
+                },
+                color = if (appThemeMode == AppThemeMode.MIUIX) {
+                    MiuixTheme.colorScheme.onSurface
+                } else {
+                    labelsPrimary
+                },
+                modifier = Modifier
+                    .padding(horizontal = Spacing.lg)
+            )
 
             SettingsSection(title = "用户与身份") {
                 SettingsToggleRow(

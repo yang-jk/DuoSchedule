@@ -4,6 +4,15 @@
 
 ---
 
+## [4.41.1] - 2026-06-20
+
+- [修复] iOS 主题弹窗改回 Compose Dialog + DialogProperties 方式，修复页面内绘制方式导致的布局和玻璃效果问题
+
+## [4.41.0] - 2026-06-19
+
+- [优化] 设置及二级页面顶栏分层渐变模糊：参考 ABlur 算法，新增 `Modifier.layeredGradientBlur`，通过堆叠 3 层 `textureBlur` 切片（模糊半径 60→40→20 阶梯递减）配合垂直渐变 alpha 遮罩，实现模糊半径沿 Y 轴从顶部强模糊渐进到底部清晰的真实渐变模糊效果，替代原 `BlurredBar` 的"均匀模糊 + 渐变色遮罩"伪渐变方案
+- [优化] `BlurredBar` Miuix 分支重构为使用 `layeredGradientBlur`，保留外层 `gradientBrush` 着色逻辑，iOS 分支保持不变
+
 ## [4.40.0] - 2026-06-18
 
 - [优化] 字重层次增强：headlineLarge/Medium 使用 Bold，headlineSmall/titleLarge 使用 SemiBold，与 body Normal 形成清晰层级对比

@@ -40,6 +40,7 @@ import com.duoschedule.ui.theme.SegmentOption
 import com.duoschedule.ui.theme.ComponentSize
 import com.duoschedule.ui.theme.LocalDarkTheme
 import com.duoschedule.ui.theme.LocalBackdrop
+import com.duoschedule.ui.theme.BlurredBar
 import com.duoschedule.ui.theme.getDialogBackgroundColor
 import com.duoschedule.ui.theme.getLabelsVibrantPrimary
 import com.duoschedule.ui.theme.getLabelsVibrantSecondary
@@ -48,17 +49,26 @@ import com.duoschedule.ui.theme.BrandColors
 import com.duoschedule.ui.theme.GlassCard
 import com.duoschedule.ui.theme.LiquidGlassColors
 import com.duoschedule.ui.theme.GlassBottomSheetDefaults
-import com.duoschedule.ui.settings.components.IOSConfirmDialog
+import com.duoschedule.ui.settings.components.GlassConfirmDialog
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop as kyantRememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import androidx.compose.ui.graphics.BlendMode
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import androidx.compose.ui.platform.LocalDensity
-import com.duoschedule.ui.settings.components.IOSSuccessDialog
+import com.duoschedule.ui.settings.components.GlassSuccessDialog
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -102,6 +112,14 @@ fun ImportPreviewScreen(
     var personBTarget by remember { mutableStateOf(if (isSwappedExport) PersonType.PERSON_B else PersonType.PERSON_A) }
     
     val scope = rememberCoroutineScope()
+    val appThemeMode = LocalAppThemeMode.current
+    val hazeState = rememberHazeState()
+    val contentBackdrop = kyantRememberLayerBackdrop()
+    val backgroundColor = MaterialTheme.colorScheme.surface
+    val miuixBackdrop = rememberLayerBackdrop {
+        drawRect(backgroundColor)
+        drawContent()
+    }
     
     val conflictCount = previewItems.count { it.hasConflict }
     val selectedCount = previewItems.count { it.isSelected }
@@ -160,72 +178,58 @@ fun ImportPreviewScreen(
     }
 
     Scaffold(
-        contentWindowInsets = WindowInsets(0),
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(if (isAppExport) "导入预览（应用导出）" else "导入预览（模板）") 
-                },
-                navigationIcon = {
-                    val appThemeMode = LocalAppThemeMode.current
-                    if (appThemeMode == AppThemeMode.MIUIX) {
-                        top.yukonga.miuix.kmp.basic.IconButton(onClick = onDismiss) {
-                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+            BlurredBar(hazeState, backdrop = miuixBackdrop, contentBackdrop = contentBackdrop) {
+                SmallTopAppBar(
+                    title = if (isAppExport) "导入预览（应用导出）" else "导入预览（模板）",
+                    scrollBehavior = MiuixScrollBehavior(),
+                    color = Color.Transparent,
+                    titleColor = MiuixTheme.colorScheme.onSurface,
+                    defaultWindowInsetsPadding = false,
+                    navigationIcon = {
+                        if (appThemeMode == AppThemeMode.MIUIX) {
+                            top.yukonga.miuix.kmp.basic.IconButton(onClick = onDismiss) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = MiuixTheme.colorScheme.onSurface)
+                            }
+                        } else {
+                            GlassSymbolIconButton(
+                                onClick = onDismiss,
+                                style = GlassSymbolButtonStyle.NonTinted,
+                                buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
+                                contentPadding = PaddingValues(start = Spacing.sm)
+                            ) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = getLabelsVibrantPrimary())
+                            }
                         }
-                    } else {
-                        GlassSymbolIconButton(
-                            onClick = onDismiss,
-                            style = GlassSymbolButtonStyle.NonTinted,
-                            buttonSize = ComponentSize.LiquidGlassButton.TopAppBarIconButtonSize,
-                            contentPadding = PaddingValues(start = Spacing.sm)
-                        ) {
-                            Icon(Icons.Default.ChevronLeft, contentDescription = "返回", tint = getLabelsVibrantPrimary())
+                    },
+                    actions = {
+                        if (appThemeMode == AppThemeMode.MIUIX) {
+                            top.yukonga.miuix.kmp.basic.Button(
+                                onClick = { showTargetDialog = true },
+                                enabled = selectedCount > 0,
+                                colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary()
+                            ) {
+                                top.yukonga.miuix.kmp.basic.Text("确认导入")
+                            }
+                        } else {
+                            LiquidGlassButton(
+                                onClick = { showTargetDialog = true },
+                                text = "确认导入",
+                                enabled = selectedCount > 0,
+                                style = LiquidGlassButtonStyle.Tinted
+                            )
                         }
                     }
-                },
-                actions = {
-                    val appThemeMode = LocalAppThemeMode.current
-                    if (appThemeMode == AppThemeMode.MIUIX) {
-                        top.yukonga.miuix.kmp.basic.Button(
-                            onClick = {
-                                if (isAppExport) {
-                                    showTargetDialog = true
-                                } else {
-                                    showTargetDialog = true
-                                }
-                            },
-                            enabled = selectedCount > 0,
-                            colors = top.yukonga.miuix.kmp.basic.ButtonDefaults.buttonColorsPrimary()
-                        ) {
-                            top.yukonga.miuix.kmp.basic.Text("确认导入")
-                        }
-                    } else {
-                        LiquidGlassButton(
-                            onClick = { 
-                                if (isAppExport) {
-                                    showTargetDialog = true
-                                } else {
-                                    showTargetDialog = true
-                                }
-                            },
-                            text = "确认导入",
-                            enabled = selectedCount > 0,
-                            style = LiquidGlassButtonStyle.Tinted
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
                 )
-            )
+            }
         },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = paddingValues.calculateTopPadding())
-        ) {
+    ) { innerPadding ->
+        Box(modifier = Modifier.hazeSource(hazeState).kyantLayerBackdrop(contentBackdrop).layerBackdrop(miuixBackdrop)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = innerPadding.calculateTopPadding())
+            ) {
             if (isAppExport) {
                 AppExportPreviewContent(
                     personAName = actualImportData.personAName,
@@ -251,12 +255,14 @@ fun ImportPreviewScreen(
             }
 
             Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
+            }
         }
     }
 
     if (showTargetDialog) {
         if (isAppExport) {
             AppExportConfirmDialog(
+                backdrop = contentBackdrop,
                 personAName = actualImportData.personAName,
                 personBName = actualImportData.personBName,
                 coursesForPersonA = coursesForPersonA,
@@ -309,6 +315,7 @@ fun ImportPreviewScreen(
             )
         } else {
             TemplateConfirmDialog(
+                backdrop = contentBackdrop,
                 selectedTarget = selectedTarget,
                 mergeMode = mergeMode,
                 isImporting = isImporting,
@@ -342,6 +349,7 @@ fun ImportPreviewScreen(
     
     if (showSuccessDialog) {
         SuccessDialog(
+            backdrop = contentBackdrop,
             importedCount = importedCount,
             importedTarget = importedTarget,
             isAppExport = isAppExport,
@@ -933,6 +941,7 @@ private fun TemplatePreviewContent(
 
 @Composable
 private fun AppExportConfirmDialog(
+    backdrop: Backdrop,
     personAName: String?,
     personBName: String?,
     coursesForPersonA: List<ImportPreviewItem>,
@@ -1092,7 +1101,8 @@ private fun AppExportConfirmDialog(
             }
         }
     } else {
-        IOSConfirmDialog(
+        GlassConfirmDialog(
+            backdrop = backdrop,
             title = "确认导入",
             onConfirm = onConfirm,
             onDismiss = onDismiss,
@@ -1216,6 +1226,7 @@ private fun AppExportConfirmDialog(
 
 @Composable
 private fun TemplateConfirmDialog(
+    backdrop: Backdrop,
     selectedTarget: PersonType?,
     mergeMode: Boolean,
     isImporting: Boolean,
@@ -1292,7 +1303,8 @@ private fun TemplateConfirmDialog(
             }
         }
     } else {
-        IOSConfirmDialog(
+        GlassConfirmDialog(
+            backdrop = backdrop,
             title = "选择导入目标",
             onConfirm = onConfirm,
             onDismiss = onDismiss,
@@ -1337,6 +1349,7 @@ private fun TemplateConfirmDialog(
 
 @Composable
 private fun SuccessDialog(
+    backdrop: Backdrop,
     importedCount: Int,
     importedTarget: PersonType?,
     isAppExport: Boolean,
@@ -1386,7 +1399,8 @@ private fun SuccessDialog(
             }
         }
     } else {
-        IOSSuccessDialog(
+        GlassSuccessDialog(
+            backdrop = backdrop,
             title = "导入成功",
             message = message,
             onDismiss = onNavigateToHome,

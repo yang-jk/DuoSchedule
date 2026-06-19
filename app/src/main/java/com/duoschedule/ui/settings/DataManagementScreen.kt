@@ -606,7 +606,8 @@ fun DataManagementScreen(
                 }
             }
         } else {
-            IOSLoadingDialog(
+            GlassLoadingDialog(
+                backdrop = contentBackdrop,
                 message = loadingMessage,
                 onDismiss = { }
             )
@@ -635,7 +636,8 @@ fun DataManagementScreen(
                     }
                 }
             } else {
-                IOSSuccessDialog(
+                GlassSuccessDialog(
+                    backdrop = contentBackdrop,
                     title = "导入成功",
                     message = "成功解析 ${importResult!!.importedCount} 门课程",
                     onDismiss = { showImportResultDialog = false },
@@ -664,7 +666,8 @@ fun DataManagementScreen(
                     }
                 }
             } else {
-                IOSErrorDialog(
+                GlassErrorDialog(
+                    backdrop = contentBackdrop,
                     title = "导入失败",
                     message = if (importResult!!.errors.isEmpty()) "无法解析文件内容" else null,
                     errors = importResult!!.errors,

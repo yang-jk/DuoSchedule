@@ -27,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
@@ -40,10 +39,7 @@ import com.duoschedule.ui.theme.*
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
 import com.kyant.backdrop.drawBackdrop
-
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.highlight.Highlight
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -124,30 +120,6 @@ fun CurrentCourseCard(
 
     val density = LocalDensity.current
 
-    val layer1Tint = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.Layer1_Tint
-    } else {
-        LiquidGlassColors.BottomSheet.Light.Layer1_Tint
-    }
-
-    val layer1Alpha = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.Layer1_Alpha
-    } else {
-        LiquidGlassColors.BottomSheet.Light.Layer1_Alpha
-    }
-
-    val layer2Base = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.Layer2_Base
-    } else {
-        LiquidGlassColors.BottomSheet.Light.Layer2_Base
-    }
-
-    val glassEffect = if (darkTheme) {
-        LiquidGlassColors.BottomSheet.Dark.GlassEffect
-    } else {
-        LiquidGlassColors.BottomSheet.Light.GlassEffect
-    }
-
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -166,18 +138,11 @@ fun CurrentCourseCard(
                 backdrop = backdrop,
                 shape = { ContinuousRoundedRectangle(BorderRadius.iOS26.large) },
                 effects = {
-                    vibrancy()
-                    blur(with(density) { GlassBottomSheetDefaults.BlurRadius.toPx() })
-                    lens(
-                        refractionHeight = with(density) { GlassBottomSheetDefaults.LensRefractionHeight.toPx() },
-                        refractionAmount = with(density) { GlassBottomSheetDefaults.LensRefractionAmount.toPx() },
-                        chromaticAberration = true
-                    )
+                    glassCardEffects(darkTheme, density)
                 },
+                highlight = { Highlight.Plain },
                 onDrawSurface = {
-                    drawRect(layer1Tint.copy(alpha = layer1Alpha))
-                    drawRect(layer2Base, blendMode = BlendMode.ColorDodge)
-                    drawRect(glassEffect)
+                    glassCardSurfaceColors(darkTheme)
                 }
             )
             .padding(Spacing.md),
