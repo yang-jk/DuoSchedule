@@ -2,9 +2,7 @@ import json
 import base64
 import os
 import sys
-import urllib.request
-import urllib.error
-import urllib.parse
+import subprocess
 
 VERSION_NAME = os.environ['VERSION_NAME']
 VERSION_CODE = int(os.environ['VERSION_CODE'])
@@ -19,26 +17,43 @@ GITHUB_TOKEN = os.environ.get('UPDATE_REPO_TOKEN', '')
 GITEE_TOKEN = os.environ.get('GITEE_TOKEN', '')
 GITEE_RELEASE_SUCCESS = os.environ.get('GITEE_RELEASE_SUCCESS', 'true').lower() == 'true'
 
-def fetch_file_sha(api_url, headers, max_retries=3):
-    """获取文件 SHA，支持重试"""
+def curl_request(url, method='GET', headers=None, data=None, max_retries=3, timeout=30):
+    """使用 curl 发起请求，支持重试"""
     for attempt in range(1, max_retries + 1):
         try:
-            req = urllib.request.Request(api_url)
-            for key, value in headers.items():
-                req.add_header(key, value)
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                existing = json.loads(resp.read().decode('utf-8'))
-                sha = existing.get('sha', '')
-                return sha
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                return ''  # 文件不存在，返回空 SHA
-            print(f"  获取 SHA 失败 (尝试 {attempt}/{max_retries}): HTTP {e.code}")
+            cmd = ['curl', '-sS', '-X', method, '--connect-timeout', '10', '--max-time', str(timeout)]
+            if headers:
+                for key, value in headers.items():
+                    cmd += ['-H', f'{key}: {value}']
+            if data:
+                cmd += ['-d', data]
+            cmd.append(url)
+
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 10)
+            if result.returncode == 0:
+                return result.stdout
+            else:
+                print(f"  curl 失败 (尝试 {attempt}/{max_retries}): {result.stderr.strip()}")
+        except subprocess.TimeoutExpired:
+            print(f"  curl 超时 (尝试 {attempt}/{max_retries})")
         except Exception as e:
-            print(f"  获取 SHA 失败 (尝试 {attempt}/{max_retries}): {e}")
+            print(f"  curl 异常 (尝试 {attempt}/{max_retries}): {e}")
         if attempt < max_retries:
             import time
             time.sleep(2)
+    return None
+
+def fetch_file_sha(api_url, headers, max_retries=3):
+    """获取文件 SHA，支持重试"""
+    response = curl_request(api_url, method='GET', headers=headers, max_retries=max_retries)
+    if response:
+        try:
+            existing = json.loads(response)
+            sha = existing.get('sha', '')
+            return sha
+        except json.JSONDecodeError:
+            # 404 返回的不是 JSON，curl 会返回空或错误页面
+            pass
     return ''
 
 def update_github(api_url, token, download_url):
@@ -58,6 +73,7 @@ def update_github(api_url, token, download_url):
 
     content_b64 = base64.b64encode(content_json.encode('utf-8')).decode('ascii')
 
+    headers = {'Authorization': f'token {token}', 'Content-Type': 'application/json'}
     sha = fetch_file_sha(api_url, {'Authorization': f'token {token}'})
     if sha:
         print(f"[GitHub] Current file SHA: {sha}")
@@ -73,40 +89,37 @@ def update_github(api_url, token, download_url):
 
     payload_json = json.dumps(payload)
 
-    req = urllib.request.Request(api_url, data=payload_json.encode('utf-8'), method='PUT')
-    req.add_header('Authorization', f'token {token}')
-    req.add_header('Content-Type', 'application/json')
-
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = json.loads(resp.read().decode('utf-8'))
+    response = curl_request(api_url, method='PUT', headers=headers, data=payload_json)
+    if response:
+        try:
+            result = json.loads(response)
+            # 检查是否有 API 错误
+            if 'message' in result and 'sha' not in result.get('content', {}):
+                error_msg = result.get('message', 'Unknown error')
+                # SHA 冲突时重试
+                if 'conflict' in error_msg.lower() or '422' in error_msg or '409' in error_msg:
+                    print(f"[GitHub] SHA conflict, retrying with fresh SHA...")
+                    new_sha = fetch_file_sha(api_url, {'Authorization': f'token {token}'})
+                    if new_sha:
+                        payload["sha"] = new_sha
+                        payload_json = json.dumps(payload)
+                        response2 = curl_request(api_url, method='PUT', headers=headers, data=payload_json)
+                        if response2:
+                            result2 = json.loads(response2)
+                            if 'content' in result2 or 'commit' in result2:
+                                print(f"[GitHub] Retry success! Commit: {result2.get('commit', {}).get('sha', 'unknown')}")
+                                return True
+                            print(f"[GitHub] Retry failed: {result2.get('message', 'unknown')}")
+                            return False
+                print(f"[GitHub] API Error: {error_msg}")
+                return False
             print(f"[GitHub] Success! Commit: {result.get('commit', {}).get('sha', 'unknown')}")
             return True
-    except urllib.error.HTTPError as e:
-        body = e.read().decode('utf-8')
-        # SHA 不匹配时重试：重新获取 SHA 再 PUT
-        if e.code == 409 or e.code == 422:
-            print(f"[GitHub] SHA conflict (HTTP {e.code}), retrying with fresh SHA...")
-            new_sha = fetch_file_sha(api_url, {'Authorization': f'token {token}'})
-            if new_sha:
-                payload["sha"] = new_sha
-                payload_json = json.dumps(payload)
-                req2 = urllib.request.Request(api_url, data=payload_json.encode('utf-8'), method='PUT')
-                req2.add_header('Authorization', f'token {token}')
-                req2.add_header('Content-Type', 'application/json')
-                try:
-                    with urllib.request.urlopen(req2, timeout=30) as resp2:
-                        result2 = json.loads(resp2.read().decode('utf-8'))
-                        print(f"[GitHub] Retry success! Commit: {result2.get('commit', {}).get('sha', 'unknown')}")
-                        return True
-                except Exception as e2:
-                    print(f"[GitHub] Retry failed: {e2}")
-                    return False
-        print(f"[GitHub] HTTP Error {e.code}: {body}")
-        return False
-    except Exception as e:
-        print(f"[GitHub] Error: {e}")
-        return False
+        except json.JSONDecodeError:
+            print(f"[GitHub] Invalid JSON response: {response[:200]}")
+            return False
+    print("[GitHub] Request failed after retries")
+    return False
 
 def update_gitee(api_url, token, download_url):
     update_data = {
@@ -141,38 +154,38 @@ def update_gitee(api_url, token, download_url):
 
     payload_json = json.dumps(payload)
 
-    req = urllib.request.Request(api_url, data=payload_json.encode('utf-8'), method='PUT')
-    req.add_header('Content-Type', 'application/json')
-
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = json.loads(resp.read().decode('utf-8'))
+    headers = {'Content-Type': 'application/json'}
+    response = curl_request(api_url, method='PUT', headers=headers, data=payload_json)
+    if response:
+        try:
+            result = json.loads(response)
+            # 检查是否有 API 错误
+            if 'message' in result and 'content' not in result:
+                error_msg = result.get('message', 'Unknown error')
+                # SHA 问题时重试
+                if sha and ('sha' in error_msg.lower() or 'conflict' in error_msg.lower() or '400' in error_msg or '409' in error_msg or '422' in error_msg):
+                    print(f"[Gitee] SHA issue, retrying with fresh SHA...")
+                    new_sha = fetch_file_sha(f"{api_url}?access_token={token}", {'Content-Type': 'application/json'})
+                    if new_sha:
+                        payload["sha"] = new_sha
+                        payload_json = json.dumps(payload)
+                        response2 = curl_request(api_url, method='PUT', headers=headers, data=payload_json)
+                        if response2:
+                            result2 = json.loads(response2)
+                            if 'content' in result2 or 'commit' in result2:
+                                print(f"[Gitee] Retry success! Commit: {result2.get('commit', {}).get('sha', 'unknown')}")
+                                return True
+                            print(f"[Gitee] Retry failed: {result2.get('message', 'unknown')}")
+                            return False
+                print(f"[Gitee] API Error: {error_msg}")
+                return False
             print(f"[Gitee] Success! Commit: {result.get('commit', {}).get('sha', 'unknown')}")
             return True
-    except urllib.error.HTTPError as e:
-        body = e.read().decode('utf-8')
-        # SHA 缺失或不匹配时重试：重新获取 SHA 再 PUT
-        if e.code == 400 or e.code == 409 or e.code == 422:
-            print(f"[Gitee] SHA issue (HTTP {e.code}), retrying with fresh SHA...")
-            new_sha = fetch_file_sha(f"{api_url}?access_token={token}", {'Content-Type': 'application/json'})
-            if new_sha:
-                payload["sha"] = new_sha
-                payload_json = json.dumps(payload)
-                req2 = urllib.request.Request(api_url, data=payload_json.encode('utf-8'), method='PUT')
-                req2.add_header('Content-Type', 'application/json')
-                try:
-                    with urllib.request.urlopen(req2, timeout=30) as resp2:
-                        result2 = json.loads(resp2.read().decode('utf-8'))
-                        print(f"[Gitee] Retry success! Commit: {result2.get('commit', {}).get('sha', 'unknown')}")
-                        return True
-                except Exception as e2:
-                    print(f"[Gitee] Retry failed: {e2}")
-                    return False
-        print(f"[Gitee] HTTP Error {e.code}: {body}")
-        return False
-    except Exception as e:
-        print(f"[Gitee] Error: {e}")
-        return False
+        except json.JSONDecodeError:
+            print(f"[Gitee] Invalid JSON response: {response[:200]}")
+            return False
+    print("[Gitee] Request failed after retries")
+    return False
 
 any_success = False
 
@@ -186,13 +199,11 @@ if GITHUB_TOKEN:
         any_success = True
         print("[GitHub] update.json updated successfully")
         print("[GitHub] Purging jsDelivr CDN cache...")
-        try:
-            purge_url = f"https://purge.jsdelivr.net/gh/{GITHUB_OWNER}/duoschedule-update@main/update.json"
-            req = urllib.request.Request(purge_url)
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                print(f"[GitHub] jsDelivr cache purged (status: {resp.status})")
-        except Exception as e:
-            print(f"[GitHub] jsDelivr purge failed (non-fatal): {e}")
+        response = curl_request(f"https://purge.jsdelivr.net/gh/{GITHUB_OWNER}/duoschedule-update@main/update.json")
+        if response:
+            print(f"[GitHub] jsDelivr cache purged")
+        else:
+            print("[GitHub] jsDelivr purge failed (non-fatal)")
     else:
         print("[GitHub] Failed to update, continuing...")
 else:
@@ -217,13 +228,11 @@ if GITEE_TOKEN:
     if gitee_success:
         any_success = True
         print("[Gitee] Purging cache...")
-        try:
-            purge_url = f"https://gitee.com/{GITEE_OWNER}/duoschedule-update/raw/main/update.json"
-            req = urllib.request.Request(purge_url)
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                print(f"[Gitee] Cache purged (status: {resp.status})")
-        except Exception as e:
-            print(f"[Gitee] Purge failed (non-fatal): {e}")
+        response = curl_request(f"https://gitee.com/{GITEE_OWNER}/duoschedule-update/raw/main/update.json", timeout=10)
+        if response:
+            print(f"[Gitee] Cache purged")
+        else:
+            print("[Gitee] Purge failed (non-fatal)")
     else:
         print("[Gitee] Failed to update, continuing...")
 else:
